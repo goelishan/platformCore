@@ -1,0 +1,148 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1.5rem 0}
+.header{margin-bottom:1.5rem}
+.header h2{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.header p{font-size:13px;color:var(--color-text-secondary)}
+.phase{margin-bottom:12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.phase-header{display:flex;align-items:stretch;cursor:pointer;user-select:none}
+.phase-bar{width:6px;flex-shrink:0}
+.phase-meta{flex:1;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.phase-badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.phase-title{font-size:14px;font-weight:500;color:var(--color-text-primary);flex:1}
+.phase-days{font-size:12px;color:var(--color-text-secondary);white-space:nowrap}
+.phase-deadline{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.phase-chevron{font-size:12px;color:var(--color-text-tertiary);margin-left:4px;transition:transform 0.2s;flex-shrink:0}
+.phase-body{padding:0 14px 14px 20px;display:none}
+.phase-body.open{display:block}
+.topics{list-style:none;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.topics li{font-size:12px;color:var(--color-text-secondary);display:flex;gap:6px;align-items:flex-start}
+.topics li::before{content:"";width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.deliverable{margin-top:10px;padding:8px 10px;border-radius:6px;border-left:3px solid;font-size:12px}
+.deliverable strong{font-weight:500;display:block;margin-bottom:2px}
+.gap-notice{margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:500}
+.progress-row{display:flex;gap:4px;margin-bottom:16px}
+.prog-seg{height:6px;border-radius:3px;flex:1;opacity:0.3}
+.prog-seg.active{opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+</style>
+<div class="wrap">
+  <div class="header">
+    <h2>Platform Engineer — 40-day roadmap</h2>
+    <p>DBA → Platform Engineer · Target: interview-ready · PlatformCore project thread throughout</p>
+  </div>
+  <div class="progress-row" id="prog"></div>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#534AB7"></span>Docker/Compose</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#0F6E56"></span>Terraform IaC</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#185FA5"></span>Kubernetes</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#BA7517"></span>EKS + Helm</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#993C1D"></span>Observability</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#72243E"></span>GitOps + Secrets</span>
+  </div>
+  <div id="phases"></div>
+</div>
+<script>
+const phases=[
+  {
+    id:1,days:"Days 1–5",title:"Docker Compose",color:"#534AB7",bg:"#EEEDFE",textColor:"#3C3489",deadlineLabel:"Gate 1",deadlineBg:"#EEEDFE",deadlineText:"#3C3489",
+    gap:"You said this is next — you have zero Compose right now. This is the fastest phase but skipping it means Kubernetes will be confusing.",
+    topics:[
+      "Full docker-compose.yml structure","Named networks (not default bridge)","healthcheck + depends_on condition","restart policies","env_file integration","Volume mounts (named + bind)","docker-compose.override.yml (dev vs prod)","Compose + existing CI/CD integration"
+    ],
+    deliverable:"PlatformCore local stack: app + nginx + postgres — fully wired, health-gated, no hardcoded secrets. `docker compose up` works cold.",
+    deliverableColor:"#534AB7"
+  },
+  {
+    id:2,days:"Days 6–14",title:"Terraform IaC",color:"#0F6E56",bg:"#E1F5EE",textColor:"#085041",deadlineLabel:"Gate 2",deadlineBg:"#E1F5EE",deadlineText:"#085041",
+    gap:"This is the biggest gap for Platform Engineer. Right now your AWS infra is all manual click-ops. IaC is non-negotiable — every Platform Engineer interview will ask about it.",
+    topics:[
+      "Providers, resources, data sources","plan / apply / destroy workflow","Variables, outputs, locals","Modules (VPC, EC2, SG)","Remote state — S3 + DynamoDB locking","Workspaces for dev/staging/prod","ECR + IAM roles via Terraform","Replace your manual AWS setup completely"
+    ],
+    deliverable:"PlatformCore infra fully in Terraform: VPC, subnets, SGs, EC2, ALB, ECR, IAM roles. Remote state in S3. Zero manual AWS console steps.",
+    deliverableColor:"#0F6E56"
+  },
+  {
+    id:3,days:"Days 15–24",title:"Kubernetes fundamentals",color:"#185FA5",bg:"#E6F1FB",textColor:"#0C447C",deadlineLabel:"Gate 3",deadlineBg:"#E6F1FB",deadlineText:"#0C447C",
+    gap:"Zero K8s exposure right now. This is the longest phase deliberately — K8s concepts take time to settle. Do NOT skip the local phase (kind/minikube). Running it locally first before EKS saves days of debugging.",
+    topics:[
+      "Control plane: API server, etcd, scheduler","Node components: kubelet, kube-proxy","Pods, ReplicaSets, Deployments","Services: ClusterIP, NodePort, LoadBalancer","Ingress + nginx ingress controller","ConfigMaps + Secrets","PersistentVolumes + PVCs","Liveness + readiness probes","Resource limits/requests","HPA (horizontal pod autoscaler)"
+    ],
+    deliverable:"PlatformCore running on local kind cluster. Deployment + Service + Ingress + ConfigMap + Secret + PV. HPA configured. Probes on all containers.",
+    deliverableColor:"#185FA5"
+  },
+  {
+    id:4,days:"Days 25–30",title:"EKS + Helm",color:"#BA7517",bg:"#FAEEDA",textColor:"#633806",deadlineLabel:"Gate 4",deadlineBg:"#FAEEDA",deadlineText:"#633806",
+    gap:"Moving from local K8s to EKS is where most people stall — auth, node groups, IAM for service accounts (IRSA). Helm is mandatory; no Platform Engineer deploys raw manifests at scale.",
+    topics:[
+      "EKS cluster via Terraform (aws_eks_cluster)","Managed node groups","kubeconfig + aws eks update-kubeconfig","Helm: charts, values.yaml, releases","helm install / upgrade / rollback","Write your own Helm chart for PlatformCore","IRSA — IAM Roles for Service Accounts","Update CI/CD pipeline to deploy to EKS"
+    ],
+    deliverable:"PlatformCore deployed to EKS via Helm chart. CI/CD pipeline updated: build → ECR → helm upgrade. IRSA configured for AWS access.",
+    deliverableColor:"#BA7517"
+  },
+  {
+    id:5,days:"Days 31–35",title:"Observability",color:"#993C1D",bg:"#FAECE7",textColor:"#4A1B0C",deadlineLabel:"Gate 5",deadlineBg:"#FAECE7",deadlineText:"#4A1B0C",
+    gap:"You have no observability right now — file-based logs and no metrics. Platform Engineers own the observability stack. This is heavily tested in interviews.",
+    topics:[
+      "kube-prometheus-stack via Helm","Prometheus scrape configs","Grafana dashboards (import + custom)","Loki + Promtail for log aggregation","Replace file logs with structured stdout","Alert rules — at least 2 real alerts","ServiceMonitor CRD for app metrics","Grafana data source: Prometheus + Loki"
+    ],
+    deliverable:"Prometheus + Grafana + Loki running on EKS. App emitting metrics. Two alert rules (pod crash, high latency). Dashboard showing app + cluster health.",
+    deliverableColor:"#993C1D"
+  },
+  {
+    id:6,days:"Days 36–40",title:"GitOps + Secrets + Interview prep",color:"#993556",bg:"#FBEAF0",textColor:"#4B1528",deadlineLabel:"Interview ready",deadlineBg:"#FBEAF0",deadlineText:"#4B1528",
+    gap:"ArgoCD is the standard GitOps tool. External Secrets Operator + AWS Secrets Manager replaces your .env approach. Last 2 days: system design practice, not new tools.",
+    topics:[
+      "ArgoCD install on EKS","App-of-apps pattern","Git push → ArgoCD sync → cluster update","External Secrets Operator","AWS Secrets Manager integration","Remove all .env from K8s deployments","System design: design a deployment platform","Interview: troubleshooting K8s scenarios"
+    ],
+    deliverable:"Full GitOps loop: git push triggers ArgoCD sync. All secrets via AWS Secrets Manager. PlatformCore end-to-end demo ready. 2x mock interviews done.",
+    deliverableColor:"#993556"
+  }
+];
+
+const colors=["#534AB7","#0F6E56","#185FA5","#BA7517","#993C1D","#993556"];
+const prog=document.getElementById('prog');
+colors.forEach(c=>{const s=document.createElement('div');s.className='prog-seg active';s.style.background=c;prog.appendChild(s);});
+
+const container=document.getElementById('phases');
+phases.forEach(p=>{
+  const div=document.createElement('div');
+  div.className='phase';
+  div.innerHTML=`
+    <div class="phase-header" onclick="toggle(${p.id})">
+      <div class="phase-bar" style="background:${p.color}"></div>
+      <div class="phase-meta">
+        <span class="phase-badge" style="background:${p.bg};color:${p.textColor}">Phase ${p.id}</span>
+        <span class="phase-title">${p.title}</span>
+        <span class="phase-days">${p.days}</span>
+        <span class="phase-deadline" style="background:${p.deadlineBg};color:${p.deadlineText}">${p.deadlineLabel}</span>
+        <span class="phase-chevron" id="chev${p.id}">▼</span>
+      </div>
+    </div>
+    <div class="phase-body" id="body${p.id}">
+      <div class="gap-notice" style="background:${p.bg};color:${p.textColor};border-left:3px solid ${p.color}">
+        <strong style="font-weight:500">Why this phase matters: </strong>${p.gap}
+      </div>
+      <ul class="topics">
+        ${p.topics.map(t=>`<li><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${p.color};margin-top:5px;flex-shrink:0"></span>${t}</li>`).join('')}
+      </ul>
+      <div class="deliverable" style="background:${p.bg};border-color:${p.color};color:${p.textColor}">
+        <strong>Gate deliverable</strong>${p.deliverable}
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+});
+
+function toggle(id){
+  const body=document.getElementById('body'+id);
+  const chev=document.getElementById('chev'+id);
+  const open=body.classList.toggle('open');
+  chev.style.transform=open?'rotate(180deg)':'';
+}
+toggle(1);
+</script>

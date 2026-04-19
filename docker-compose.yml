@@ -1,0 +1,88 @@
+# PlatformCore local stack — Phase 1 (Days 1–5).
+#
+# Topology:
+#
+#   host:80 ──► nginx ──► app ──► postgres
+#                 │          │
+#                 └── edge ──┘   (frontend network)
+#                            │
+#                            └── backend ── postgres   (backend network)
+#
+# Nginx is on `edge` only — it has no route to Postgres at all. The app
+# straddles both networks; that's intentional, it's the only service that
+# needs to reach the DB. This is the "defence in depth" pattern from
+# the K8s NetworkPolicy / AWS SG world, applied at the Docker layer.
+
+networks:
+  edge:
+    name: platformcore-edge
+  backend:
+    name: platformcore-backend
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      # Read-only bind mount: the container cannot modify our config.
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/_nginx_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  app:
+    build: ./app
+    # NOTE: no `ports:` block. The app is only reachable via nginx on `edge`.
+    # This mirrors production: app tiers live behind a reverse proxy / LB,
+    # never exposed directly to the internet. Dev port-forwarding will be
+    # re-enabled later via docker-compose.override.yml (day 5).
+    environment:
+      # DATABASE_URL is assembled here from .env-sourced variables. Compose
+      # performs variable substitution on this file at load time, so the
+      # compose YAML never contains a secret literal.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edge
+      - backend
+    healthcheck:
+      # python:3.12-slim has no curl/wget, but always ships with python.
+      # Using the stdlib keeps the image layer count down.
+      test:
+        ["CMD", "python", "-c",
+         "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  pgdata:
