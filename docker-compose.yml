@@ -48,6 +48,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - edge
       - backend
@@ -59,6 +61,27 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  migrate:
+    image: postgres:16
+    restart: on-failure:3
+    environment:
+      # psql reads these natively — no flags needed for connection.
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - ./db:/migrations:ro
+    # ON_ERROR_STOP=1 makes psql exit non-zero on the first SQL error.
+    # Without it, psql reports exit 0 even if statements failed — and
+    # the on-failure:3 retry would never trigger. Classic gotcha.
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/init.sql"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
 
   postgres:
     image: postgres:16
