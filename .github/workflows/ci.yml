@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Seed .env from .env.example
         # Compose does parse-time substitution of ${VAR}. Without a .env file
@@ -35,7 +35,7 @@ jobs:
     needs: validate
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Seed .env from .env.example
         run: cp .env.example .env
