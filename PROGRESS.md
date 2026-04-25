@@ -10,18 +10,66 @@ PlatformCore is the hands-on thread for Ishan's 40-day DBA → Platform Engineer
 
 ## Current position
 
-- **Phase:** 2 — Terraform IaC — **IN PROGRESS** as of 2026-04-21.
-- **Day:** Day 6 completed and verified on 2026-04-21. Terraform pipeline bootstrapped end-to-end. Day 7 (VPC) begins next session.
+- **Phase:** 2 — Terraform IaC — **IN PROGRESS** as of 2026-04-25.
+- **Day:** Day 9 **CLOSED and VERIFIED** on 2026-04-25. Full deployment path proven end-to-end: ALB serves 200 from a container running on a private-subnet EC2 with no NAT gateway; image pulled from ECR through ecr.api + ecr.dkr + s3 gateway endpoints; logs stream to CloudWatch via the logs interface endpoint. `make curl` returns 200 on `/`, `/health`, `/version`, and 503 (expected) on `/ready`. Target group state: `healthy`. Day 10 (likely RDS or GitHub Actions OIDC; check roadmap) begins next session.
 - **Gate 2 deliverable (target):** PlatformCore infra fully in Terraform — VPC, subnets, SGs, EC2, ALB, ECR, IAM roles. Remote state in S3. Zero manual console steps.
 
 ## Open actions (for user to complete before/at next session)
 
-- [x] Day 6 commit pushed to `main` on 2026-04-21 — Terraform bootstrap complete (provider.tf, backend.tf, variables.tf, outputs.tf, .terraform.lock.hcl committed; .terraform/ and state files gitignored).
+- [x] Day 7 commit pushed to `main` on 2026-04-21 — VPC, subnets, IGW, route tables, outputs all committed.
+- [ ] Day 8 commit — SGs, IAM, EC2, ALB, default_tags, Makefile, headers, tag audit.
+- [ ] Day 9 commit — VPC endpoints (SSM trio + ECR.api + ECR.dkr + S3 gateway + CloudWatch Logs), private RT, ECR repo + lifecycle, IAM (ECR readonly + scoped Logs-write), user_data for boot-time pull/run, lazy-DB main.py, Makefile endpoint teardown.
+- [ ] AWS Budgets `$5/mo` alert (`budgets.tf`) — second layer of cost defence beyond the Makefile.
+- [ ] Rapid-fire recall round on Day 8 material (still pending).
+- [ ] Final Day 9 verification once `:v2` deployed: `make curl` returns 200 on `/`, `/health`, `/version`; `/ready` returns 503 (expected, no DB).
 
-## Day 7 agenda (tentative — confirm at session start)
+## Day 9 agenda (tentative — confirm at session start)
 
-- Rapid-fire round on Day 6 material (state file purpose + loss consequence, plan/apply lifecycle, remote state rationale, DynamoDB lock mechanism, data source vs resource distinction, `-out` flag race condition, lock file purpose, provider version constraints).
-- Day 7: write the VPC resource. One `aws_vpc` resource, public + private subnets across two AZs, internet gateway, route tables. First chargeable-adjacent resource — confirm `terraform plan` shows correct diff before applying.
+- Rapid-fire on Day 8: source-SG reference pattern, standalone rule resources vs inline, IAM role vs instance profile, IMDSv2 mechanism, AMI data source semantics, ALB vs NLB, target group health-check independence from app routes, `-target` tradeoffs, `default_tags` vs explicit tags, 502 as a healthy ALB signal.
+- Day 9: deploy actual app code to the EC2 so the target group turns healthy and the ALB serves 200s. Likely involves user_data or AMI bake decision, plus the NAT Gateway / VPC endpoint question (private subnet has no outbound path today — `yum install` / ECR pulls will fail without it).
+
+## Day 9 in-flight notes (2026-04-23)
+
+**Architecture decision: Option A — VPC Endpoints, no NAT.** Private subnet reaches AWS services via per-service endpoints. Cheaper than NAT gateway at this scale and safer (AWS-backbone-only traffic). Tradeoff: one endpoint per service, and interface endpoints are the biggest cost leak if left up overnight (~$0.01/hr each per AZ) — `make down` now tears them all down.
+
+**Endpoints provisioned:** SSM trio (`ssm`, `ssmmessages`, `ec2messages`), ECR pair (`ecr.api` control, `ecr.dkr` data), S3 gateway (ECR's layer storage backend), CloudWatch Logs. STS deliberately omitted — the app doesn't call `sts:GetCallerIdentity`; `get-login-password` uses instance-profile credentials directly via SigV4 without identity lookups.
+
+**Bootstrap trap (resolved):** Plain AL2023 needs `dnf install docker` at first boot, but AL2023 package repos are on CloudFront (public internet) and there is no VPC endpoint for them. Switched to ECS-optimized AL2023 AMI, which ships Docker pre-baked. Happy accident: `most_recent=true` + a loose AMI name filter (`al2023-ami-*-x86_64`) had already picked the ECS-optimized image — tightening the filter (`al2023-ami-ecs-hvm-*-x86_64`) returned the same AMI with zero drift. Banked as an interview lesson: **loose filter + most_recent = hidden drift vector; pin the exact prefix.** Also disabled the systemd-managed ECS agent (`systemctl disable ecs`) on the running instance during manual verification to stop it crash-looping against our non-existent cluster.
+
+**Network-path proof points (what the `:v1` crash taught us):**
+1. `aws ecr get-login-password` from the EC2 returns `AccessDenied` → confirms ecr.api endpoint + SigV4 reach AWS; only IAM needs fixing. After policy attach, token returned.
+2. `docker pull` downloads all 8 layers → confirms ecr.dkr endpoint (manifest) + S3 gateway (blobs) both work.
+3. App crash-logs arrive in CloudWatch within seconds → confirms awslogs driver + logs endpoint + scoped IAM policy all work.
+
+**IAM shape (Phase 9 additions):**
+- `AmazonEC2ContainerRegistryReadOnly` (AWS-managed, attached) — ECR pull + token.
+- `platformcore-cw-logs-write` (inline, scoped to `/platformcore/*` log groups) — `CreateLogStream`, `PutLogEvents`, `CreateLogGroup`, `DescribeLogStreams`. Scoped, not the broader `CloudWatchAgentServerPolicy`.
+
+**Three-resource IAM triangle banked:** `aws_iam_role_policy_attachment` (managed policy → role), `aws_iam_role_policy` (inline), `aws_iam_policy + attachment` (customer-managed reusable). All three used intentionally in `iam.tf`.
+
+**App refactor (Path B, committed in this session):** `app/main.py` rewritten to be lazy about the DB. New endpoint shape:
+- `/` — DB-free, smoke test.
+- `/health` — liveness. DB-free by design. ALB target group health check points here.
+- `/ready` — readiness. Touches DB via `SELECT 1`. Returns 503 in Phase 9 (no RDS). Will be the ALB health target after Phase 10.
+- `/version` — returns `APP_VERSION` env var (injected in user_data to match the pulled image tag).
+
+**Liveness vs readiness mental model banked:** liveness checks the process, readiness checks dependencies. Wiring a health check that hits the DB turns a DB blip into a container restart-loop — strictly worse than a brief removal from LB rotation. Production setups split the two; our Phase 9 setup has the split ready for Phase 10 to activate.
+
+**Final verification — completed 2026-04-25:**
+- Built `:v2` with `docker buildx build --platform linux/amd64` from Apple Silicon laptop.
+- Pushed to ECR; user_data pinned to `:v2` via `local.app_image_tag`.
+- First instance after `make up` failed `docker pull` because `:v2` had not yet been pushed at apply time — `set -e` killed user_data after the start marker, before the run line. **Lesson banked: push image BEFORE the apply that depends on it.**
+- Recovered without instance replacement by SSM-shelling in and pasting the failed-tail of user_data manually. Proves the user_data text is correct; only the ordering broke.
+- Hit a second IAM gap during recovery: `logs:PutRetentionPolicy` was not in the inline policy. The `|| true` in user_data swallowed the error so the script continued. Retention not yet set on the log group; tracked as cleanup work for next session (likely move log-group management out of user_data and into Terraform via `aws_cloudwatch_log_group` + `terraform import`).
+- Final state: ALB target `healthy`, all four endpoints respond as expected, container shows `Up X seconds` with no crash loop.
+
+## Day 9 follow-up tasks (carry into Day 10 opener or end-of-day cleanup)
+
+- [ ] Move CloudWatch log group to Terraform (`aws_cloudwatch_log_group.app` with `retention_in_days = 7`); `terraform import` the existing group; remove `aws logs create-log-group` and `aws logs put-retention-policy` from user_data.
+- [ ] Tighten IAM Logs policy to just `CreateLogStream` + `PutLogEvents` once the log group is Terraform-managed. The awslogs Docker driver needs nothing else.
+- [ ] AWS Budgets `$5/mo` alert (`budgets.tf`) — open since Day 8.
+- [ ] Day 8 + Day 9 git commits (separate, both with detailed messages).
+- [ ] Permanent fix to suppress the systemd-managed `ecs-agent` container on the ECS-optimized AMI — added to user_data; will land on next instance replacement.
 
 ---
 
@@ -130,7 +178,84 @@ PlatformCore's Phase 1 is a production-shaped, dev-friendly containerised stack 
 - `.gitignore` updated: `.terraform/` and state files excluded; `.terraform.lock.hcl` committed (provider version lock — equivalent to package-lock.json).
 - Day 6 commit pushed to `main` on 2026-04-21.
 
+### 2026-04-21 — Session (Day 7, VPC)
+
+- Rapid-fire on Day 6 material: 4.5/6. Gaps corrected: state file is a record of what Terraform has already created (not instructions for future work) — losing it orphans existing resources and causes Terraform to try creating duplicates on next apply; `-out` race condition is between your own plan and apply (AWS changes in between), not between two engineers; S3 versioning on state bucket is the disaster recovery mechanism for state corruption.
+- Built full VPC networking in `terraform/vpc.tf`:
+  - `aws_vpc.main`: 10.0.0.0/16, DNS hostnames + support enabled
+  - `data.aws_availability_zones.available`: dynamic AZ query (no hardcoded us-east-1a/b)
+  - `aws_subnet.public` x2: 10.0.0.0/24 + 10.0.1.0/24, us-east-1a/b, `map_public_ip_on_launch=true`
+  - `aws_subnet.private` x2: 10.0.10.0/24 + 10.0.11.0/24, us-east-1a/b
+  - `aws_internet_gateway.main`: attached to VPC
+  - `aws_route_table.public`: single route 0.0.0.0/0 → IGW
+  - `aws_route_table_association.public` x2: binds each public subnet to the public route table
+- `outputs.tf` updated: vpc_id, public_subnet_ids, private_subnet_ids (using `[*]` splat)
+- `terraform plan -out=tfplan` + `terraform apply "tfplan"` used correctly throughout — no re-plan race condition
+- Taught DNS fundamentals: what DNS is, resolution hierarchy, TTL, what breaks when it fails (everything that uses names, which is everything), connection to Phase 1 musl/IPv6 bug
+- Taught VPC traffic flow with ASCII diagram: route table entry `0.0.0.0/0 → IGW` is the single structural difference between public and private subnet; private subnets are currently internet-dead (outbound) — NAT Gateway needed for app servers to reach internet (future day)
+- Taught Terraform resource dependency graph: references between resources (`gateway_id = aws_internet_gateway.main.id`) are both value lookups and implicit dependency declarations — Terraform derives creation order and parallelises independent resources automatically
+- cidrsubnet corrections: `cidrsubnet("10.0.0.0/16", 8, N)` produces /24 subnets; `+10` offset for private subnets is a readability convention, not an AWS reservation requirement
+
 **Interview hooks banked this session:**
+- Route table `0.0.0.0/0 → IGW` is the only thing that makes a subnet "public" — not the subnet itself, not the VPC, just that one route entry. Remove it and the subnet is effectively private.
+- Route table association is the binding step — without it, a subnet falls back to the VPC default route table (no IGW route), silently behaving as private even if intended to be public.
+- `map_public_ip_on_launch=true` on public subnets: EC2 instances get a public IP automatically. Private subnets: no public IP, no inbound internet path, no outbound internet path (until NAT GW).
+- Terraform dependency graph: resource references = implicit dependencies. Terraform parallelises all resources with no dependency relationship. You never write ordering — you write references and let Terraform derive the DAG.
+- Dynamic AZ data source over hardcoded AZ names: if an AZ goes into maintenance, Terraform picks a healthy one. Hardcoded names create silent single-AZ risk if that AZ is unavailable.
+- Two AZs minimum for any production workload: single-AZ means one AWS hardware failure takes down the entire service. Two AZs = fault tolerance at the infrastructure layer.
+- `[*]` splat expression: `aws_subnet.public[*].id` returns a list of all IDs from a count-based resource — the standard pattern for passing subnet lists to downstream modules (ALB, EKS, RDS).
+- Private subnet outbound dead end today: no `0.0.0.0/0` route = packet dropped. App servers in private subnets can't pull images, call APIs, or reach AWS services without NAT Gateway. NAT GW sits in public subnet, has Elastic IP, allows outbound-initiated traffic from private subnets while blocking inbound. Coming in a future day.
+
+- Day 7 commit pushed to `main` on 2026-04-21.
+
+### 2026-04-22 — Session (Day 8, Security Groups + EC2 + ALB)
+
+- Rapid-fire on Day 7 material: 6.5/8. Clean: subnet public/private definition (route table entry is the single structural difference), route table association purpose, `map_public_ip_on_launch` semantics, IGW as VPC-border NAT for 1:1 public-IP mapping, dynamic AZ data source over hardcoded names, outputs as module interface, two-AZ minimum reasoning. Gap: `[*]` splat confused with `count`/`for_each` — corrected in real time. Splat is about *shape* (extract one attribute across a list → flat list), not *scale* (count/for_each control how many resources get created). They compose: count creates the list, splat flattens one attribute off it. Second gap: user's framing of instance profile as "allows deeper configuration" — corrected to "thin wrapper EC2's legacy RunInstances API requires; IAM model is `role + policy`; the profile is the plumbing EC2 needs to actually receive the role at launch."
+- Built a scenario-based drill deck before shipping code: `docs/phase2_scenario_drills.md` — 12 scenarios across the Phase 2 surface area (SGs, IAM, ALB, state backend, cost). Each scenario has the five-prompt framework (Fit / Doesn't fit / Better / Scale / Failure modes) + collapsible scaffold + trap warning. Purpose: build *finding the trap* as a meta-skill for interviews. Trap classes identified: false-scale (looks elastic, isn't), false-security (looks hardened, has a gap), false-simplicity (looks clean, hides coupling), false-economy (looks cheap, scales badly).
+- Day 8 resources shipped:
+  - `security_groups.tf`: two SGs (`alb_sg` public-facing on 80, `ec2_sg` private app on 8000) + four standalone rule resources (`aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule`). Chose standalone rules deliberately: inline rules would have created a circular dependency — `ec2_sg` references `alb_sg` as its ingress source, but if `alb_sg` had an inline egress rule pointing at `ec2_sg`, Terraform's DAG would deadlock. User diagnosed this structurally before writing the code ("at the time of creation ALB will ask for ec2 sg id, which is not deployed yet"). Keystone pattern shipped: `ec2_sg` ingress on 8000 with `referenced_security_group_id = aws_security_group.alb_sg.id` — **identity-based authz, not CIDR-based** — IP-independent, survives ALB recreation, encodes "only traffic whose source SG is alb_sg" as the rule itself.
+  - `iam.tf`: IAM role with EC2 trust policy via `data.aws_iam_policy_document` (type-safe JSON assembly vs `jsonencode` string-building), `AmazonSSMManagedInstanceCore` managed policy attachment, `aws_iam_instance_profile` wrapper. User initially wrote `resource "aws_iam_role.ec2_ssm"` (single string with dot) — corrected to the two-label form `resource "aws_iam_role" "ec2_ssm"`. Also had typo `resouce`, an invalid `attach_policy` argument, an unquoted ARN. Taught the habit: run `terraform fmt && terraform validate` before asking for review — the machine catches these instantly and you don't burn a code-review round on syntax.
+  - `ec2.tf`: `data.aws_ami.al2023` with `most_recent = true` + owner filter (`["amazon"]`) — dynamic lookup pulls the latest patched AL2023 x86_64 image; pinning an ID creates silent stale-image risk across regions. Instance placed in `aws_subnet.private[0]`, `associate_public_ip_address = false`, SSH explicitly absent (no `key_name`, no port 22 anywhere in the SG chain). Shell access via SSM Session Manager using the instance profile. `metadata_options { http_tokens = "required" }` enforces IMDSv2 — prevents SSRF attacks against `169.254.169.254` from stealing the attached IAM role's temporary credentials. `root_block_device` gp3, 30 GB (AL2023 AMI's minimum snapshot size; 20 GB was rejected by RunInstances on first apply), `encrypted = true` via AWS-managed EBS KMS key.
+  - `alb.tf`: `aws_lb` (type=application, `subnets = aws_subnet.public[*].id`, multi-AZ by construction), `aws_lb_target_group` on port 8000 with `/health` health check + HTTP 200 matcher, `aws_lb_target_group_attachment` binding the EC2, `aws_lb_listener` on port 80 with a default `forward` action. Target group health check is decoupled from `/` — means `/` can redirect, 500, or be rate-limited without marking the target unhealthy. ALB is L7 (path/host/header routing, HTTP-aware); NLB would be L4 (raw TCP, no content inspection). Chose ALB because we'll add path-based routing and HTTPS termination in later phases.
+  - `outputs.tf`: added `app_instance_id`, `ec2_ssm_role_arn`, `alb_dns_name`, `alb_url`.
+  - `provider.tf`: `default_tags { tags = { Project = var.project_name; ManagedBy = "terraform" } }` — applied to every resource that supports tags. Explicit `Name` + `Environment` tags kept on resources where they vary. DRY without losing specificity.
+  - Full-file header comment blocks added to `variables.tf`, `backend.tf`, `main.tf`, `vpc.tf`, `security_groups.tf`, `iam.tf`, `ec2.tf`, `alb.tf` — each explains *why* the file exists and the non-obvious design choices it encodes, not *what* the resources do (code already says that).
+- Bugs caught / interview-grade lessons:
+  - **Circular SG dependency**: solved with standalone rule resources — AWS provider v5+ idiom for exactly this case.
+  - **Em-dashes (`—`) in SG descriptions**: AWS's `CreateSecurityGroup` API rejects non-ASCII characters per its documented allow-list `^[\x00-\x7F]*$`. Fixed by replacing three em-dashes with hyphens. Interview lesson: AWS APIs have per-field character allow-lists; don't trust Unicode to round-trip.
+  - **Volume size 20 GB < AL2023 minimum 30 GB**: my mistake, caught by `RunInstances`. Fix: bump to 30, or reference `data.aws_ami.al2023.block_device_mappings[0].ebs.volume_size` dynamically.
+  - **Partial apply recovery**: ALB, target group, listener, attachment all created before EC2 failed. No state surgery — re-running apply just reconciled the missing instance. State is diff-driven; partial applies are recoverable by design.
+- Cost-control layer shipped:
+  - `Makefile` at project root with four targets: `up` (full `terraform apply`), `down` (`terraform destroy -target` on listener + attachment + target group + ALB + EC2 only — keeps VPC/SGs/IAM which cost $0), `rebuild` (down→up), `status` (`terraform state list`).
+  - Rationale: ALB is ~$16/mo 24/7, EC2 t3.micro ~$7.50/mo, EBS gp3 30 GB ~$2.40/mo = ~$26/mo if left running; ~2 hrs/day brings it to ~$2-3/mo. Daily teardown habit saves ~90%.
+  - `-target` is pragmatic not idiomatic: HashiCorp explicitly discourages it for routine use because it bypasses the DAG. Interview framing: "I use it locally for cost-driven teardown; production answer is separate stacks, or full teardown + recreate, or Terragrunt-modelled lifecycle."
+  - **Makefile gotchas encountered:** (1) recipe lines must start with literal TAB — editors auto-converting to spaces caused `missing separator. Stop.` (2) Makefile initially placed in `terraform/` but its recipes used `cd terraform && ...`, which breaks when run from inside `terraform/`. Moved to project root; removed `cd` prefix mismatch. Teaching moment: relative-path mental model (`./`, `../`, cwd-relative) shows up everywhere — Terraform module sources, Docker build contexts, `kubectl apply -f`.
+  - Teardown path verified end-to-end on 2026-04-22 — `make down` removed the five billable resources cleanly, `make status` showed only the free ones remaining.
+- Housekeeping: teardown proven, progress file updated, recap delivered to user for review.
+
+**Interview hooks banked this session (Day 8):**
+
+- Security groups are stateful L4 firewalls at the ENI level — return traffic is allowed automatically, never write egress rules for response packets. Compare NACLs (stateless, subnet-level, numbered precedence) as the deliberate-contrast second layer.
+- Source-SG reference (`referenced_security_group_id`) is identity-based authorization: "allow traffic whose source SG is X" — IP-independent, survives ALB recreation, and is the pattern you want over CIDR allow-lists whenever the source is another AWS resource in the same VPC. CIDRs are for external sources (office IPs, VPN ranges, partners).
+- Standalone rule resources (`aws_vpc_security_group_ingress_rule`) break circular dependencies in the Terraform DAG that inline rules would create. General pattern: when two resources cross-reference each other, the edges that encode the relationship must be nodes the DAG can topologically sort — separate them into their own resources.
+- IAM role vs instance profile: the role is the principal + policy attachment. The instance profile is a thin EC2-specific passthrough required by the legacy `RunInstances` API — EC2 can't attach a role directly, only an instance profile that wraps one. It's plumbing, not a richer abstraction. Lambda/ECS/etc. attach roles directly; EC2 is the odd one out because the profile concept predates the modern IAM model.
+- SSM Session Manager replaces SSH: no key pair, no port 22, no bastion host. Shell over the AWS API, gated by IAM (`ssm:StartSession`). `AmazonSSMManagedInstanceCore` managed policy on the EC2 role + SSM agent on the AMI (AL2023 ships with it) = done. Audit trail: every session logged in CloudTrail + optionally full keystroke log to S3 / CloudWatch.
+- IMDSv2 (`http_tokens = "required"`): forces token-based requests to `169.254.169.254`. IMDSv1 is vulnerable to SSRF — if the app has any URL-fetching endpoint, an attacker can trick it into reading the metadata service and exfiltrating the EC2 role's temporary credentials. Capital One breach (2019) is the canonical citation. Mandatory hardening for anything customer-facing.
+- AMI data source with `most_recent = true` + owner filter: always pulls the latest patched AL2023. Pinning an ID gives you determinism but creates stale-image risk — you'll ship a CVE-vulnerable base months after Amazon patched it. Production answer is a base-image pipeline (Image Builder / Packer) that bakes your org's hardened baseline on a scheduled rebuild, pinned to that output.
+- ALB vs NLB: L7 vs L4. ALB terminates HTTP, inspects headers/paths/hosts, does WebSocket, supports HTTPS termination + ACM integration + WAF attachment, hands traffic off as HTTP to targets. NLB terminates TCP/UDP at L4, preserves source IP, handles millions of req/s, does HTTPS passthrough. Rule of thumb: HTTP routing → ALB; raw TCP / high-throughput / source-IP preservation / non-HTTP protocols → NLB.
+- Target group health checks are decoupled from the app's routing surface. `/health` is a dedicated endpoint that tests only the app's liveness — not the DB, not upstream services. If `/health` tests downstream dependencies, a transient DB blip marks *every* target unhealthy and drains the entire fleet simultaneously. Same lesson as Day 3's nginx healthcheck: test your own primary process, not your dependencies.
+- ALB returns **502 Bad Gateway** when no target is healthy. That's not a failure of the ALB — it's the correct protocol-level signal that the load balancer is reachable but has nothing to route to. Seeing the 502 end-to-end is the bridge moment from "infra exists" to "app needs to exist."
+- `terraform destroy -target` is the escape hatch for cost-driven local iteration. HashiCorp docs call it "advanced" and discourage routine use because it bypasses the dependency graph — the `down` target still works only because we carefully listed all five billable resources in the correct teardown order. Production answer is a separate stack or full teardown.
+- Provider `default_tags` block is the DRY pattern for tags every resource must have (Project, ManagedBy, CostCenter). Explicit tags per resource for what varies (Name, Environment on resources that span environments). Tag consistency pays off at billing time — `Project=platformcore` lets you filter Cost Explorer to just this stack without resource-by-resource accounting.
+- AWS API character allow-lists: per-field, per-service. SG descriptions are ASCII-only (`^[\x00-\x7F]*$`); S3 bucket names are lowercase DNS-safe; IAM role names have their own set. Never assume Unicode round-trips through an AWS API — copy-paste from editors that smart-quote or em-dash can silently break an apply.
+- Makefile recipe indentation is *literal tab* — not "tab-width spaces." Many modern editors default to space-expansion, which silently converts a valid Makefile to an invalid one. `.editorconfig` with `[Makefile] indent_style = tab` is the fix.
+- Cost-control interview framing: "For a learning/dev environment I tear down billable resources nightly via a Makefile with `-target`; in production I'd solve it at the stack boundary — separate ephemeral preview environments that spin up per-PR via CI and tear down on merge, running on spot-priced compute, with AWS Budgets alerts as a second-layer backstop on the bill itself."
+
+**Day 8 design story (interview-ready):**
+
+Day 8 converted PlatformCore from "a network" into "a service." The ALB is the public entry point in the public subnets; the EC2 is the workload in a private subnet with zero inbound path from the internet; the two are connected only through security group references, not CIDRs, so the authorization rule is identity-based and survives resource recreation. SSH is explicitly absent — shell access is over the AWS API via SSM Session Manager, gated by IAM, fully audited in CloudTrail, with no port 22 in any SG and no key pair attached to the instance. IMDSv2 is required, which closes the SSRF-to-credential-theft class of exploits that Capital One paid $190M to learn about. The root volume is encrypted at rest. The AMI is pulled dynamically so security patches arrive on Amazon's schedule rather than whenever we happen to remember to update a hardcoded ID. Provider `default_tags` give every resource Project/ManagedBy labels for cost allocation; explicit Name/Environment tags handle the stuff that varies. A Makefile at the repo root wraps four operating verbs (`up`, `down`, `rebuild`, `status`); the `down` target uses `terraform destroy -target` to tear down only billable resources (ALB, target group, listener, attachment, EC2) while leaving the free tier (VPC, subnets, route tables, SGs, IAM role + instance profile) intact, cutting idle cost by ~90% for a learning environment that runs ~2 hours a day. What would break it: the wide-open egress on `ec2_sg` (0.0.0.0/0) is a noted tech-debt — in production that becomes an allowlist of just the endpoints the app actually needs (ECR, S3, Secrets Manager, VPC endpoints); the ALB listener is HTTP-only, which is Day-9+ work (ACM cert + HTTPS listener + HTTP→HTTPS redirect); the private subnet has no outbound internet path today, so any app that needs to pull packages or call external APIs will fail until NAT Gateway or VPC endpoints arrive; and `-target` destroys are interview-pragmatic but production-wrong — the real answer is ephemeral per-PR stacks, spot pricing, and AWS Budgets as a bill-level backstop.
+
+**Interview hooks banked this session (Day 6):**
 - State file = Terraform's memory. Losing it means Terraform doesn't know what it manages — can't modify or destroy existing resources. Disaster recovery = S3 versioning (roll back to last known-good state file).
 - DynamoDB lock = mutex on state. Prevents concurrent applies from corrupting state. Orphaned lock (crashed apply) requires manual DynamoDB item deletion to unblock.
 - Data source vs resource: resources are lifecycle-owned (create/modify/destroy); data sources are read-only queries — import facts about existing infra without taking ownership.
