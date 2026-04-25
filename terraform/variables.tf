@@ -1,7 +1,12 @@
+# Input variables for the PlatformCore stack.
+#
+# Defaults are set for the current dev environment. For multi-env expansion
+# (staging, prod) these will be passed via -var flags or per-env tfvars files.
+
 variable "aws_region" {
-    description="AWS region to deploy into"
-    type=string
-    default="us-east-1"
+  description = "AWS region to deploy into"
+  type        = string
+  default     = "us-east-1"
 }
 
 variable "vpc_cidr" {
