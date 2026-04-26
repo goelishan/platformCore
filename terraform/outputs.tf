@@ -10,40 +10,45 @@ output "account_id" {
 
 output "vpc_id" {
   description = "ID of the VPC"
-  value       = aws_vpc.main.id
+  value       = module.network.vpc_id
 }
 
 output "public_subnet_ids" {
   description = "IDs of the public subnets (ALB lives here)"
-  value       = aws_subnet.public[*].id
+  value       = module.network.public_subnet_ids
 }
 
 output "private_subnet_ids" {
   description = "IDs of the private subnets (EC2 / RDS live here)"
-  value       = aws_subnet.private[*].id
+  value       = module.network.private_subnet_ids
 }
 
 output "app_instance_id" {
   description = "Instance ID of the app EC2. Use with: aws ssm start-session --target <id>"
-  value       = aws_instance.app.id
+  value       = module.compute.instance_id
 }
 
 output "ec2_ssm_role_arn" {
   description = "ARN of the IAM role attached to the app EC2 via its instance profile"
-  value       = aws_iam_role.ec2_ssm.arn
+  value       = module.compute.iam_role_arn
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for the app image. Used by docker push during deploy."
+  value       = module.compute.ecr_repository_url
 }
 
 output "alb_dns_name" {
   description = "Public DNS name of the ALB"
-  value       = aws_lb.app.dns_name
+  value       = module.edge.alb_dns_name
 }
 
 output "alb_url" {
   description = "Full HTTP URL to the app via the ALB (curl this to smoke-test)"
-  value       = "http://${aws_lb.app.dns_name}"
+  value       = module.edge.alb_url
 }
 
 output "rds_endpoint" {
   description = "Postgres endpoint (hostname:port). Reachable only from EC2 SG."
-  value       = aws_db_instance.main.endpoint
+  value       = module.data.endpoint
 }
