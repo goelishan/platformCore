@@ -35,7 +35,8 @@ down:
 	  -target=aws_vpc_endpoint.ec2messages \
 	  -target=aws_vpc_endpoint.ecr_api \
 	  -target=aws_vpc_endpoint.ecr_dkr \
-	  -target=aws_vpc_endpoint.logs
+	  -target=aws_vpc_endpoint.logs \
+	  -target=aws_db_instance.main
 
 # Full destroy: everything, including ECR repo + images and the free VPC
 # resources. Use at the end of a phase or when switching projects. Will

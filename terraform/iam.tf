@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-resource "aws_iam_role_policy" "cloudwatch_logs_write" {
+resource "aws_iam_role_policy" "cw_logs_write" {
   name = "${var.project_name}-cw-logs-write"
   role = aws_iam_role.ec2_ssm.id
 
@@ -78,12 +78,10 @@ resource "aws_iam_role_policy" "cloudwatch_logs_write" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents",
-        "logs:DescribeLogStreams"
       ]
-      Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/platformcore/*"
+      Resource = "arn:aws:logs:*:*:log-group:/platformcore/*:*"
     }]
   })
 }

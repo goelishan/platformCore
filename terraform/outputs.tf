@@ -42,3 +42,8 @@ output "alb_url" {
   description = "Full HTTP URL to the app via the ALB (curl this to smoke-test)"
   value       = "http://${aws_lb.app.dns_name}"
 }
+
+output "rds_endpoint" {
+  description = "Postgres endpoint (hostname:port). Reachable only from EC2 SG."
+  value       = aws_db_instance.main.endpoint
+}

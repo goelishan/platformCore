@@ -114,22 +114,17 @@ locals {
     # (every ~3min trying to join a non-existent cluster) is pure noise.
     # In production this lives in a Packer-built custom AMI; here it lives
     # in user_data because we are using AWS's stock AMI directly.
+    
     systemctl stop ecs 2>/dev/null || true
     systemctl disable ecs 2>/dev/null || true
     docker rm -f ecs-agent 2>/dev/null || true
 
-    # Create the CloudWatch log group explicitly so we can set retention.
-    # The awslogs Docker driver creates log *streams* on demand but NOT the
-    # group — letting it auto-create would leave us with infinite retention
-    # (infinite cost) and no way to attach a policy before the first write.
-    aws logs create-log-group --log-group-name /platformcore/app \
-      --region ${var.aws_region} 2>/dev/null || true
-    aws logs put-retention-policy --log-group-name /platformcore/app \
-      --retention-in-days 7 --region ${var.aws_region} || true
 
     # Authenticate Docker with ECR using the instance-profile credentials.
     # The token is valid for 12 hours; we only need it long enough for the
     # pull below.
+
+    
     aws ecr get-login-password --region ${var.aws_region} | \
       docker login --username AWS --password-stdin \
       ${aws_ecr_repository.app.repository_url}
@@ -141,11 +136,14 @@ locals {
     #   --restart unless-stopped: survives reboots and daemon restarts.
     #   --log-driver=awslogs: stdout/stderr stream to CloudWatch Logs.
     #   -e APP_VERSION: surfaced by the app's /version endpoint.
+
+
     docker run -d \
       --name platformcore-app \
       --restart unless-stopped \
       -p 8000:8000 \
       -e APP_VERSION=${local.app_image_tag} \
+      -e DATABASE_URL=postgresql://${aws_db_instance.main.username}:${random_password.rds_master.result}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name} \
       --log-driver=awslogs \
       --log-opt awslogs-region=${var.aws_region} \
       --log-opt awslogs-group=/platformcore/app \
@@ -156,3 +154,4 @@ locals {
     echo "=== user-data done: $(date -u) ==="
   EOF
 }
+
