@@ -29,3 +29,13 @@ output "password" {
 output "rds_sg_id" {
   value = aws_security_group.rds_sg.id
 }
+
+output "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret holding the DB master credential."
+  value       = aws_secretsmanager_secret.db_master.arn
+}
+
+output "db_secret_name" {
+  description = "Name of the secrets manager secret"
+  value = aws_secretsmanager_secret.db_master.name
+}

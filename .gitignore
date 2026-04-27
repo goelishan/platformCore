@@ -23,4 +23,5 @@ terraform/*.tfstate.backup
 # Plan artifacts: binary, can contain rendered secrets, meaningless after state change.
 terraform/tfplan
 terraform/tfplan*
-*.tfplan
+*.tfplandocs/
+PROGRESS.md

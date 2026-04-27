@@ -35,11 +35,16 @@ variable "db_username" {
   type = string
 }
 
-variable "db_password" {
-  type      = string
-  sensitive = true
+variable "db_secret_name" {
+  type=string
+  description = "Secrets manager secret name"  
 }
 
 variable "db_name" {
   type = string
+}
+
+variable "db_secret_arn" {
+  type        = string
+  description = "ARN of the Secrets Manager secret holding the DB master credential. Compute's user_data fetches by ARN at boot via secretsmanager:GetSecretValue."
 }

@@ -100,7 +100,28 @@ resource "random_password" "rds_master" {
   special = false
 }
 
+#--------------------------------------------------------------------------------------------------------
+# SECRETS MANAGER
+#--------------------------------------------------------------------------------------------------------
 
+resource "aws_secretsmanager_secret" "db_master" {
+  name="${var.project_name}/db/master"
+  description="RDS master credential for ${var.project_name}"
+  recovery_window_in_days = 0
+
+  tags={
+    Name="${var.project_name}-db-master-secret"
+    Environment=var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "db_master" {
+  secret_id = aws_secretsmanager_secret.db_master.id
+  secret_string = jsonencode({
+    username=aws_db_instance.main.username
+    password=random_password.rds_master.result
+  })
+}
 
 #--------------------------------------------------------------------------------------------------------
 # DB INSTANCE

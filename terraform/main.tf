@@ -179,8 +179,9 @@ module "compute" {
 
   db_endpoint = module.data.endpoint
   db_username = module.data.username
-  db_password = module.data.password
+  db_secret_name = module.data.db_secret_name
   db_name     = module.data.db_name
+  db_secret_arn = module.data.db_secret_arn
 }
 
 

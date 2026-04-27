@@ -134,7 +134,23 @@ resource "aws_iam_instance_profile" "ec2_ssm" {
   }
 }
 
+#--------------------------------------------------------------------------------------------------------
+# IAM - SECRETS MANAGER READ (SCOPED TO ONE SECRET ARN)
+#--------------------------------------------------------------------------------------------------------
 
+resource "aws_iam_role_policy" "secrets_read" {
+  name="${var.project_name}-secrets-read"
+  role = aws_iam_role.ec2_ssm.id
+
+  policy = jsonencode({
+    Version="2012-10-17"
+    Statement=[{
+      Effect="Allow"
+      Action=["secretsmanager:GetSecretValue"]
+      Resource=var.db_secret_arn
+    }]
+  })
+}
 
 #--------------------------------------------------------------------------------------------------------
 # SECURITY GROUP
@@ -265,8 +281,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
 # here forces instance replacement. APP_VERSION is injected as an env var
 # so the running container reports its tag via /version without needing a
 # rebuild for version-string changes. DATABASE_URL is templated from
-# var.db_* inputs - the password is sensitive and propagates the redaction
-# flag through Terraform's plan output.
+# DATABASE_URL is assembled at bot using secrets manager.
 
 
 
@@ -300,6 +315,15 @@ locals {
     # Pull flow: DNS -> ecr.dkr endpoint (manifest) -> s3 gateway (layers).
     docker pull ${aws_ecr_repository.app.repository_url}:${local.app_image_tag}
 
+    SECRET_JSON=$(aws secretsmanager get-secret-value \
+      --secret-id ${var.db_secret_name} \
+      --region ${var.aws_region} \
+      --query SecretString \
+      --output text)
+    DB_PASSWORD=$(echo "$SECRET_JSON" | python3 -c \
+      "import sys,json; print(json.load(sys.stdin)['password'])"
+    )
+
     # Run the container.
     #   --restart unless-stopped: survives reboots and daemon restarts.
     #   --log-driver=awslogs: stdout/stderr stream to CloudWatch Logs.
@@ -310,7 +334,7 @@ locals {
       --restart unless-stopped \
       -p 8000:8000 \
       -e APP_VERSION=${local.app_image_tag} \
-      -e DATABASE_URL=postgresql://${var.db_username}:${var.db_password}@${var.db_endpoint}/${var.db_name} \
+      -e DATABASE_URL=postgresql://${var.db_username}:$DB_PASSWORD@${var.db_endpoint}/${var.db_name} \
       --log-driver=awslogs \
       --log-opt awslogs-region=${var.aws_region} \
       --log-opt awslogs-group=/platformcore/app \
