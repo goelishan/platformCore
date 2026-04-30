@@ -87,3 +87,35 @@ resource "aws_vpc_security_group_ingress_rule" "endpoints_from_ec2" {
   ip_protocol                  = "tcp"
   description                  = "HTTPS from app EC2 to VPC endpoints"
 }
+
+resource "aws_vpc_security_group_egress_rule" "ec2_to_endpoints" {
+  security_group_id            = module.compute.ec2_sg_id
+  referenced_security_group_id = module.network.endpoints_sg_id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "EC2 to VPC endpoints on 443"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ec2_to_rds" {
+  security_group_id            = module.compute.ec2_sg_id
+  referenced_security_group_id = module.data.rds_sg_id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  description                  = "EC2 to RDS on 5432"
+}
+
+
+data "aws_ec2_managed_prefix_list" "s3" {
+  name = "com.amazonaws.${var.aws_region}.s3"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ec2_to_s3" {
+  security_group_id = module.compute.ec2_sg_id
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.s3.id
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "s3 gateway endpoint"
+}

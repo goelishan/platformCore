@@ -29,6 +29,7 @@ up:
 down:
 	cd terraform && terraform destroy -auto-approve \
 	  -target=module.edge.aws_lb_listener.http \
+	  -target=module.edge.aws_lb_listener.https \
 	  -target=module.edge.aws_lb_target_group_attachment.app \
 	  -target=module.edge.aws_lb_target_group.app \
 	  -target=module.edge.aws_lb.app \
@@ -41,6 +42,7 @@ down:
 	  -target=module.network.aws_vpc_endpoint.ecr_dkr \
 	  -target=module.network.aws_vpc_endpoint.logs \
 	  -target=module.network.aws_vpc_endpoint.secretsmanager
+	  
 
 
 

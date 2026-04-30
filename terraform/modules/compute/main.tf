@@ -180,13 +180,6 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 
-resource "aws_vpc_security_group_egress_rule" "ec2_all_outbound" {
-  security_group_id = aws_security_group.ec2_sg.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
-  description       = "All outbound - constrained by private subnet route table"
-}
-
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -313,7 +306,12 @@ locals {
       ${aws_ecr_repository.app.repository_url}
 
     # Pull flow: DNS -> ecr.dkr endpoint (manifest) -> s3 gateway (layers).
-    docker pull ${aws_ecr_repository.app.repository_url}:${local.app_image_tag}
+    
+    for i in {1..5};do
+      docker pull ${aws_ecr_repository.app.repository_url}:${local.app_image_tag} && break
+      echo "Pull attempt $i failed - waiting 30s for endpoint DNS..."
+      sleep 30
+    done
 
     SECRET_JSON=$(aws secretsmanager get-secret-value \
       --secret-id ${var.db_secret_name} \

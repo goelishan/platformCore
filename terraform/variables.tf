@@ -26,3 +26,21 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "create_https" {
+  description = "Set to true when a Route 53 hosted zone and domain are available"
+  type        = bool
+  default     = false
+}
+
+variable "zone_id" {
+  description = "Route 53 hosted zone ID"
+  type        = string
+  default     = ""
+}
+
+variable "domain_name" {
+  description = "App domain name"
+  type        = string
+  default     = ""
+}
