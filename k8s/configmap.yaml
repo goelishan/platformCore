@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: platformcore
+data:
+  #Consumed as env file
+  APP_ENV: dev
+  LOG_LEVEL: "info"
+
+  #Consumed as mounted file
+  nginx.conf: |
+    server {
+      listen 80;
+      location /healthz {
+        return 200 'OK';
+        add_header Content_Type text/plain;
+      }
+      location / {
+        return 200 'platformcore - k8s';
+        add_header Content-Type text/plain;
+      }
+    }
