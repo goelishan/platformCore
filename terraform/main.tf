@@ -16,7 +16,7 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  environment=terraform.workspace=="default" ? "dev" : terraform.workspace
+  environment = terraform.workspace == "default" ? "dev" : terraform.workspace
 }
 
 #--------------------------------------------------------------------------------------------------------
