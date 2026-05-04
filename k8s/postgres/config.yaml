@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: platformcore
+data:
+  POSTGRES_USER: platformcore
+  POSTGRES_DB: platformcore

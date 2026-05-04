@@ -25,3 +25,9 @@ terraform/tfplan
 terraform/tfplan*
 *.tfplandocs/
 PROGRESS.md
+
+# Local-only documentation and learning artifacts.
+# Personal notes, progress logs, drill material, and roadmap docs
+# are kept locally and not version controlled.
+PROGRESS.md
+docs/
