@@ -36,6 +36,13 @@ spec:
             value: /var/lib/postgresql/data/pgdata
         ports:
           - containerPort: 5432
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
         volumeMounts:
           - name: data
             mountPath: /var/lib/postgresql/data

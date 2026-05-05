@@ -4,7 +4,6 @@ metadata:
   name: nginx
   namespace: platformcore
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: nginx
@@ -38,11 +37,11 @@ spec:
               readOnly: true
           resources: 
             requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
               cpu: "100m"
               memory: "64Mi"
-            limits:
-              cpu: "200m"
-              memory: "128Mi"
           readinessProbe:
             httpGet:
               path: /
