@@ -1,3 +1,27 @@
+#--------------------------------------------------------------------------------------------------------
+# NGINX - INGRESS
+#--------------------------------------------------------------------------------------------------------
+#
+# Host-based routing in front of the nginx Service. Maps host nginx.local
+# at path / to the nginx ClusterIP Service on port 80.
+# ingressClassName: nginx selects the in-cluster ingress-nginx controller
+# (which is its own Deployment in the ingress-nginx namespace - separate
+# from the nginx Pod this stack runs).
+#
+# Local resolution: for nginx.local to reach this Ingress, /etc/hosts on
+# the dev machine needs an entry pointing nginx.local at 127.0.0.1, plus
+# kind's port mapping forwarding host 80 to the cluster. Production uses
+# a real DNS A/CNAME record fronted by an ALB.
+#
+# Failure mode: ingress-nginx controller not installed = manifest applies
+# cleanly but no traffic flows (404 from the cluster's default backend).
+# Verify with kubectl get pods -n ingress-nginx before debugging route
+# shape. Annotation rewrite-target: / strips the matched path prefix
+# before forwarding upstream - inert here at path /, will matter when we
+# start mounting apps under prefixes like /api.
+
+
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
