@@ -9,15 +9,17 @@ up:
 # Tear down billable resources between learning sessions.
 #
 # What gets destroyed (billable):
+#   - EKS node group (~$0.02/hr for 1x t3.small) + cluster (~$0.10/hr)
 #   - ALB + listener + target group + attachment (~$0.025/hr for the ALB)
 #   - EC2 instance (~$0.01/hr for t3.micro)
-#   - 6 interface VPC endpoints (~$0.01/hr each per AZ - biggest ongoing
+#   - 8 interface VPC endpoints (~$0.01/hr each per AZ - biggest ongoing
 #     cost in this stack if left running overnight)
 #   - RDS db.t3.micro (~$0.017/hr; destroy takes 5-10 min, slowest step)
 #
 # What stays (free or effectively free):
 #   - VPC, subnets, IGW, route tables, security groups
-#   - IAM role + policies, instance profile
+#   - IAM roles + policies, instance profile, EKS IAM roles
+#   - OIDC provider (free)
 #   - ECR repository + images (~fractions of a cent/month for our image)
 #   - CloudWatch log group + retained streams
 #   - RDS subnet group + parameter group (no charge when no instance)
@@ -25,9 +27,20 @@ up:
 #
 # All targets use module-prefixed addresses post-Day-11. -target bypasses
 # the DAG, so we enumerate explicitly in dependency-correct teardown
-# order: edge -> compute -> data -> network endpoints.
+# order: eks -> edge -> compute -> data -> network endpoints.
 down:
 	cd terraform && terraform destroy -auto-approve \
+	  -target=module.eks.aws_eks_node_group.main \
+	  -target=module.eks.aws_eks_access_policy_association.console_admin \
+	  -target=module.eks.aws_eks_access_entry.console_admin \
+	  -target=module.eks.aws_iam_openid_connect_provider.eks \
+	  -target=module.eks.aws_eks_cluster.main \
+	  -target=module.eks.aws_iam_role_policy_attachment.eks_cluster \
+	  -target=module.eks.aws_iam_role_policy_attachment.eks_worker_node \
+	  -target=module.eks.aws_iam_role_policy_attachment.eks_cni \
+	  -target=module.eks.aws_iam_role_policy_attachment.eks_ecr_readonly \
+	  -target=module.eks.aws_iam_role.eks_cluster \
+	  -target=module.eks.aws_iam_role.eks_node \
 	  -target=module.edge.aws_lb_listener.http \
 	  -target=module.edge.aws_lb_listener.https \
 	  -target=module.edge.aws_lb_target_group_attachment.app \
@@ -41,9 +54,8 @@ down:
 	  -target=module.network.aws_vpc_endpoint.ecr_api \
 	  -target=module.network.aws_vpc_endpoint.ecr_dkr \
 	  -target=module.network.aws_vpc_endpoint.logs \
-	  -target=module.network.aws_vpc_endpoint.secretsmanager
-	  
-
+	  -target=module.network.aws_vpc_endpoint.secretsmanager \
+	  -target=module.network.aws_vpc_endpoint.ec2
 
 
 # Full destroy: everything, including ECR repo + images and the free VPC
