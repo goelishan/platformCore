@@ -61,6 +61,7 @@ resource "aws_subnet" "public" {
   tags = {
     Name        = "${var.project_name}-public-${count.index + 1}"
     Environment = var.environment
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -74,6 +75,7 @@ resource "aws_subnet" "private" {
   tags = {
     Name        = "${var.project_name}-private-${count.index + 1}"
     Environment = var.environment
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
@@ -328,3 +330,59 @@ resource "aws_vpc_endpoint" "ec2" {
     Environment=var.environment
   }
 }
+
+
+#--------------------------------------------------------------------------------------------------------
+# VPC ENDPOINT - STS
+#--------------------------------------------------------------------------------------------------------
+
+resource "aws_vpc_endpoint" "sts" {
+  vpc_id = aws_vpc.main.id
+  service_name = "com.amazonaws.${var.aws_region}.sts"
+  vpc_endpoint_type = "Interface"
+  subnet_ids = aws_subnet.private[*].id
+  security_group_ids = [aws_security_group.endpoints_sg.id]
+  private_dns_enabled = true
+
+  tags = {
+    Name="${var.project_name}-sts-endpoint"
+    Environment=var.environment
+  }
+}
+
+
+#--------------------------------------------------------------------------------------------------------
+# NAT GATEWAY
+#--------------------------------------------------------------------------------------------------------
+
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name="${var.project_name}-nat-eip"
+    Environment=var.environment
+  }
+}
+
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id = aws_subnet.public[0].id
+
+  tags = {
+    Name="${var.project_name}-nat"
+    Environment=var.environment
+  }
+
+  depends_on = [ aws_internet_gateway.main ]
+}
+
+#--------------------------------------------------------------------------------------------------------
+# PRIVATE RT - DEFAULT ROUTE TO NAT
+#--------------------------------------------------------------------------------------------------------
+
+resource "aws_route" "private_default" {
+  route_table_id = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.main.id
+}
+

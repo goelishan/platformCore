@@ -22,24 +22,54 @@
 
 
 
+#--------------------------------------------------------------------------------------------------------
+# NGINX - INGRESS (ALB)
+#--------------------------------------------------------------------------------------------------------
+#
+# Provisions a real AWS Application Load Balancer in the VPC's public
+# subnets (discovered via the kubernetes.io/role/elb=1 tag on public
+# subnets). The ALB Controller in kube-system watches this object and
+# materialises the ALB - this manifest is the declarative intent; the
+# controller is the imperative actor.
+#
+# target-type: ip is the right default on EKS with VPC CNI - Pods have
+# real VPC IPs, so the ALB targets Pod IPs directly. The alternative
+# (instance) routes via NodePort, requiring SG holes on the node range
+# and adding an extra hop. IP target type is cleaner and faster.
+#
+# No host: rule = catch-all on the ALB's default DNS. Once a Route53
+# CNAME points a real hostname at the ALB, add a host: filter here.
+#
+# Failure modes:
+# - Subnets not tagged kubernetes.io/role/elb=1 = "Failed to find at
+#   least two subnets in different AZs". Tag-driven discovery, see
+#   terraform/modules/network.
+# - ingressClassName: alb references the IngressClass installed by the
+#   ALB controller's Helm chart. Missing = "no IngressClass found".
+# - Target group sync lag: after Ingress apply, ALB DNS resolves in
+#   ~30s but target health takes another ~30-60s before the first 200.
+
+
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx-ingress
+  name: nginx
   namespace: platformcore
-  annotations: 
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
 spec:
-  ingressClassName: nginx
-  rules: 
-    - host: nginx.local
-      http:
-        paths: 
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: nginx
-                port: 
+                port:
                   number: 80
-            
+

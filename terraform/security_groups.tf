@@ -125,10 +125,10 @@ resource "aws_vpc_security_group_egress_rule" "ec2_to_s3" {
 #--------------------------------------------------------------------------------------------------------
 
 resource "aws_vpc_security_group_ingress_rule" "endpoints_from_eks" {
-  security_group_id = module.network.endpoints_sg_id
+  security_group_id            = module.network.endpoints_sg_id
   referenced_security_group_id = module.eks.cluster_security_group_id
-  from_port = 443
-  to_port = 443
-  ip_protocol = "tcp"
-  description = "HTTPS from EKS cluster to VPC endpoints"
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "HTTPS from EKS cluster to VPC endpoints"
 }

@@ -105,8 +105,8 @@ module "edge" {
 module "eks" {
   source = "./modules/eks"
 
-  project_name = var.project_name
-  cluster_name = "platformcore"
+  project_name       = var.project_name
+  cluster_name       = "platformcore"
   private_subnet_ids = module.network.private_subnet_ids
-  admin_iam_arn = "arn:aws:iam::316053082971:user/platformcore-terraform"
+  admin_iam_arn      = "arn:aws:iam::316053082971:user/platformcore-terraform"
 }

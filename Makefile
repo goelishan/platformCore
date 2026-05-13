@@ -8,28 +8,55 @@ up:
 
 # Tear down billable resources between learning sessions.
 #
-# What gets destroyed (billable):
+# What gets destroyed (billable, post-Day-22):
 #   - EKS node group (~$0.02/hr for 1x t3.small) + cluster (~$0.10/hr)
+#   - NAT Gateway (~$0.045/hr ≈ $33/mo) + Elastic IP (~$0.005/hr when
+#     detached - destroy NAT first, then EIP releases cleanly)
 #   - ALB + listener + target group + attachment (~$0.025/hr for the ALB)
 #   - EC2 instance (~$0.01/hr for t3.micro)
-#   - 8 interface VPC endpoints (~$0.01/hr each per AZ - biggest ongoing
-#     cost in this stack if left running overnight)
+#   - 9 interface VPC endpoints (~$0.01/hr each per AZ; the STS endpoint
+#     was added Day 22 for IRSA token exchange)
 #   - RDS db.t3.micro (~$0.017/hr; destroy takes 5-10 min, slowest step)
+#   - ALB Controller IRSA (IAM role + custom policy + attachment) and
+#     EBS CSI IRSA (IAM role + attachment) - free in AWS, but their
+#     trust policies reference the cluster's OIDC issuer URL which
+#     becomes stale on cluster recreate, so destroy them with the
+#     cluster to avoid carrying broken refs across rebuilds
+#   - EBS CSI add-on (auto-destroyed with cluster anyway, listed for
+#     explicit dependency order)
 #
 # What stays (free or effectively free):
-#   - VPC, subnets, IGW, route tables, security groups
-#   - IAM roles + policies, instance profile, EKS IAM roles
-#   - OIDC provider (free)
+#   - VPC, subnets (now with kubernetes.io/role/elb=1 and internal-elb=1
+#     tags from Day 22 for ALB Controller subnet discovery)
+#   - IGW, route tables (private RT keeps its NAT default route until
+#     NAT is destroyed; aws_route.private_default is destroyed below)
+#   - Security groups (including endpoints_sg which gates the interface
+#     endpoint ENIs)
+#   - IAM roles for EKS cluster + node + EC2 SSM, instance profile
 #   - ECR repository + images (~fractions of a cent/month for our image)
 #   - CloudWatch log group + retained streams
 #   - RDS subnet group + parameter group (no charge when no instance)
 #   - S3 gateway endpoint (gateway endpoints are free)
 #
-# All targets use module-prefixed addresses post-Day-11. -target bypasses
-# the DAG, so we enumerate explicitly in dependency-correct teardown
-# order: eks -> edge -> compute -> data -> network endpoints.
+# *** PHASE 4+ NOTE ***
+# Partial-teardown gets brittle as the resource graph grows. For Phase 4
+# and beyond, `make down-all` is the recommended teardown - the small
+# extra cost of recreating "free" resources is worth the predictability
+# of a fresh-from-scratch graph every morning. Real production teams use
+# the same shape via CI. `make down` is preserved here for short
+# learning iterations within a day.
+#
+# Teardown order: eks (children first, OIDC last) -> edge -> compute ->
+# data -> network endpoints -> network NAT (route first, then GW, then
+# EIP - reverse of creation order so each dependency unblocks the next).
 down:
 	cd terraform && terraform destroy -auto-approve \
+	  -target=module.eks.aws_eks_addon.ebs_csi \
+	  -target=module.eks.aws_iam_role_policy_attachment.alb_controller \
+	  -target=module.eks.aws_iam_role.alb_controller \
+	  -target=module.eks.aws_iam_policy.alb_controller \
+	  -target=module.eks.aws_iam_role_policy_attachment.ebs_csi \
+	  -target=module.eks.aws_iam_role.ebs_csi \
 	  -target=module.eks.aws_eks_node_group.main \
 	  -target=module.eks.aws_eks_access_policy_association.console_admin \
 	  -target=module.eks.aws_eks_access_entry.console_admin \
@@ -55,7 +82,11 @@ down:
 	  -target=module.network.aws_vpc_endpoint.ecr_dkr \
 	  -target=module.network.aws_vpc_endpoint.logs \
 	  -target=module.network.aws_vpc_endpoint.secretsmanager \
-	  -target=module.network.aws_vpc_endpoint.ec2
+	  -target=module.network.aws_vpc_endpoint.ec2 \
+	  -target=module.network.aws_vpc_endpoint.sts \
+	  -target=module.network.aws_route.private_default \
+	  -target=module.network.aws_nat_gateway.main \
+	  -target=module.network.aws_eip.nat
 
 
 # Full destroy: everything, including ECR repo + images and the free VPC
