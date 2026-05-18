@@ -50,11 +50,6 @@ spec:
                 configMapKeyRef:
                   name: nginx-config
                   key: LOG_LEVEL
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: app-secret
-                  key: DB_PASSWORD
           volumeMounts:
             - name: nginx-conf
               mountPath: /etc/nginx/conf.d

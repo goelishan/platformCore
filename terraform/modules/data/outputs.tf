@@ -39,3 +39,13 @@ output "db_secret_name" {
   description = "Name of the secrets manager secret"
   value = aws_secretsmanager_secret.db_master.name
 }
+
+output "db_address" {
+  description = "RDS hostname only (no port). Used in boto3 generate_db_auth_token."
+  value       = aws_db_instance.main.address
+}
+
+output "db_resource_id" {
+  description = "RDS resource ID (db-XXXXX). Used to scope the rds-db:connect IAM policy to this specific instance."
+  value       = aws_db_instance.main.resource_id
+}

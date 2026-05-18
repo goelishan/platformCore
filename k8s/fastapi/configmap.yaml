@@ -1,0 +1,15 @@
+#--------------------------------------------------------------------------------------------------------
+# FASTAPI - CONFIGMAP
+#--------------------------------------------------------------------------------------------------------
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastapi-config
+  namespace: platformcore
+data:
+  RDS_HOST: "platformcore-db.c4f6ckwcwtll.us-east-1.rds.amazonaws.com"
+  RDS_PORT: "5432"
+  RDS_DB_NAME: "platformcore"
+  RDS_USER: "fastapi"
+  AWS_DEFAULT_REGION: "us-east-1"

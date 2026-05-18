@@ -162,6 +162,8 @@ resource "aws_db_instance" "main" {
   deletion_protection     = false
   apply_immediately       = true
 
+  iam_database_authentication_enabled = true
+
   tags = {
     Name        = "${var.project_name}-db"
     Environment = var.environment

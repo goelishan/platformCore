@@ -23,8 +23,7 @@ terraform/*.tfstate.backup
 # Plan artifacts: binary, can contain rendered secrets, meaningless after state change.
 terraform/tfplan
 terraform/tfplan*
-*.tfplandocs/
-PROGRESS.md
+*.tfplan
 
 # Local-only documentation and learning artifacts.
 # Personal notes, progress logs, drill material, and roadmap docs

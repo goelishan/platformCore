@@ -35,3 +35,7 @@ variable "admin_iam_arn" {
   type        = string
 }
 
+variable "db_resource_id" {
+  description = "RDS resource ID (db-XXXXX). Used to scope rds-db:connect to this instance only."
+  type        = string
+}

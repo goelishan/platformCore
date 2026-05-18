@@ -132,3 +132,16 @@ resource "aws_vpc_security_group_ingress_rule" "endpoints_from_eks" {
   ip_protocol                  = "tcp"
   description                  = "HTTPS from EKS cluster to VPC endpoints"
 }
+
+#--------------------------------------------------------------------------------------------------------
+# EKS NODES -> RDS
+#--------------------------------------------------------------------------------------------------------
+
+resource "aws_vpc_security_group_ingress_rule" "rds_from_eks" {
+  security_group_id = module.data.rds_sg_id
+  referenced_security_group_id = module.eks.cluster_security_group_id
+  from_port = 5432
+  to_port = 5432
+  ip_protocol = "tcp"
+  description = "Postgres from EKS node to RDS"
+}

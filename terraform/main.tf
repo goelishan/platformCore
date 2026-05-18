@@ -109,4 +109,5 @@ module "eks" {
   cluster_name       = "platformcore"
   private_subnet_ids = module.network.private_subnet_ids
   admin_iam_arn      = "arn:aws:iam::316053082971:user/platformcore-terraform"
+  db_resource_id     = module.data.db_resource_id
 }

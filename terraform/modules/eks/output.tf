@@ -36,3 +36,9 @@ output "alb_controller_role_arn" {
   description = "IRSA role arn for Helm"
   value = aws_iam_role.alb_controller.arn
 }
+
+output "fastapi_role_arn" {
+  description = "IRSA role ARN for the FastAPI ServiceAccount annotation."
+  value       = aws_iam_role.fastapi.arn
+}
+
