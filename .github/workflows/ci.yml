@@ -6,13 +6,17 @@ on:
   push:
     branches: [main]
 
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER: platformcore
+
 jobs:
   validate:
     name: Validate compose files
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Seed .env from .env.example
         # Compose does parse-time substitution of ${VAR}. Without a .env file
@@ -29,19 +33,55 @@ jobs:
         # typos that would otherwise only surface on a dev laptop.
         run: docker compose config > /dev/null
 
-  build:
-    name: Build app image
-    runs-on: ubuntu-latest
+  build-and-push:
     needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - name: Seed .env from .env.example
-        run: cp .env.example .env
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Build app image
-        # Building just the `app` service — nginx and postgres are upstream
-        # images, no point rebuilding them. If the Dockerfile or
-        # requirements.txt break, this fails here.
-        run: docker compose build app
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          docker build -t ${{ secrets.ECR_REPO }}:${{ github.sha }} ./app
+          docker push ${{ secrets.ECR_REPO }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER }}
+
+      - name: Deploy
+        run: |
+          helm upgrade --install platformcore charts/platformcore \
+            -n platformcore --create-namespace \
+            --set image.repository=${{ secrets.ECR_REPO }} \
+            --set image.tag=${{ github.sha }} \
+            --atomic \
+            --timeout 5m
