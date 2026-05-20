@@ -1,0 +1,19 @@
+#--------------------------------------------------------------------------------------------------------
+# CHART METADATA
+#--------------------------------------------------------------------------------------------------------
+
+
+apiVersion: v2
+name: platformcore
+description: PlatformCore stack — nginx + fastapi + postgres on EKS
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.28.0-0"
+home: https://github.com/goelishan/platformCore
+maintainers:
+  - name: Ishan Goel
+    email: ishan.goel24@hotmail.com
+keywords:
+  - platformcore
+  - eks

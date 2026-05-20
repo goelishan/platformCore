@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "platformcore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fastapi
+spec:
+  replicas: {{ .Values.fastapi.replicas }}
+  selector:
+    matchLabels:
+      {{- include "platformcore.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: fastapi
+  template:
+    metadata:
+      labels:
+        {{- include "platformcore.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: fastapi
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/fastapi/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.fastapi.serviceAccount.name }}
+      containers:
+        - name: fastapi
+          image: {{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: fastapi-config
+          resources:
+            {{- toYaml .Values.fastapi.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            failureThreshold: 3

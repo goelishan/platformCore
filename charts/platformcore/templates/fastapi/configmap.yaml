@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastapi-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "platformcore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fastapi
+data:
+  RDS_HOST: {{ .Values.fastapi.rds.host | quote }}
+  RDS_PORT: {{ .Values.fastapi.rds.port | toString | quote }}
+  RDS_DB_NAME: {{ .Values.fastapi.rds.dbName | quote }}
+  RDS_USER: {{ .Values.fastapi.rds.dbUser | quote }}
+  AWS_DEFAULT_REGION: {{ .Values.global.aws.region | quote }}

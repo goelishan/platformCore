@@ -1,0 +1,16 @@
+
+
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "platformcore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+data:
+  POSTGRES_USER: {{ .Values.postgres.auth.user | quote }}
+  POSTGRES_DB: {{ .Values.postgres.auth.db | quote }}
+
+{{- end }}

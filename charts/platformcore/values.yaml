@@ -1,0 +1,109 @@
+#--------------------------------------------------------------------------------------------------------
+# DEFAULT VALUES — THE CHART'S PUBLIC API
+#--------------------------------------------------------------------------------------------------------
+
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  aws:
+    region: us-east-1
+    accountId: "316053082971"
+
+#--------------------------------------------------------------------------------------------------------
+# NGINX — STATELESS WEB TIER
+#--------------------------------------------------------------------------------------------------------
+
+
+nginx:
+  image:
+    repository: nginx
+    tag: alpine
+  
+  config:
+    appEnv: dev
+    logLevel: "info"
+  
+  secret:
+    apiKey: "placeholder-api-key"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 50
+  
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+
+#--------------------------------------------------------------------------------------------------------
+# FASTAPI — APP TIER, IRSA → RDS IAM AUTH
+#--------------------------------------------------------------------------------------------------------
+
+
+fastapi:
+  image:
+    repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app
+    tag: latest
+  replicas: 1
+
+  serviceAccount:
+    create: true
+    name: fastapi
+    roleARN: "arn:aws:iam::316053082971:role/platformcore-fastapi"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  rds:
+    host: "platformcore-db.c4f6ckwcwtll.us-east-1.rds.amazonaws.com"
+    port: 5432
+    dbName: platformcore
+    dbUser: fastapi
+
+
+#--------------------------------------------------------------------------------------------------------
+# POSTGRES — K8S-PRIMITIVE LEARNING VEHICLE (RDS IS THE REAL DATA STORE)
+#--------------------------------------------------------------------------------------------------------
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "17"
+  replicas: 1
+
+  auth:
+    user: platformcore
+    db: platformcore
+    password: platformcore
+
+  storage:
+    size: 1Gi
+    storageClass: gp3-retain
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
