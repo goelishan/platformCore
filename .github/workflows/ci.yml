@@ -83,5 +83,5 @@ jobs:
             -n platformcore --create-namespace \
             --set image.repository=${{ secrets.ECR_REPO }} \
             --set image.tag=${{ github.sha }} \
-            --atomic \
+            --rollback-on-failure \
             --timeout 5m
