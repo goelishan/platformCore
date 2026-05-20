@@ -30,7 +30,7 @@ data "aws_iam_policy_document" "alb_controller_trust" {
 #--------------------------------------------------------------------------------------------------------
 
 data "http" "alb_controller_policy" {
-    url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.8.2/docs/install/iam_policy.json"
+    url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v3.3.0/docs/install/iam_policy.json"
 
     request_headers = {
         Accept = "application/json"

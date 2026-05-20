@@ -50,6 +50,17 @@ up:
 # data -> network endpoints -> network NAT (route first, then GW, then
 # EIP - reverse of creation order so each dependency unblocks the next).
 down:
+	@echo "==> Pre-destroy: removing Helm releases so the ALB controller cleans up its ALB..."
+	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
+	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
+	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \
+	  sleep 60; \
+	  helm uninstall aws-load-balancer-controller -n kube-system --ignore-not-found 2>/dev/null || true; \
+	else \
+	  echo "  Cluster not found - skipping Helm cleanup."; \
+	fi
 	cd terraform && terraform destroy -auto-approve \
 	  -target=module.eks.aws_eks_addon.ebs_csi \
 	  -target=module.eks.aws_iam_role_policy_attachment.alb_controller \
@@ -57,6 +68,9 @@ down:
 	  -target=module.eks.aws_iam_policy.alb_controller \
 	  -target=module.eks.aws_iam_role_policy_attachment.ebs_csi \
 	  -target=module.eks.aws_iam_role.ebs_csi \
+	  -target=module.eks.aws_iam_role_policy_attachment.fastapi_rds \
+	  -target=module.eks.aws_iam_role.fastapi \
+	  -target=module.eks.aws_iam_policy.fastapi_rds \
 	  -target=module.eks.aws_eks_node_group.main \
 	  -target=module.eks.aws_eks_access_policy_association.console_admin \
 	  -target=module.eks.aws_eks_access_entry.console_admin \
@@ -90,10 +104,30 @@ down:
 
 
 # Full destroy: everything, including ECR repo + images and the free VPC
-# resources. Use at the end of a phase or when switching projects. Will
-# fail on the ECR repo if images are present; add force_delete=true to
-# the aws_ecr_repository resource if you want to bypass that.
+# resources. Use at the end of a phase or when switching projects.
+#
+# Why the pre-destroy block exists:
+#   The ALB Controller watches Ingress objects and provisions a real AWS ALB
+#   outside Terraform's state. terraform destroy has no record of it, so when
+#   TF tries to delete the VPC subnets AWS rejects the call ("has dependent
+#   object"). We must let the controller clean up its own ALB before TF runs.
+#   Sequence: uninstall the app chart (deletes Ingress) -> wait for controller
+#   to delete the ALB -> uninstall the controller chart (stops it recreating
+#   anything) -> terraform destroy.
+#   ECR images are handled by force_delete=true on the aws_ecr_repository
+#   resource (no longer needs manual image deletion before destroy).
 down-all:
+	@echo "==> Pre-destroy: removing Helm releases and waiting for ALB controller to clean up the ALB..."
+	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
+	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
+	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \
+	  sleep 60; \
+	  helm uninstall aws-load-balancer-controller -n kube-system --ignore-not-found 2>/dev/null || true; \
+	else \
+	  echo "  Cluster not found - skipping Helm cleanup."; \
+	fi
 	cd terraform && terraform destroy -auto-approve
 
 
