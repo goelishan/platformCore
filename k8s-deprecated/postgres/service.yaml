@@ -1,0 +1,40 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+#
+# clusterIP: None makes this a headless Service. Two consequences:
+# (1) kube-proxy creates ZERO iptables rules for it - no VIP to DNAT to,
+#     no kernel-level load balancing. The Service is purely a DNS anchor.
+# (2) DNS resolution returns one A record per Ready Pod (not a single
+#     VIP), AND each Pod gets its own DNS name:
+#     postgres-0.postgres-service.platformcore.svc.cluster.local
+#
+# Why headless here: the postgres StatefulSet's serviceName references
+# this Service. Per-Pod DNS is the primitive that makes stable identity
+# useful - replication topologies need to address postgres-0 directly,
+# not "whichever postgres the load balancer picks." WAL streaming, leader
+# election, all of it depends on stable peer addresses.
+#
+# Failure mode: changing this back to ClusterIP would break per-Pod DNS
+# silently. StatefulSet Pods come up Ready, but
+# nslookup postgres-0.postgres-service returns NXDOMAIN. spec.clusterIP
+# is also immutable once set - flipping it requires delete + recreate
+# (which is what Day 19 did during the migration).
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: platformcore
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432

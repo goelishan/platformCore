@@ -1,0 +1,33 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+#
+# Stable in-cluster VIP for nginx Pods. type: ClusterIP because traffic
+# enters via the Ingress (k8s/nginx/ingress.yaml), not directly from
+# outside the cluster. The selector app: nginx routes by Pod label - this
+# is how kube-proxy programs iptables rules to DNAT VIP traffic to a Pod
+# backend chosen at random.
+#
+# Relies on: nginx Deployment Pods carrying matching label app: nginx.
+#
+# Failure mode: selector / Pod-label mismatch = Service has zero
+# endpoints and all requests get 503 from the Ingress with no obvious
+# error. Diagnose with kubectl get endpoints nginx -n platformcore.
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: platformcore
+spec:
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

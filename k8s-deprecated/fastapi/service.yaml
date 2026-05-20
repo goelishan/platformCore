@@ -1,0 +1,23 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi
+  namespace: platformcore
+spec:
+  selector:
+    app: fastapi
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+
+
+

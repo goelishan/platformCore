@@ -1,0 +1,53 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+  namespace: platformcore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      serviceAccountName: fastapi 
+      containers:
+      - name: fastapi
+        image: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app:latest
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: fastapi-config
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          failureThreshold: 3

@@ -1,0 +1,52 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+#
+# Two consumption shapes from one ConfigMap:
+# (1) APP_ENV and LOG_LEVEL are read as env vars by the nginx Deployment
+#     via configMapKeyRef (baked into Pod env at start time).
+# (2) nginx.conf is mounted as a file at /etc/nginx/conf.d/default.conf
+#     via the Deployment's volumes/volumeMounts wiring.
+#
+# Failure mode: a ConfigMap update does NOT auto-restart consumer Pods.
+# The mounted-file form picks up the change after eventual consistency
+# (kubelet sync, ~60s), but env-var keys are baked in at Pod start and
+# require a Pod rollout to refresh. For env-shaped config, use a
+# checksum annotation on the Deployment template (sha256sum of the
+# ConfigMap data) to force rollout when ConfigMap changes - Helm chart
+# convention, ships in Phase 4.
+
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: platformcore
+data:
+  #Consumed as env file
+  APP_ENV: dev
+  LOG_LEVEL: "info"
+
+  #Consumed as mounted file
+  nginx.conf: |
+    server {
+      listen 80;
+      location /healthz {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+      }
+      location /api/ {
+        proxy_pass http://fastapi:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+      location / {
+        return 200 'platformcore - k8s';
+        add_header Content-Type text/plain;
+      }
+    }

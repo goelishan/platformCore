@@ -1,0 +1,52 @@
+#--------------------------------------------------------------------------------------------------------
+# DEPRECATED — superseded by charts/platformcore Helm chart (Day 24)
+# Do NOT apply with kubectl apply — these resources are now Helm-managed.
+# Source of truth: charts/platformcore/templates/
+# To inspect rendered manifests: helm template platformcore charts/platformcore -n platformcore
+#--------------------------------------------------------------------------------------------------------
+#
+# Continuous control loop: every 15s the HPA polls metrics-server for
+# nginx CPU usage, applies
+# ceil(currentReplicas * currentUsage / targetUsage), and adjusts the
+# Deployment's .spec.replicas if the result is outside the +-10%
+# tolerance band and outside the stabilization window.
+#
+# Asymmetry: scale-up is fast (one polling cycle, ~15s). Scale-down
+# waits 5 minutes by default (behavior.scaleDown.stabilizationWindowSeconds).
+# The window prevents flapping - a 4-minute traffic spike would otherwise
+# cause constant Pod churn, paying the cold-start cost on every cycle.
+#
+# Relies on: metrics-server installed in cluster (kind needs the
+# --kubelet-insecure-tls flag because kind's kubelet certs are
+# self-signed; EKS does not - cluster CA signs kubelet certs there).
+# nginx Deployment must have CPU resource requests set (HPA's
+# denominator). Without either, TARGETS shows <unknown>/50% and HPA does
+# nothing.
+#
+# Failure mode: maxReplicas is a hard ceiling. If formula computes 4 but
+# maxReplicas=3, the 3 Pods absorb the load under CFS throttling -
+# latency rises, p99 climbs. Operator signal is to raise the ceiling or
+# address root cause; staying throttled is a degraded but not failed
+# state.
+
+
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa
+  namespace: platformcore
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
