@@ -1,8 +1,44 @@
 .PHONY: up down down-all rebuild status logs curl
 
 # Bring the full stack up.
+#
+# Post-terraform bootstrap runs automatically:
+#   1. kubeconfig updated so kubectl/helm can reach the new cluster
+#   2. ALB Controller installed — required before any Ingress object is created
+#   3. kube-prometheus-stack installed — monitoring up before app workloads land
+#
+# The platformcore app itself is deployed by the CI pipeline (push to main),
+# not by make up, so image tagging stays owned by CI.
+#
+# NOTE: on a fresh cluster the `fastapi` IAM auth DB user must exist in RDS.
+# If RDS was recreated, re-run the bootstrap psql commands from PROGRESS.md
+# (CREATE USER fastapi WITH LOGIN; GRANT rds_iam TO fastapi;) before pushing
+# to main — the deploy job will time out waiting for FastAPI to become ready.
 up:
 	cd terraform && terraform apply -auto-approve
+	@echo "==> Updating kubeconfig..."
+	aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager
+	@echo "==> Adding Helm repos..."
+	helm repo add eks https://aws.github.io/eks-charts --force-update 2>/dev/null || true
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update 2>/dev/null || true
+	helm repo update
+	@echo "==> Installing ALB Controller..."
+	@ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
+	VPC_ID=$$(cd terraform && terraform output -raw vpc_id); \
+	helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+	  -n kube-system \
+	  --set clusterName=platformcore \
+	  --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ALB_ROLE" \
+	  --set vpcId=$$VPC_ID \
+	  --set region=us-east-1 \
+	  --set replicaCount=1 \
+	  --wait
+	@echo "==> Installing kube-prometheus-stack..."
+	helm upgrade --install kps prometheus-community/kube-prometheus-stack \
+	  -n monitoring --create-namespace \
+	  -f helm/monitoring/values.yaml \
+	  --wait --timeout 10m
+	@echo "==> Bootstrap complete. Push to main to deploy the platformcore app."
 
 
 
@@ -53,6 +89,9 @@ down:
 	@echo "==> Pre-destroy: removing Helm releases so the ALB controller cleans up its ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete pvc --all -n monitoring --wait=true --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace monitoring --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
 	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \

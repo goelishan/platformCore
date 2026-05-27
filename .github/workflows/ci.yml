@@ -81,7 +81,7 @@ jobs:
         run: |
           helm upgrade --install platformcore charts/platformcore \
             -n platformcore --create-namespace \
-            --set image.repository=${{ secrets.ECR_REPO }} \
-            --set image.tag=${{ github.sha }} \
+            --set fastapi.image.repository=${{ secrets.ECR_REPO }} \
+            --set fastapi.image.tag=${{ github.sha }} \
             --rollback-on-failure \
             --timeout 5m
