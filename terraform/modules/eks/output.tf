@@ -29,12 +29,12 @@ output "node_role_arn" {
 
 output "cluster_security_group_id" {
   description = "CLuster SG attached to ENI and all managed nodes"
-  value = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }
 
 output "alb_controller_role_arn" {
   description = "IRSA role arn for Helm"
-  value = aws_iam_role.alb_controller.arn
+  value       = aws_iam_role.alb_controller.arn
 }
 
 output "fastapi_role_arn" {

@@ -1,0 +1,110 @@
+#--------------------------------------------------------------------------------------------------------
+# kube-prometheus-stack overrides
+#--------------------------------------------------------------------------------------------------------
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+
+    serviceMonitorSelector:
+      matchLabels:
+        release: kps
+    podMonitorSelector:
+      matchLabels:
+        release: kps
+    probeSelector:
+      matchLabels:
+        release: kps
+    ruleSelector:
+      matchLabels:
+        release: kps
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3-retain
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests: 
+              storage: 20Gi
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 400Mi
+      limits:
+        memory: 800Mi
+
+
+alertManager:
+  alertManagerSpec:
+    replicas: 1
+
+    storage: 
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3-retain
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+    
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
+
+grafana:
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: gp3-retain
+    accessModes: ["ReadWriteOnce"]
+    size: 5Gi
+  
+  service:
+    type: ClusterIP
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    hosts:
+      - ""
+    path: /
+    pathType: Prefix
+
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+  

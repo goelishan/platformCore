@@ -36,8 +36,8 @@ variable "db_username" {
 }
 
 variable "db_secret_name" {
-  type=string
-  description = "Secrets manager secret name"  
+  type        = string
+  description = "Secrets manager secret name"
 }
 
 variable "db_name" {

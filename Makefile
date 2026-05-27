@@ -120,6 +120,9 @@ down-all:
 	@echo "==> Pre-destroy: removing Helm releases and waiting for ALB controller to clean up the ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete pvc --all -n monitoring --wait=true --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace monitoring --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
 	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \

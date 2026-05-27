@@ -3,31 +3,31 @@
 #--------------------------------------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "ebs_csi_trust" {
-    statement {
-      actions = ["sts:AssumeRoleWithWebIdentity"]
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
-      principals {
-        type = "Federated"
-        identifiers = [aws_iam_openid_connect_provider.eks.arn]
-      }
-
-      condition {
-        test = "StringEquals"
-        variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
-        values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
-      }
-
-      condition {
-        test = "StringEquals"
-        variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
-        values   = ["sts.amazonaws.com"]
-      }
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks.arn]
     }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
 }
 
 
 resource "aws_iam_role" "ebs_csi" {
-  name = "${var.project_name}-ebs-csi"
+  name               = "${var.project_name}-ebs-csi"
   assume_role_policy = data.aws_iam_policy_document.ebs_csi_trust.json
 }
 
@@ -42,11 +42,29 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
 #--------------------------------------------------------------------------------------------------------
 
 resource "aws_eks_addon" "ebs_csi" {
-  cluster_name = aws_eks_cluster.main.name
-  addon_name = "aws-ebs-csi-driver"
+  cluster_name             = aws_eks_cluster.main.name
+  addon_name               = "aws-ebs-csi-driver"
   service_account_role_arn = aws_iam_role.ebs_csi.arn
 
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 }
 
+#--------------------------------------------------------------------------------------------------------
+# Prefix Delegation
+#--------------------------------------------------------------------------------------------------------
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "vpc-cni"
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    env = {
+      ENABLE_PREFIX_DELEGATION = "true"
+      WARM_PREFIX_TARGET       = "1"
+    }
+  })
+}

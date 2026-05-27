@@ -27,15 +27,15 @@ variable "environment" {
 }
 
 variable "zone_id" {
-  type = string
+  type        = string
   description = "Route 53 zone id for domain"
-  default = ""
+  default     = ""
 }
 
 variable "domain_name" {
-  type = string
+  type        = string
   description = "Domain name for the app"
-  default = ""
+  default     = ""
 }
 
 variable "create_https" {

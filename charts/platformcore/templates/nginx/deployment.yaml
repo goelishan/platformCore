@@ -42,7 +42,7 @@ spec:
             {{- toYaml .Values.nginx.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 2
             periodSeconds: 5

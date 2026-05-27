@@ -10,11 +10,11 @@ data "aws_iam_policy_document" "fastapi_trust" {
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
-        type="Federated"
-        identifiers = [aws_iam_openid_connect_provider.eks.id]
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks.id]
     }
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
       values   = ["system:serviceaccount:platformcore:fastapi"]
     }
@@ -24,12 +24,12 @@ data "aws_iam_policy_document" "fastapi_trust" {
       variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
       values   = ["sts.amazonaws.com"]
     }
-}
+  }
 }
 
 data "aws_iam_policy_document" "fastapi_rds" {
   statement {
-    actions   = ["rds-db:connect"]
+    actions = ["rds-db:connect"]
     resources = [
       "arn:aws:rds-db:${data.aws_region.fastapi.name}:${data.aws_caller_identity.fastapi.account_id}:dbuser:${var.db_resource_id}/fastapi"
     ]
@@ -51,4 +51,4 @@ resource "aws_iam_role_policy_attachment" "fastapi_rds" {
   role       = aws_iam_role.fastapi.name
   policy_arn = aws_iam_policy.fastapi_rds.arn
 }
-    
+

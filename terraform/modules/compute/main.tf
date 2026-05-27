@@ -139,15 +139,15 @@ resource "aws_iam_instance_profile" "ec2_ssm" {
 #--------------------------------------------------------------------------------------------------------
 
 resource "aws_iam_role_policy" "secrets_read" {
-  name="${var.project_name}-secrets-read"
+  name = "${var.project_name}-secrets-read"
   role = aws_iam_role.ec2_ssm.id
 
   policy = jsonencode({
-    Version="2012-10-17"
-    Statement=[{
-      Effect="Allow"
-      Action=["secretsmanager:GetSecretValue"]
-      Resource=var.db_secret_arn
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = var.db_secret_arn
     }]
   })
 }
@@ -225,7 +225,7 @@ resource "aws_cloudwatch_log_group" "app" {
 resource "aws_ecr_repository" "app" {
   name                 = "${var.project_name}-app"
   image_tag_mutability = "MUTABLE"
-  force_delete         = true  # allows destroy even when tagged images are present
+  force_delete         = true # allows destroy even when tagged images are present
 
   image_scanning_configuration {
     scan_on_push = true

@@ -37,7 +37,7 @@ output "db_secret_arn" {
 
 output "db_secret_name" {
   description = "Name of the secrets manager secret"
-  value = aws_secretsmanager_secret.db_master.name
+  value       = aws_secretsmanager_secret.db_master.name
 }
 
 output "db_address" {
