@@ -10,10 +10,8 @@
 # The platformcore app itself is deployed by the CI pipeline (push to main),
 # not by make up, so image tagging stays owned by CI.
 #
-# NOTE: on a fresh cluster the `fastapi` IAM auth DB user must exist in RDS.
-# If RDS was recreated, re-run the bootstrap psql commands from PROGRESS.md
-# (CREATE USER fastapi WITH LOGIN; GRANT rds_iam TO fastapi;) before pushing
-# to main — the deploy job will time out waiting for FastAPI to become ready.
+# RDS IAM auth user bootstrap is automated via scripts/rds-bootstrap.sh —
+# runs as the final make up step, idempotent, safe on every cluster recreate.
 up:
 	cd terraform && terraform apply -auto-approve
 	@echo "==> Updating kubeconfig..."
@@ -38,6 +36,8 @@ up:
 	  -n monitoring --create-namespace \
 	  -f helm/monitoring/values.yaml \
 	  --wait --timeout 10m
+	@echo "==> Bootstrapping RDS IAM auth user..."
+	@bash scripts/rds-bootstrap.sh
 	@echo "==> Bootstrap complete. Push to main to deploy the platformcore app."
 
 

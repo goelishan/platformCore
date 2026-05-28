@@ -78,10 +78,13 @@ fastapi:
     port: 5432
     dbName: platformcore
     dbUser: fastapi
+  
+  serviceMonitor:
+    enabled: true
 
 
 #--------------------------------------------------------------------------------------------------------
-# POSTGRES — K8S-PRIMITIVE LEARNING VEHICLE (RDS IS THE REAL DATA STORE)
+# POSTGRES
 #--------------------------------------------------------------------------------------------------------
 
 postgres:

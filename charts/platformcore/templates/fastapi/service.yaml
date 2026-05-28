@@ -12,6 +12,7 @@ spec:
     {{- include "platformcore.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: fastapi
   ports:
-  - port: 8000
+  - name: http
+    port: 8000
     targetPort: 8000
     protocol: TCP

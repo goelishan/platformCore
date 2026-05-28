@@ -1,6 +1,7 @@
 #--------------------------------------------------------------------------------------------------------
 # VARIABLES - EKS MODULE
 #--------------------------------------------------------------------------------------------------------
+
 terraform {
   required_providers {
     tls = {
@@ -36,6 +37,6 @@ variable "admin_iam_arn" {
 }
 
 variable "db_resource_id" {
-  description = "RDS resource ID (db-XXXXX). Used to scope rds-db:connect to this instance only."
+  description = "RDS resource ID. Used to scope rds-db:connect to this instance only."
   type        = string
 }

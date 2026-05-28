@@ -12,8 +12,11 @@
 from fastapi import FastAPI, HTTPException
 import os
 import boto3
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="platformcore")
+Instrumentator().instrument(app).expose(app)
+
 
 def get_rds_auth_token():
     """Generate a short-lived IAM auth token for RDS."""
@@ -47,6 +50,7 @@ def get_db_connection():
         f"sslmode=require"
     )
     return psycopg.connect(conn_str)
+
 
 @app.get("/")
 def root():

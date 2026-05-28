@@ -22,7 +22,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-retain
+          storageClassName: gp3-delete
           accessModes: ["ReadWriteOnce"]
           resources:
             requests: 
@@ -43,7 +43,7 @@ alertManager:
     storage: 
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-retain
+          storageClassName: gp3-delete
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -61,7 +61,7 @@ grafana:
   persistence:
     enabled: true
     type: pvc
-    storageClassName: gp3-retain
+    storageClassName: gp3-delete
     accessModes: ["ReadWriteOnce"]
     size: 5Gi
   
