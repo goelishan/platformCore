@@ -1,25 +1,23 @@
-# Service Monitor
-
-{{- if .Values.fastapi.serviceMonitor.enabled -}}
+{{- if .Values.fastapi.serviceMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-    name: fastapi
-    namespace: {{ .Release.Namespace }}
-    labels:
-        {{- include "platformcore.selectorLabels" . | nindent 4 -}}
-        app.kubernetes.io/component: fastapi
-        release: kps
+  name: fastapi
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "platformcore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fastapi
+    release: kps
 spec:
-    selector:
-        matchLabels: 
-            {{- include "platformcore.selectorLabels" . | nindent 6 -}}
-            app.kubernetes.io/component: fastapi
-    namespaceSelector: 
-        matchNames:
-            - {{ .Release.Namespace }}
-    endpoints:
-        -   port: http
-            path: /metrics
-            interval: 30s
+  selector:
+    matchLabels:
+      {{- include "platformcore.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: fastapi
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
 {{- end }}
