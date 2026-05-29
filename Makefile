@@ -19,6 +19,7 @@ up:
 	@echo "==> Adding Helm repos..."
 	helm repo add eks https://aws.github.io/eks-charts --force-update 2>/dev/null || true
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update 2>/dev/null || true
+	helm repo add grafana https://grafana.github.io/helm-charts --force-update 2>/dev/null || true
 	helm repo update
 	@echo "==> Installing ALB Controller..."
 	@ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
@@ -36,6 +37,16 @@ up:
 	  -n monitoring --create-namespace \
 	  -f helm/monitoring/values.yaml \
 	  --wait --timeout 10m
+	@echo "==> Installing Loki..."
+	helm upgrade --install loki grafana/loki \
+	  -n monitoring \
+	  -f helm/monitoring/loki-values.yaml \
+	  --wait --timeout 5m
+	@echo "==> Installing Promtail..."
+	helm upgrade --install promtail grafana/promtail \
+	  -n monitoring \
+	  -f helm/monitoring/promtail-values.yaml \
+	  --wait --timeout 5m
 	@echo "==> Bootstrapping RDS IAM auth user..."
 	@bash scripts/rds-bootstrap.sh
 	@echo "==> Bootstrap complete. Push to main to deploy the platformcore app."

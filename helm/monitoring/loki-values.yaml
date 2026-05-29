@@ -1,0 +1,62 @@
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig: 
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig: 
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+
+singleBinary:
+  replicas: 1
+  persistence:
+    storageClass: gp3-delete
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+# Distributed components — not needed for single binary mode
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Self-monitoring creates a circular dependency, disable it
+
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  lokiCanary: 
+    enabled: false
+  serviceMonitor:
+    enabled: false
+
+
+test:
+  enabled: false
+gateway:
+  enabled: false
+
