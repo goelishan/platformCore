@@ -1,0 +1,42 @@
+{{- if .Values.fastapi.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fastapi-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "platformcore.labels" . | nindent 4 }}
+    release: kps
+spec:
+  groups:
+    - name: fastapi.rules
+      rules:
+        - alert: FastAPICrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{
+              namespace="{{ .Release.Namespace }}",
+              container="fastapi"
+            }[5m]) * 60 > 0.5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FastAPI pod is crash-looping"
+            description: "Restart rate > 0.5/min for 2 minutes"
+
+        - alert: FastAPIHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{
+                namespace="{{ .Release.Namespace }}"
+              }[5m])) by (le)
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FastAPI p95 latency > 1s"
+            description: "95th percentile latency has been above 1s for 5 minutes"
+
+{{- end }}
+

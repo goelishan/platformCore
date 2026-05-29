@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastapi-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  fastapi-dashboard.json: |
+    {
+      "title": "Platformcore - FastAPI",
+      "uid": "platformcore-fastapi",
+      "schemaVersion": 36,
+      "refresh": "30s",
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Request Rate (req/s)",
+          "gridPos": {"x":0, "y":0, "w":12, "h":8},
+          "targets": [{
+            "expr": "sum(rate(http_requests_total{namespace=\"platformcore\"}[1m])) by (status_code)",
+            "legendFormat": "{{`{{status_code}}`}}"
+          }]
+        },
+        {
+          "type": "timeseries",
+          "title": "P95 Latency (s)",
+          "gridPos": {"x":12, "y":0, "w":12, "h":8},
+          "targets": [{
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"platformcore\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          }]
+        },
+        {
+          "type": "stat",
+          "title": "Pod Restart Count",
+          "gridPos": {"x":0, "y":8, "w":8, "h":4},
+          "targets": [{
+            "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"platformcore\",container=\"fastapi\"})",
+            "legendFormat": "restarts"
+          }]
+        },
+        {
+          "type": "stat",
+          "title": "Ready Pods",
+          "gridPos": {"x":8, "y":8, "w":8, "h":4},
+          "targets": [{
+            "expr": "sum(kube_pod_status_ready{namespace=\"platformcore\",condition=\"true\"})",
+            "legendFormat": "ready"
+          }]
+        }
+      ]
+    }
