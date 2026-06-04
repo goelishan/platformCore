@@ -58,6 +58,8 @@ jobs:
   update-image-tag:
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # allows git push back to the repo via GITHUB_TOKEN
     steps:
       - uses: actions/checkout@v4
         with:
