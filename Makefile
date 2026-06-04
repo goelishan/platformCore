@@ -8,7 +8,8 @@
 #   3. kube-prometheus-stack installed — monitoring up before app workloads land
 #   4. Loki installed — log aggregation backend
 #   5. Promtail installed — DaemonSet log shipper, forwards pod stdout to Loki
-#   6. ArgoCD installed — GitOps controller; watches repo, syncs app chart to cluster
+#   6. External Secrets Operator installed — pulls secrets from AWS Secrets Manager into K8s Secrets
+#   7. ArgoCD installed — GitOps controller; watches repo, syncs app chart to cluster
 #
 # The platformcore app itself is deployed by the CI pipeline (push to main),
 # not by make up, so image tagging stays owned by CI.
@@ -24,6 +25,7 @@ up:
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update 2>/dev/null || true
 	helm repo add grafana https://grafana.github.io/helm-charts --force-update 2>/dev/null || true
 	helm repo add argo https://argoproj.github.io/argo-helm --force-update 2>/dev/null || true
+	helm repo add external-secrets https://charts.external-secrets.io --force-update 2>/dev/null || true
 	helm repo update
 	@echo "==> Installing ALB Controller..."
 	@ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
@@ -50,6 +52,13 @@ up:
 	helm upgrade --install promtail grafana/promtail \
 	  -n monitoring \
 	  -f helm/monitoring/promtail-values.yaml \
+	  --wait --timeout 5m
+	@echo "==> Installing External Secrets Operator..."
+	@ESO_ROLE=$$(cd terraform && terraform output -raw eso_role_arn); \
+	helm upgrade --install external-secrets external-secrets/external-secrets \
+	  -n external-secrets --create-namespace \
+	  -f helm/eso/values.yaml \
+	  --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ESO_ROLE" \
 	  --wait --timeout 5m
 	@echo "==> Installing ArgoCD..."
 	helm upgrade --install argocd argo/argo-cd \
@@ -109,6 +118,8 @@ down:
 	@echo "==> Pre-destroy: removing Helm releases so the ALB controller cleans up its ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall external-secrets -n external-secrets --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace external-secrets --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall argocd -n argocd --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete namespace argocd --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \
@@ -183,6 +194,8 @@ down-all:
 	@echo "==> Pre-destroy: removing Helm releases and waiting for ALB controller to clean up the ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall external-secrets -n external-secrets --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace external-secrets --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall argocd -n argocd --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete namespace argocd --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \

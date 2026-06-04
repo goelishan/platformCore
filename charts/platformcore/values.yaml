@@ -24,9 +24,6 @@ nginx:
     appEnv: dev
     logLevel: "info"
   
-  secret:
-    apiKey: "placeholder-api-key"
-
   resources:
     requests:
       cpu: 50m
@@ -97,7 +94,6 @@ postgres:
   auth:
     user: platformcore
     db: platformcore
-    password: platformcore
 
   storage:
     size: 1Gi

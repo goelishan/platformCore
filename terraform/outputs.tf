@@ -69,3 +69,7 @@ output "rds_host" {
   description = "RDS hostname (no port). Used in FastAPI ConfigMap."
   value       = module.data.db_address
 }
+
+output "eso_role_arn" {
+  value = module.eks.eso_role_arn
+}

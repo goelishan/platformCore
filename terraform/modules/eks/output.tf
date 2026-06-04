@@ -42,3 +42,7 @@ output "fastapi_role_arn" {
   value       = aws_iam_role.fastapi.arn
 }
 
+output "eso_role_arn" {
+  description = "IRSA role ARN for the External Secrets Operator controller SA."
+  value       = aws_iam_role.eso.arn
+}

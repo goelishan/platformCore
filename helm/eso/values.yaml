@@ -1,0 +1,7 @@
+# External Secrets Operator deployed on EKS.
+
+installCRDs: true
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "PLACEHOLDER"

@@ -123,6 +123,26 @@ resource "aws_secretsmanager_secret_version" "db_master" {
   })
 }
 
+resource "aws_secretsmanager_secret" "nginx_api_key" {
+  name = "${var.project_name}/app/nginx-api-key"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "nginx_api_key" {
+  secret_id = aws_secretsmanager_secret.nginx_api_key.id
+  secret_string = jsonencode({ API_KEY = "placeholder-api-key" })
+}
+
+resource "aws_secretsmanager_secret" "postgres_app_password" {
+  name = "${var.project_name}/app/postgres-password"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "postgres_app_password" {
+  secret_id = aws_secretsmanager_secret.postgres_app_password.id
+  secret_string = jsonencode({ POSTGRES_PASSWORD = "platformcore" })
+}
+
 #--------------------------------------------------------------------------------------------------------
 # DB INSTANCE
 #--------------------------------------------------------------------------------------------------------
