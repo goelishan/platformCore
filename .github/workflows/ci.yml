@@ -52,36 +52,27 @@ jobs:
 
       - name: Build and push
         run: |
-          docker build -t ${{ secrets.ECR_REPO }}:${{ github.sha }} ./app
+          docker build --platform linux/amd64 -t ${{ secrets.ECR_REPO }}:${{ github.sha }} ./app
           docker push ${{ secrets.ECR_REPO }}:${{ github.sha }}
 
-  deploy:
+  update-image-tag:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Update kubeconfig
+      - name: Update fastapi image tag in values.yaml
+        # Scoped to the line following the ECR repo URL — avoids touching
+        # nginx (tag: alpine) and postgres (tag: "17") image tag lines.
         run: |
-          aws eks update-kubeconfig \
-            --region ${{ env.AWS_REGION }} \
-            --name ${{ env.EKS_CLUSTER }}
+          sed -i '/platformcore-app/{n;s|tag: .*|tag: ${{ github.sha }}|}' charts/platformcore/values.yaml
 
-      - name: Deploy
+      - name: Commit and push
         run: |
-          helm upgrade --install platformcore charts/platformcore \
-            -n platformcore --create-namespace \
-            --set fastapi.image.repository=${{ secrets.ECR_REPO }} \
-            --set fastapi.image.tag=${{ github.sha }} \
-            --rollback-on-failure \
-            --timeout 5m
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/platformcore/values.yaml
+          git commit -m "ci: update fastapi image tag to ${{ github.sha }} [skip ci]"
+          git push

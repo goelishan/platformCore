@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platformcore
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/goelishan/platformCore
+    targetRevision: HEAD
+    path: charts/platformcore
+    helm:
+      valueFiles:
+        - values.yaml
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platformcore
+  
+  syncPolicy:
+    automated:  
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

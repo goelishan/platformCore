@@ -6,6 +6,9 @@
 #   1. kubeconfig updated so kubectl/helm can reach the new cluster
 #   2. ALB Controller installed — required before any Ingress object is created
 #   3. kube-prometheus-stack installed — monitoring up before app workloads land
+#   4. Loki installed — log aggregation backend
+#   5. Promtail installed — DaemonSet log shipper, forwards pod stdout to Loki
+#   6. ArgoCD installed — GitOps controller; watches repo, syncs app chart to cluster
 #
 # The platformcore app itself is deployed by the CI pipeline (push to main),
 # not by make up, so image tagging stays owned by CI.
@@ -20,6 +23,7 @@ up:
 	helm repo add eks https://aws.github.io/eks-charts --force-update 2>/dev/null || true
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update 2>/dev/null || true
 	helm repo add grafana https://grafana.github.io/helm-charts --force-update 2>/dev/null || true
+	helm repo add argo https://argoproj.github.io/argo-helm --force-update 2>/dev/null || true
 	helm repo update
 	@echo "==> Installing ALB Controller..."
 	@ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
@@ -46,6 +50,11 @@ up:
 	helm upgrade --install promtail grafana/promtail \
 	  -n monitoring \
 	  -f helm/monitoring/promtail-values.yaml \
+	  --wait --timeout 5m
+	@echo "==> Installing ArgoCD..."
+	helm upgrade --install argocd argo/argo-cd \
+	  -n argocd --create-namespace \
+	  -f helm/argocd/values.yaml \
 	  --wait --timeout 5m
 	@echo "==> Bootstrapping RDS IAM auth user..."
 	@bash scripts/rds-bootstrap.sh
@@ -100,12 +109,16 @@ down:
 	@echo "==> Pre-destroy: removing Helm releases so the ALB controller cleans up its ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall argocd -n argocd --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace argocd --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  helm uninstall loki -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  helm uninstall promtail -n monitoring --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete pvc --all -n monitoring --wait=true --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete namespace monitoring --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
-	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \
+	  echo "  Waiting 60s for ALB controller to de-register and delete the ALBs..."; \
 	  sleep 60; \
 	  helm uninstall aws-load-balancer-controller -n kube-system --ignore-not-found 2>/dev/null || true; \
 	else \
@@ -170,12 +183,16 @@ down-all:
 	@echo "==> Pre-destroy: removing Helm releases and waiting for ALB controller to clean up the ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
+	  helm uninstall argocd -n argocd --ignore-not-found 2>/dev/null || true; \
+	  kubectl delete namespace argocd --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall kps -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  helm uninstall loki -n monitoring --ignore-not-found 2>/dev/null || true; \
+	  helm uninstall promtail -n monitoring --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete pvc --all -n monitoring --wait=true --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete namespace monitoring --ignore-not-found 2>/dev/null || true; \
 	  helm uninstall platformcore -n platformcore --ignore-not-found 2>/dev/null || true; \
 	  kubectl delete ingress --all -A --ignore-not-found 2>/dev/null || true; \
-	  echo "  Waiting 60s for ALB controller to de-register and delete the ALB..."; \
+	  echo "  Waiting 60s for ALB controller to de-register and delete the ALBs..."; \
 	  sleep 60; \
 	  helm uninstall aws-load-balancer-controller -n kube-system --ignore-not-found 2>/dev/null || true; \
 	else \
