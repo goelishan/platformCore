@@ -16,11 +16,25 @@ from pydantic import ValidationError
 
 from oncall import config
 from oncall import landing_zone as lz
-from oncall.envelope import Owner, Signal, SignalKind, SourceStatus, Subject, iso, parse
+from oncall.envelope import (
+    Owner,
+    Signal,
+    SignalKind,
+    SignalSource,
+    SourceStatus,
+    Subject,
+    iso,
+    parse,
+)
 
 CLUSTER = "platformcore"
 NAMESPACE = "prod"
 EVENT_TIME = datetime(2026, 8, 5, 3, 4, 12, tzinfo=UTC)
+
+# container|reason|exit_code. The exit code is stable per failure mode — 1 is an
+# application error, 137 is SIGKILL. A restart counter must never appear here: it
+# increments, so every restart would land in its own recurrence group.
+CRASH_KEY = "payments-api|CrashLoopBackOff|1"
 
 
 @pytest.fixture()
@@ -37,17 +51,19 @@ def db(tmp_path, monkeypatch):
 def make_signal(
     name: str = "payments-api-7f9",
     event_time: datetime = EVENT_TIME,
-    dedupe_key: str = "CrashLoopBackOff|1",
+    dedupe_key: str = CRASH_KEY,
     kind: SignalKind = SignalKind.POD_STATE,
+    node: str | None = "ip-10-0-1-42",
 ) -> Signal:
     return Signal(
-        source="k8s_api",
+        source=SignalSource.K8S_PODS,
         kind=kind,
         cluster=CLUSTER,
         namespace=NAMESPACE,
         event_time=event_time,
         subject=Subject(kind="Pod", name=name),
         owner=Owner(kind="Deployment", name="payments-api"),
+        node=node,
         dedupe_key=dedupe_key,
         payload={"restart_count": 1, "exit_code": 1},
     )
@@ -87,10 +103,32 @@ def test_same_problem_different_time_shares_fingerprint_only():
 
 
 def test_different_problem_same_subject_splits_fingerprint():
-    crash = make_signal(dedupe_key="CrashLoopBackOff|1")
-    oom = make_signal(dedupe_key="OOMKilled|137")
+    crash = make_signal(dedupe_key=CRASH_KEY)
+    oom = make_signal(dedupe_key="payments-api|OOMKilled|137")
 
     assert crash.fingerprint != oom.fingerprint
+
+
+def test_rescheduling_does_not_change_the_fingerprint():
+    """node is context, not identity. The same failure on a different node is the
+    same problem — putting node in the basis would shatter its recurrence group."""
+    before = make_signal(node="ip-10-0-1-42")
+    after = make_signal(node="ip-10-0-3-17")
+
+    assert before.fingerprint == after.fingerprint
+    assert before.signal_id == after.signal_id
+
+
+def test_unknown_source_is_rejected():
+    """source names are permanent and drive last_run(). A typo must fail loudly
+    rather than create a phantom source no staleness check ever looks at."""
+    with pytest.raises(ValidationError):
+        Signal(
+            source="k8s_pod",
+            kind=SignalKind.POD_STATE,
+            cluster=CLUSTER,
+            event_time=EVENT_TIME,
+        )
 
 
 # ---- write path ------------------------------------------------------------
@@ -100,7 +138,7 @@ def test_recollection_is_idempotent(db):
     sig = make_signal()
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [sig, sig])
         lz.finish_run(conn, run, SourceStatus.OK, 1)
 
@@ -116,7 +154,7 @@ def test_upsert_preserves_incident_id(db):
     sig = make_signal()
 
     with lz.connect() as conn:
-        first_run = lz.start_run(conn, "k8s_api", CLUSTER)
+        first_run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, first_run, [sig])
         incident = lz.open_incident(conn, CLUSTER, NAMESPACE, trigger="KubePodCrashLooping")
         attached = lz.attach_signals(
@@ -130,7 +168,7 @@ def test_upsert_preserves_incident_id(db):
     assert attached == 1
 
     with lz.connect() as conn:
-        second_run = lz.start_run(conn, "k8s_api", CLUSTER)
+        second_run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, second_run, [sig])
 
     with lz.connect() as conn:
@@ -144,7 +182,7 @@ def test_attach_does_not_steal_from_an_earlier_incident(db):
     sig = make_signal()
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [sig])
         first = lz.open_incident(conn, CLUSTER, NAMESPACE, trigger="alert-a")
         lz.attach_signals(
@@ -175,7 +213,7 @@ def test_failed_write_rolls_back_the_whole_run(db):
     one from a quiet cluster, so partial writes must not survive."""
     with pytest.raises(sqlite3.IntegrityError):
         with lz.connect() as conn:
-            run = lz.start_run(conn, "k8s_api", CLUSTER)
+            run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
             lz.write_signals(conn, run, [make_signal()])
             conn.execute(
                 "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at) "
@@ -198,7 +236,7 @@ def test_unavailable_source_is_recorded_without_any_signals(db):
     """The reason collection_runs exists. A dead Prometheus produces zero signals, so
     without this row its outage is indistinguishable from a healthy quiet cluster."""
     with lz.connect() as conn:
-        run = lz.start_run(conn, "prometheus", CLUSTER)
+        run = lz.start_run(conn, SignalSource.PROMETHEUS, CLUSTER)
         lz.finish_run(conn, run, SourceStatus.UNAVAILABLE, 0, error="connection refused")
 
     with lz.connect() as conn:
@@ -220,7 +258,7 @@ def test_recurrences_group_without_losing_spacing(db):
     signals = [make_signal(event_time=base + timedelta(seconds=o)) for o in offsets]
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, signals)
 
     window_start = base - timedelta(minutes=1)
@@ -246,7 +284,7 @@ def test_first_seen_ever_looks_past_the_incident_window(db):
     recent = make_signal(event_time=EVENT_TIME)
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [old, recent])
 
     with lz.connect() as conn:
@@ -262,7 +300,7 @@ def test_sweep_deletes_expired_but_exempts_incident_evidence(db):
     kept = make_signal(name="kept-pod")
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [loose, kept])
         incident = lz.open_incident(conn, CLUSTER, NAMESPACE, trigger="manual")
         conn.execute(
@@ -287,7 +325,7 @@ def test_expiry_diverges_by_kind(db):
     deploy = make_signal(kind=SignalKind.DEPLOY, name="deploy-subject")
 
     with lz.connect() as conn:
-        run = lz.start_run(conn, "k8s_api", CLUSTER)
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [log, deploy])
 
     cutoff = datetime.now(UTC) + timedelta(days=2)

@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from sqlite3 import Connection
 from typing import Any
 
-from oncall.envelope import Signal, SourceStatus, iso
+from oncall.envelope import Signal, SignalSource, SourceStatus, iso
 from oncall.landing_zone.rows import COLLECTOR_COLUMNS, to_row
 
 
@@ -34,12 +34,12 @@ def _now() -> str:
 # same second are genuinely two runs, and hashing their content would merge them.
 
 
-def start_run(conn: Connection, source: str, cluster: str) -> str:
+def start_run(conn: Connection, source: SignalSource, cluster: str) -> str:
     run_id = uuid.uuid4().hex
     conn.execute(
         "INSERT INTO collection_runs (run_id, source, cluster, started_at, status) "
         "VALUES (?, ?, ?, ?, ?)",
-        (run_id, source, cluster, _now(), str(SourceStatus.OK)),
+        (run_id, str(source), cluster, _now(), str(SourceStatus.OK)),
     )
     return run_id
 

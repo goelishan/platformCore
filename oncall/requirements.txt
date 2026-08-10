@@ -1,2 +1,6 @@
 pydantic>=2.9
 pytest>=8.3
+
+# Pinned to a minor floor: the client tracks Kubernetes releases and the
+# generated API surface moves between them.
+kubernetes>=31.0

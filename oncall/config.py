@@ -34,3 +34,26 @@ RETENTION = {
 
 
 RETENTION_DEFAULT=timedelta(days=7)
+
+
+# ---- collection scope ------------------------------------------------------
+# An empty allowlist means every namespace. The agent's own namespace is always
+# excluded: without it the agent restarting emits a signal about itself, which
+# triggers log collection about itself, which produces more signals.
+
+
+NAMESPACES = [ns for ns in os.getenv("ONCALL_NAMESPACES", "").split(",") if ns]
+
+EXCLUDE_NAMESPACES = {"oncall", "kube-system"}
+
+
+# ---- poll cadence, seconds -------------------------------------------------
+# Events are garbage-collected by the API server after roughly an hour, so a
+# missed poll loses them permanently. Pod state is a snapshot that can always be
+# re-read, so it is polled less aggressively.
+
+
+POLL_INTERVALS = {
+    "k8s_pods": 60,
+    "k8s_events": 30,
+}

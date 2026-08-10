@@ -24,7 +24,8 @@ from oncall.envelope import Signal, iso
 COLLECTOR_COLUMNS = (
     "fingerprint", "source", "kind", "event_time", "collected_at","cluster",
     "namespace", "subject_kind", "subject_name", "subject_uid",
-    "owner_kind", "owner_name", "severity", "payload", "redacted", "blob_id"
+    "owner_kind", "owner_name", "node_name",
+    "severity", "payload", "redacted", "blob_id"
 )
 
 
@@ -50,6 +51,7 @@ def to_row(signal: Signal, run_id: str | None) -> dict[str, Any]:
         "subject_uid": signal.subject.uid if signal.subject else None,
         "owner_kind": signal.owner.kind if signal.owner else None,
         "owner_name": signal.owner.name if signal.owner else None,
+        "node_name": signal.node,
         "severity": str(signal.severity) if signal.severity else None,
         "payload": json.dumps(signal.payload, sort_keys=True, default=str),
         "redacted": int(signal.redacted),

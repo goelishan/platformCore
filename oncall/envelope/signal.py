@@ -18,7 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
-from oncall.envelope.enums import Severity, SignalKind
+from oncall.envelope.enums import Severity, SignalKind, SignalSource
 from oncall.envelope.timefmt import iso
 
 # ---- subject and owner -----------------------------------------------------
@@ -38,7 +38,7 @@ class Owner(BaseModel):
 # ---- envelope --------------------------------------------------------------
 
 class Signal(BaseModel):
-    source: str
+    source: SignalSource
     kind: SignalKind
     cluster: str
     event_time: datetime
@@ -47,6 +47,14 @@ class Signal(BaseModel):
     namespace: str | None = None
     subject: Subject | None = None
     owner: Owner | None = None
+
+    # Where the subject was running. A third location dimension alongside subject
+    # and owner, promoted to a column because "five pods failing across five nodes"
+    # and "five pods failing on one node" are different diagnoses, and telling them
+    # apart is a GROUP BY. Deliberately absent from the fingerprint: a rescheduled
+    # pod is the same problem on a different node, not a different problem.
+    node: str | None = None
+
     severity: Severity | None = None
     payload: dict[str, Any] = Field(default_factory=dict)
     redacted: bool = False

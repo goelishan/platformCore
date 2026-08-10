@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS signals (
     subject_uid   TEXT,
     owner_kind    TEXT,                  -- joins a pod crash to the rollout behind it
     owner_name    TEXT,
+    node_name     TEXT,                  -- separates "the app is broken" from "the node is"
     severity      TEXT,
     payload       TEXT NOT NULL,         -- JSON
     redacted      INTEGER NOT NULL DEFAULT 0,
@@ -72,6 +73,10 @@ CREATE INDEX IF NOT EXISTS idx_sig_owner
     ON signals(cluster, namespace, owner_name, event_time);
 CREATE INDEX IF NOT EXISTS idx_sig_recur
     ON signals(cluster, namespace, fingerprint, event_time);
+-- No namespace: node-level failures cross namespace boundaries, and that is
+-- exactly the pattern this index exists to surface.
+CREATE INDEX IF NOT EXISTS idx_sig_node
+    ON signals(cluster, node_name, event_time);
 CREATE INDEX IF NOT EXISTS idx_sig_incident ON signals(incident_id);
 CREATE INDEX IF NOT EXISTS idx_sig_expiry   ON signals(expires_at);
 
