@@ -8,8 +8,10 @@
 #   3. kube-prometheus-stack installed — monitoring up before app workloads land
 #   4. Loki installed — log aggregation backend
 #   5. Promtail installed — DaemonSet log shipper, forwards pod stdout to Loki
-#   6. External Secrets Operator installed — pulls secrets from AWS Secrets Manager into K8s Secrets
+#   6. External Secrets Operator (ESO) installed — IRSA-authenticated, pulls platformcore/*
+#      secrets from AWS Secrets Manager and materialises them as K8s Secrets
 #   7. ArgoCD installed — GitOps controller; watches repo, syncs app chart to cluster
+#      (app deploy is NOT triggered here — CI push → image tag commit → ArgoCD sync)
 #
 # The platformcore app itself is deployed by the CI pipeline (push to main),
 # not by make up, so image tagging stays owned by CI.
