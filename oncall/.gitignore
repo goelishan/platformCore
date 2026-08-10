@@ -1,0 +1,25 @@
+# Ignore rules scoped to the oncall subproject. Paths are relative to this file,
+# so "data/" means oncall/data/. Keeping them here rather than in the repo root
+# is what lets oncall/ be lifted out into its own repo without losing them.
+#
+# The repo root already covers __pycache__/, *.pyc, .venv/ and .env globally;
+# this file states only what is specific to the agent.
+
+# Runtime state: the landing zone database, its WAL sidecars, and the raw log
+# blobs signals point at. Generated, machine-local, and potentially large.
+# This is state, not source.
+data/
+
+# Test and type-checker caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# API credentials for the reasoner (M5). Never version controlled.
+.env
+.env.local
+
+# Local-only notes, matching the repo convention for PROGRESS.md and docs/
+NOTES.md
+DESIGN.md
+scratch/
