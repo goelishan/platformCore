@@ -1,0 +1,156 @@
+# Deliberately broken workloads for local development.
+#
+# Every failure mode the pod collector has to map, in one namespace that can be
+# deleted in a second. Deployments rather than bare pods, so owner resolution has
+# a real ReplicaSet -> Deployment chain to walk.
+#
+#   kubectl apply -f oncall/dev/broken-workloads.yaml
+#   kubectl delete namespace oncall-lab
+#
+# Expect: crashloop and oomkill enter CrashLoopBackOff within a minute, badimage
+# reaches ImagePullBackOff after a couple of retries, unschedulable stays Pending
+# forever, probefail restarts on a fixed interval, configerror never starts.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oncall-lab
+---
+# Exits 1 on startup. The canonical CrashLoopBackOff: kubelet backs off on a
+# doubling interval, which is the spacing signature the recurrence design exists
+# to preserve. terminated.reason=Error, exit_code=1 — an application failure.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crashloop
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: crashloop }
+  template:
+    metadata:
+      labels: { app: crashloop }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "echo starting; sleep 2; echo 'FATAL: DATABASE_URL not set'; exit 1"]
+---
+# Allocates past its memory limit. Also CrashLoopBackOff, but terminated.reason
+# is OOMKilled and exit_code is 137 (128 + SIGKILL). Distinguishing this from the
+# one above is exactly what putting exit_code in dedupe_key buys.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oomkill
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: oomkill }
+  template:
+    metadata:
+      labels: { app: oomkill }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "tail /dev/zero"]
+          resources:
+            requests: { memory: 16Mi }
+            limits: { memory: 32Mi }
+---
+# Requests more CPU than any node has. Stays Pending forever with a
+# FailedScheduling event and NO container status at all — the case that has no
+# timestamp of its own and falls through to the event_time ladder.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unschedulable
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: unschedulable }
+  template:
+    metadata:
+      labels: { app: unschedulable }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          resources:
+            requests: { cpu: "100" }
+---
+# Image does not exist. ErrImagePull then ImagePullBackOff — a waiting state,
+# which carries a reason and a message and no timestamp whatsoever.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: badimage
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: badimage }
+  template:
+    metadata:
+      labels: { app: badimage }
+    spec:
+      containers:
+        - name: app
+          image: registry.invalid/does-not-exist:v9
+---
+# Starts fine, then fails its liveness probe on a fixed cycle. Restarts at even
+# intervals rather than a doubling one — the pattern that means something external
+# is killing a healthy process, not that the app is broken on startup.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probefail
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: probefail }
+  template:
+    metadata:
+      labels: { app: probefail }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          livenessProbe:
+            tcpSocket: { port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 2
+---
+# References a ConfigMap key that does not exist. Never starts:
+# CreateContainerConfigError, a waiting state distinct from an image failure.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: configerror
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: configerror }
+  template:
+    metadata:
+      labels: { app: configerror }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: no-such-configmap
+                  key: url
