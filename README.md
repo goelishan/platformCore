@@ -1,20 +1,23 @@
 # PlatformCore
 
-A reference AWS platform that runs a containerised FastAPI workload on Amazon EKS, backed by managed PostgreSQL, fronted by an ALB, and provisioned end to end through Terraform and Helm. The repository is structured the way a small platform team would structure a real product: modules along architectural boundaries, contracts at the edges, and no resource present without a stated reason.
+A reference AWS platform that runs a containerised FastAPI workload on Amazon EKS, backed by managed PostgreSQL, fronted by an Application Load Balancer, and provisioned from nothing through Terraform, Helm and Argo CD. The repository is structured the way a small platform team would structure a real product: modules along architectural boundaries, contracts at the edges, and no resource present without a stated reason.
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.9%2B-844FBA?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![AWS EKS](https://img.shields.io/badge/EKS-1.33-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/eks/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Helm](https://img.shields.io/badge/Helm-3-0F1689?logo=helm&logoColor=white)](https://helm.sh/)
+[![Argo CD](https://img.shields.io/badge/GitOps-Argo%20CD-EF7B4D?logo=argo&logoColor=white)](https://argo-cd.readthedocs.io/)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![Licence](https://img.shields.io/badge/Licence-MIT-green.svg)](#licence)
 
 
 ## Overview
 
-PlatformCore provisions a small but representative production topology on AWS. A FastAPI service runs as a Kubernetes Deployment behind an internet-facing Application Load Balancer, talks to Amazon RDS for PostgreSQL using short-lived IAM tokens, and ships logs and metrics into an in-cluster Prometheus and Loki stack. Every billable resource is managed by Terraform. Every workload manifest lives inside a single Helm chart. CI builds the application image, pushes it to ECR, and rolls the release out through `helm upgrade`.
+PlatformCore provisions a small but honest production topology on AWS. A FastAPI service runs as a Kubernetes Deployment behind a public Application Load Balancer, talks to Amazon RDS for PostgreSQL using IAM tokens that expire in minutes rather than stored passwords, and ships its logs and metrics into Prometheus, Grafana and Loki running inside the cluster.
 
-The project exists as a working substrate for the patterns a platform engineer is expected to defend at interview: VPC layout and egress economics, IRSA and OIDC federation, EKS access entries over `aws-auth`, IP target-type ALBs, retain-policy storage classes for stateful workloads, and the cost trade-offs that drive each of those choices.
+Terraform owns every billable resource. A single Helm chart owns every workload manifest. Deployment is GitOps: CI builds the application image, pushes it to ECR and commits the new tag back into the chart, then Argo CD notices the commit and syncs the cluster to match. Nothing in CI ever holds cluster credentials.
+
+The project exists as a working substrate for the patterns a platform engineer is expected to defend under questioning: VPC layout and egress economics, IRSA and OIDC federation, EKS Access Entries, load balancers that target Pods directly, storage that survives workload deletion, and the cost tradeoffs behind each of those choices.
 
 
 ## Architecture
@@ -37,10 +40,12 @@ The project exists as a working substrate for the patterns a platform engineer i
    │                                                          │
    │   EKS 1.33 managed node group                            │
    │     • FastAPI Deployment        (IRSA → RDS IAM auth)    │
-   │     • nginx Deployment          (sidecar reverse proxy)  │
+   │     • nginx Deployment          (reverse proxy)          │
    │     • Postgres StatefulSet      (gp3-retain volumes)     │
    │     • AWS Load Balancer Ctrlr   (IRSA)                   │
    │     • AWS EBS CSI Driver        (IRSA, managed add-on)   │
+   │     • External Secrets Operator (IRSA → Secrets Manager) │
+   │     • Argo CD                   (GitOps sync from repo)  │
    │     • kube-prometheus-stack     (metrics, Grafana)       │
    │     • Loki + Promtail           (log aggregation)        │
    │                                                          │
@@ -54,7 +59,14 @@ The project exists as a working substrate for the patterns a platform engineer i
    └──────────────────────────────────────────────────────────┘
 ```
 
-Pod traffic to AWS APIs leaves the cluster on Interface Endpoints, which keeps it off the NAT Gateway and off the per-gigabyte egress meter. Traffic destined for public container registries and third-party APIs uses the NAT. The ALB targets Pod IPs directly through the AWS VPC CNI, which removes the kube-proxy hop entirely and makes AWS security groups behave the same on Pods as they would on an EC2 instance.
+Pod traffic to AWS APIs leaves the cluster on Interface Endpoints, which keeps it off the NAT Gateway and off the metered egress path. Traffic bound for public container registries and external APIs uses the NAT. The ALB registers Pod IPs directly through the AWS VPC CNI, which removes the `kube-proxy` hop entirely and makes AWS security groups behave the same on Pods as they would on an EC2 instance.
+
+
+## How a change reaches production
+
+A push to `main` moves through three CI jobs. The first parses the Compose configuration twice, once against the base file alone (the shape that actually deploys) and once with the developer override merged in, so a typo that lives only in the override cannot ship unparsed. The second builds the application image, tags it with the commit SHA and pushes it to ECR. The third commits the new tag into `charts/platformcore/values.yaml`, marked `[skip ci]` so the pipeline does not feed itself.
+
+That is where CI stops. Argo CD runs inside the cluster, watches this repository, sees the values change and syncs the release. Cluster credentials never leave AWS: CI can push images and commit to the repository, and the cluster pulls its own desired state. Rolling back a bad deploy is `git revert`.
 
 
 ## Technology stack
@@ -68,12 +80,12 @@ Pod traffic to AWS APIs leaves the cluster on Interface Endpoints, which keeps i
 | Edge | Application Load Balancer, ACM, Route 53, AWS Load Balancer Controller (chart 1.8.4) |
 | Storage | Amazon EBS gp3 through a `Retain` StorageClass, EBS CSI Driver as a managed add-on |
 | Data | Amazon RDS for PostgreSQL 17, `db.t3.micro`, encryption at rest, RDS IAM Authentication |
-| Application | FastAPI on Python 3.12, uvicorn, nginx 1.27-alpine |
-| Identity | IAM, EKS Access Entries, OIDC federation, IRSA for the controller, the CSI driver and FastAPI |
-| Packaging | A single Helm chart that ships nginx, FastAPI and Postgres tiers under one release |
-| Observability | kube-prometheus-stack, Grafana, Loki, Promtail |
-| Secrets | AWS Secrets Manager via VPC Endpoint, Kubernetes Secrets consumed by `secretKeyRef` |
-| Continuous integration | GitHub Actions. Compose validated in base and merged modes, image built and pushed to ECR, Helm release upgraded on `main` |
+| Application | FastAPI on Python 3.12, uvicorn, nginx `1.27-alpine` |
+| Identity | IAM, EKS Access Entries, OIDC federation, IRSA for every workload that touches an AWS API |
+| Packaging | A single Helm chart that ships the nginx, FastAPI and Postgres tiers under one release |
+| Delivery | GitHub Actions for build and tag, Argo CD for sync, the repository as the source of truth |
+| Secrets | External Secrets Operator backed by AWS Secrets Manager over a VPC Endpoint |
+| Observability | `kube-prometheus-stack`, Grafana, Loki, Promtail |
 
 
 ## Repository layout
@@ -81,39 +93,44 @@ Pod traffic to AWS APIs leaves the cluster on Interface Endpoints, which keeps i
 ```
 platformCore/
 ├── app/                       FastAPI application, Dockerfile, requirements
-├── nginx/                     nginx reverse-proxy configuration
+├── nginx/                     nginx reverse proxy configuration
 ├── db/                        Idempotent SQL bootstrap
-├── docker-compose.yml         Production-shaped local stack
+├── docker-compose.yml         Local stack shaped like production
 ├── docker-compose.override.yml  Developer overlay
 ├── kind-config.yaml           Offline cluster topology for iteration
 │
 ├── terraform/
-│   ├── main.tf                Composition root, module DAG, cross-module wiring
+│   ├── main.tf                Composition root, module DAG, cross module wiring
 │   ├── provider.tf            AWS provider pinned to ~> 5.0
 │   ├── backend.tf             S3 state and DynamoDB lock table
-│   ├── security_groups.tf     Cross-module rules that would otherwise form a cycle
+│   ├── security_groups.tf     Cross module rules that would otherwise form a cycle
 │   ├── storageclass.tf        gp3-retain StorageClass
 │   └── modules/
 │       ├── network/           VPC, subnets, IGW, NAT, route tables, VPC endpoints
 │       ├── data/              RDS instance, parameter and subnet groups, Secrets Manager
-│       ├── compute/           EC2 baseline path, IMDSv2-enforced, SSM-only access
+│       ├── compute/           EC2 baseline path, IMDSv2 enforced, SSM access only
 │       ├── edge/              ALB, listeners, ACM, Route 53
 │       └── eks/               Cluster, node group, OIDC provider, Access Entries, IRSA bundles
 │
 ├── charts/
 │   └── platformcore/          Umbrella chart that ships the full application stack
 │       ├── Chart.yaml
-│       ├── values.yaml        Public API of the chart
+│       ├── values.yaml        Public API of the chart, CI writes the image tag here
 │       └── templates/         nginx, fastapi and postgres tiers, plus shared helpers
 │
+├── argocd/
+│   └── application.yaml       Argo CD Application pointing at the chart
+│
 ├── helm/
-│   └── monitoring/            Values overrides for kube-prometheus-stack, Loki, Promtail
+│   ├── monitoring/            Values for kube-prometheus-stack, Loki, Promtail
+│   ├── eso/                   Values for the External Secrets Operator
+│   └── argocd/                Values for Argo CD
 │
 ├── scripts/
 │   └── rds-bootstrap.sh       Idempotent RDS IAM user provisioning
 │
-├── .github/workflows/ci.yml   Validate, build and push to ECR, helm upgrade on main
-└── Makefile                   up, down, status, curl, logs lifecycle helpers
+├── .github/workflows/ci.yml   Validate, build and push, commit the new tag
+└── Makefile                   up, down, rebuild, status, curl, logs
 ```
 
 
@@ -124,7 +141,7 @@ You will need an AWS account with administrative access for bootstrap, Terraform
 
 ## Local development
 
-The Compose topology mirrors the in-cluster shape. nginx fronts FastAPI, which talks to a local Postgres container. The override file layers on watchfiles reload and bind mounts for the application source.
+The Compose topology mirrors the shape running in the cluster. nginx fronts FastAPI, which talks to a local Postgres container. The override file layers on watchfiles reload and bind mounts for the application source.
 
 ```bash
 cp .env.example .env
@@ -135,7 +152,7 @@ curl http://localhost/
 
 ## Bootstrap, once per AWS account
 
-The remote state backend is provisioned out of band, before the first `terraform init`, to avoid the chicken and egg problem of state-managing infrastructure managing its own state.
+The remote state backend is provisioned by hand before the first `terraform init`. This avoids the circular problem of Terraform managing the bucket that stores its own state.
 
 ```bash
 aws s3api create-bucket \
@@ -162,13 +179,13 @@ aws dynamodb create-table \
 
 ## Bringing the platform up
 
-`make up` is the single entry point. It applies Terraform, refreshes kubeconfig, adds the relevant Helm repositories, installs the AWS Load Balancer Controller with the cluster name, VPC ID and IRSA role wired through values, installs the kube-prometheus-stack, Loki and Promtail releases, and finally runs the RDS bootstrap script to provision the IAM-authenticated database user.
+`make up` is the single entry point. It applies Terraform, refreshes kubeconfig, then installs the platform layer through Helm: the AWS Load Balancer Controller with the cluster name, VPC ID and IRSA role wired through values, the monitoring stack, the External Secrets Operator with its own IRSA role, and Argo CD. It finishes by running the RDS bootstrap script, which provisions the database user that authenticates with IAM.
 
 ```bash
 make up
 ```
 
-After `make up` finishes, a push to `main` triggers the CI pipeline, which builds the application image, tags it with the commit SHA, pushes it to ECR, and rolls the release out through `helm upgrade --install`. The CI workflow rolls back on failure and bounds itself to a five-minute timeout.
+The application itself is deliberately not deployed here. Pushing to `main` starts the pipeline, and Argo CD carries the release into the cluster, so image tagging stays owned by CI and the running state stays owned by git.
 
 To inspect the running stack:
 
@@ -176,6 +193,7 @@ To inspect the running stack:
 kubectl get pods -n platformcore
 kubectl get ingress -n platformcore
 make status
+make curl
 make logs
 ```
 
@@ -186,40 +204,44 @@ make down-all
 ```
 
 
+## Cost
+
+Two habits keep this affordable on a personal account: route AWS traffic around the NAT, and tear the platform down when it is idle.
+
+Interface Endpoints carry the cluster's AWS API traffic (ECR pulls, STS token exchange, Secrets Manager reads, CloudWatch Logs, SSM sessions) inside the VPC, so none of it crosses the NAT Gateway's data processing meter. The S3 endpoint is a Gateway endpoint and costs nothing. The NAT exists only for destinations that have no endpoint, chiefly `public.ecr.aws` and Docker Hub. There is one NAT rather than one per Availability Zone; a second would buy availability that a reference platform does not need, and the omission is recorded on the roadmap rather than forgotten.
+
+Compute is sized to the workload: a single `t3.small` node group, a `db.t3.micro` RDS instance, gp3 volumes that undercut gp2 on price per gigabyte, and a DynamoDB lock table billed per request so an idle repository locks for free.
+
+The Makefile treats teardown as a routine operation rather than an emergency. `make down` destroys the billable resources (cluster, nodes, NAT, ALB, RDS, endpoints) while keeping the free scaffolding (VPC, subnets, route tables, IAM roles, ECR), and `make rebuild` brings everything back the next morning from the same state. `make down-all` removes the graph entirely. Left running, the largest line items are the EKS control plane at roughly $73 per month and the NAT Gateway at roughly $33 per month. Torn down between sessions, the bill shrinks to state storage and ECR pennies.
+
+
 ## Design choices worth calling out
 
-A short list of decisions that meaningfully shaped the platform, paired with the alternative they displaced.
+A short list of decisions that meaningfully shaped the platform, each paired with the alternative it displaced.
 
-**Interface Endpoints alongside a NAT Gateway, not instead of one.** The original network had no NAT and relied entirely on endpoints. That topology broke the day a workload needed an image from `public.ecr.aws`, which is a distinct service from private ECR and has no VPC Endpoint. The NAT was added, the endpoints were kept, and AWS API traffic still avoids the NAT's per-gigabyte meter. The combined topology is more expensive than endpoints alone by the NAT's fixed hourly cost and meaningfully cheaper than NAT alone at any non-trivial AWS API traffic level.
+**Interface Endpoints alongside a NAT Gateway, not instead of one.** The original network had no NAT and relied entirely on endpoints. That topology broke the day a workload needed an image from `public.ecr.aws`, which is a distinct service from private ECR and has no VPC Endpoint. The NAT was added, the endpoints were kept, and AWS API traffic still avoids the NAT meter. The combined topology costs more than endpoints alone by the fixed hourly price of the NAT, and costs meaningfully less than NAT alone once AWS API traffic amounts to anything.
+
+**GitOps over push deploys.** An earlier pipeline ran `helm upgrade` from CI. It worked, and it meant cluster admin credentials living in GitHub. The current pipeline ends at a git commit; Argo CD, running in the cluster with no inbound exposure, pulls the change and applies it. The repository became the single source of truth for what runs, and rollback became `git revert`.
 
 **Access Entries over the `aws-auth` ConfigMap.** Both mechanisms map IAM identities onto Kubernetes RBAC subjects. They diverge at the failure mode. A corrupted `aws-auth` ConfigMap can only be repaired through `kubectl`, which the same corruption may have rendered unreachable. Access Entries live on the AWS API surface and recover through the same channel that provisioned the cluster.
 
-**IRSA for every workload that calls an AWS API.** No static credentials live in the cluster. The FastAPI Deployment, the AWS Load Balancer Controller, and the EBS CSI Driver each carry their own IAM role, with trust policies locked to a specific ServiceAccount via the `sub` claim and to `sts.amazonaws.com` via the `aud` claim. The same three-resource pattern (role, policy, attachment) is repeated identically.
+**IRSA for every workload that calls an AWS API.** No static credentials live in the cluster. The FastAPI Deployment, the AWS Load Balancer Controller, the EBS CSI Driver and the External Secrets Operator each carry their own IAM role, with trust locked to a specific ServiceAccount through the `sub` claim and to `sts.amazonaws.com` through the `aud` claim. The same pattern of role, policy and attachment repeats identically for each.
 
-**`target-type = ip` on every ALB.** The controller registers Pod IPs into the target group directly, which removes the kube-proxy hop, removes the requirement to open node security groups across the NodePort range, and yields AZ-aware traffic distribution out of the box.
+**`target-type = ip` on every ALB.** The controller registers Pod IPs into the target group directly, which removes the `kube-proxy` hop, removes the need to open node security groups across the NodePort range, and gives sensible traffic distribution across Availability Zones out of the box.
 
-**`Retain` reclaim policy with `WaitForFirstConsumer` binding on the storage class.** The reclaim policy keeps EBS volumes after a PVC is deleted, so stateful workloads have a manual rescue path. The binding mode defers EBS provisioning until a Pod is scheduled, so the volume lands in the same Availability Zone as the chosen node. EBS is AZ-local, so this is not a stylistic preference. It is structurally required on multi-AZ clusters.
+**`Retain` reclaim policy with `WaitForFirstConsumer` binding on the storage class.** The reclaim policy keeps EBS volumes after a PVC is deleted, so stateful workloads have a manual rescue path. The binding mode defers provisioning until a Pod is scheduled, so the volume lands in the same Availability Zone as the chosen node. An EBS volume lives in exactly one zone, so on a cluster spanning two of them this is not a stylistic preference. It is structurally required.
 
-**Pinned versions across the entire dependency chain.** Terraform provider, Helm chart, container image tags, GitHub Actions, and the IAM policy documents fetched from upstream repositories. A fresh `make up` against this repository builds the same infrastructure today as it would in six months. The cost is the obligation to actively bump versions. The alternative, silent regression at a moment the operator did not choose, is the failure mode pinning exists to prevent.
+**Pinned versions across the entire dependency chain.** Terraform provider, Helm charts, container image tags, GitHub Actions, and the IAM policy documents fetched from upstream repositories. A fresh `make up` builds the same infrastructure today as it would in six months. The price is the obligation to bump versions deliberately. The alternative, silent regression at a moment nobody chose, is exactly the failure pinning exists to prevent.
 
 
 ## Observability
 
-`kube-prometheus-stack` runs in the `monitoring` namespace and ships with the standard ServiceMonitor and Alertmanager primitives. Grafana is exposed as a `ClusterIP` Service and accessed through `kubectl port-forward` during development. Loki ingests Promtail-shipped logs from every Pod stdout stream. The application emits Prometheus metrics through `prometheus-fastapi-instrumentator`, surfacing request latency, request volume and per-route status code distributions without any application code change.
-
-
-## Continuous integration
-
-GitHub Actions runs three jobs on every change. The validate job parses the Compose configuration twice, once against the base file alone (the production-shaped topology) and once against the merged base plus override (the developer topology). Catching both modes on every change closes a class of bug where an override-only typo would have shipped without ever being parsed in CI.
-
-On `main`, the build job tags the application image with the commit SHA and pushes it to ECR. The deploy job updates kubeconfig and runs `helm upgrade --install` against the `platformcore` release, with `--rollback-on-failure` and a five-minute timeout. The deploy job is gated by explicit `needs:` dependencies so failures surface cheaply.
+`kube-prometheus-stack` runs in the `monitoring` namespace with the standard ServiceMonitor and Alertmanager primitives. Grafana is a `ClusterIP` Service reached through `kubectl port-forward` during development. Promtail ships every Pod's stdout into Loki. The application exposes Prometheus metrics through `prometheus-fastapi-instrumentator`, which surfaces request latency, request volume and the status code distribution per route without any change to application code.
 
 
 ## Roadmap
 
-The next extensions stay continuous with the choices established above rather than displacing them.
-
-GitOps reconciliation through Argo CD, replacing the push-based `helm upgrade` step with a pull-based controller reading from this repository. External Secrets Operator with AWS Secrets Manager as the backend, with rotation hooks for credentials that support them. Image supply-chain scanning at the CI boundary, where every upstream image gets pulled, scanned through Trivy, and republished into private ECR before any cluster pulls it. A managed PostgreSQL operator such as CloudNativePG to layer streaming replication and automated failover on top of the StatefulSet substrate that the cluster already supports. Per-AZ NAT redundancy for production-grade egress availability.
+The next extensions stay continuous with the choices above rather than displacing them. Image supply chain scanning at the CI boundary, where every upstream image is pulled, scanned with Trivy and republished into private ECR before the cluster touches it. A managed PostgreSQL operator such as CloudNativePG to layer streaming replication and automated failover onto the StatefulSet substrate already in place. A NAT Gateway in each Availability Zone for production grade egress availability. Beyond that, the platform becomes the substrate for model serving workloads, which is a different story built on the same bones.
 
 
 ## Licence
