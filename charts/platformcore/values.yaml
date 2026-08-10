@@ -54,7 +54,7 @@ nginx:
 fastapi:
   image:
     repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app
-    tag: 733848d3941c851a40f6314ef17658df9d76c877
+    tag: 16773ec9c3292fe6b1e96d1eaa85b22f6e1532e7
   replicas: 1
 
   serviceAccount:
