@@ -1,5 +1,5 @@
 """
-Every write into the landing zone.
+Every write into the local buffer.
 
   - ON CONFLICT DO UPDATE, never INSERT OR REPLACE. Replace is a DELETE followed by an
     INSERT, so a re-collected signal would silently drop the incident_id back-filled
@@ -9,6 +9,10 @@ Every write into the landing zone.
   - Transactions belong to connection.connect(). A collector run is a snapshot, and a
     half-written snapshot is worse than none: the assembler cannot tell it apart from
     a genuinely quiet cluster.
+  - Every write that the store needs also appends to the outbox, in the same
+    transaction. Enqueuing here rather than in the shipper is what makes it impossible
+    for a committed row to be unknown to the shipper, or for a rolled-back row to be
+    promised to it.
 """
 
 from __future__ import annotations
@@ -20,6 +24,7 @@ from sqlite3 import Connection
 from typing import Any
 
 from oncall.envelope import Signal, SignalSource, SourceStatus, iso
+from oncall.landing_zone import outbox
 from oncall.landing_zone.rows import COLLECTOR_COLUMNS, to_row
 
 
@@ -32,6 +37,10 @@ def _now() -> str:
 # signals, so without this table its outage is indistinguishable from a quiet cluster.
 # Identity here is random, not content-derived: two runs of the same collector in the
 # same second are genuinely two runs, and hashing their content would merge them.
+#
+# Runs are not shipped. They describe the health of the collectors attached to *this*
+# buffer, and the queries that read them — last_run, source_status_in_window — are
+# asked during an incident, when the store may be exactly what is unreachable.
 
 
 def start_run(conn: Connection, source: SignalSource, cluster: str) -> str:
@@ -61,6 +70,34 @@ def finish_run(
     )
 
 
+# ---- shipping runs ---------------------------------------------------------
+# Same shape and same argument as collection_runs, one layer out: a shipper that died
+# quietly must not look like a shipper with nothing to send.
+
+
+def start_shipping_run(conn: Connection) -> str:
+    run_id = uuid.uuid4().hex
+    conn.execute(
+        "INSERT INTO shipping_runs (run_id, started_at, status) VALUES (?, ?, ?)",
+        (run_id, _now(), str(SourceStatus.OK)),
+    )
+    return run_id
+
+
+def finish_shipping_run(
+    conn: Connection,
+    run_id: str,
+    status: SourceStatus,
+    shipped: int = 0,
+    error: str | None = None,
+) -> None:
+    conn.execute(
+        "UPDATE shipping_runs "
+        "SET finished_at = ?, status = ?, shipped = ?, error = ? WHERE run_id = ?",
+        (_now(), str(status), shipped, error, run_id),
+    )
+
+
 # ---- signals ---------------------------------------------------------------
 # Column names are interpolated because they come from a constant tuple in this
 # package; values never are. Generating the update list from COLLECTOR_COLUMNS is what
@@ -85,11 +122,16 @@ def write_signals(conn: Connection, run_id: str | None, signals: list[Signal]) -
 
     collected_at and expires_at move forward on re-collection, which slides the expiry
     while a problem is still being observed. incident_id does not move, ever.
+
+    Re-collecting an unchanged signal still enqueues it. The row's collected_at did
+    move, so the store's copy is genuinely stale, and suppressing the enqueue would
+    mean deciding here what the store already knows — which this layer cannot see.
     """
     if not signals:
         return 0
 
     conn.executemany(_UPSERT_SIGNAL, [to_row(s, run_id) for s in signals])
+    outbox.enqueue(conn, outbox.SIGNAL, (s.signal_id for s in signals))
     return len(signals)
 
 
@@ -98,6 +140,11 @@ def write_signals(conn: Connection, run_id: str | None, signals: list[Signal]) -
 # incident_id is nullable and back-filled. Requiring it up front would mean only ever
 # collecting data about problems already known, destroying the pre-incident history
 # that usually contains the cause.
+#
+# Incidents and diagnoses go through the outbox rather than straight to the store,
+# because they are created *during* an incident — which is when the store is most
+# likely to be unreachable. Writing them directly would mean the one moment findings
+# cannot be recorded is the moment there are findings.
 
 
 def open_incident(
@@ -114,6 +161,7 @@ def open_incident(
         "VALUES (?, ?, ?, ?, ?, ?, 'open')",
         (incident_id, _now(), cluster, namespace, trigger, title),
     )
+    outbox.enqueue(conn, outbox.INCIDENT, [incident_id])
     return incident_id
 
 
@@ -134,21 +182,38 @@ def attach_signals(
 
     Optional filters are appended only when supplied. The usual "(? IS NULL OR col = ?)"
     shortcut would make the predicate unresolvable at plan time and cost the index.
+
+    The affected ids are selected before the update rather than returned by it. UPDATE
+    ... RETURNING would be one statement, but it needs SQLite 3.35, and pinning a
+    minimum engine version for a once-per-incident convenience is a poor trade. Both
+    statements run inside the caller's transaction, so nothing can change between them.
     """
-    clauses = [
-        "UPDATE signals SET incident_id = ?",
-        "WHERE incident_id IS NULL AND cluster = ? AND event_time BETWEEN ? AND ?",
-    ]
-    params: list[Any] = [incident_id, cluster, iso(start), iso(end)]
+    where = ["WHERE incident_id IS NULL AND cluster = ? AND event_time BETWEEN ? AND ?"]
+    params: list[Any] = [cluster, iso(start), iso(end)]
 
     if namespace is not None:
-        clauses.append("AND namespace = ?")
+        where.append("AND namespace = ?")
         params.append(namespace)
     if owner_name is not None:
-        clauses.append("AND owner_name = ?")
+        where.append("AND owner_name = ?")
         params.append(owner_name)
 
-    return conn.execute(" ".join(clauses), params).rowcount
+    predicate = " ".join(where)
+
+    affected = [
+        r["signal_id"]
+        for r in conn.execute(f"SELECT signal_id FROM signals {predicate}", params)
+    ]
+    if not affected:
+        return 0
+
+    conn.execute(f"UPDATE signals SET incident_id = ? {predicate}", [incident_id, *params])
+
+    # These rows changed after they were last shipped, and the change is the one field
+    # the store must not lose: incident_id is what exempts a signal from retention as
+    # part of the eval corpus.
+    outbox.enqueue(conn, outbox.SIGNAL, affected)
+    return len(affected)
 
 
 def close_incident(conn: Connection, incident_id: str, state: str = "resolved") -> None:
@@ -156,6 +221,7 @@ def close_incident(conn: Connection, incident_id: str, state: str = "resolved") 
         "UPDATE incidents SET state = ?, closed_at = ? WHERE incident_id = ?",
         (state, _now(), incident_id),
     )
+    outbox.enqueue(conn, outbox.INCIDENT, [incident_id])
 
 
 # ---- diagnoses -------------------------------------------------------------
@@ -197,4 +263,35 @@ def record_diagnosis(
         "UPDATE incidents SET state = 'diagnosed' WHERE incident_id = ?",
         (incident_id,),
     )
+
+    # Both rows changed. The incident is enqueued too because its state moved, and a
+    # store holding a diagnosis against an incident still marked 'open' is a store
+    # that contradicts itself.
+    outbox.enqueue(conn, outbox.DIAGNOSIS, [diagnosis_id])
+    outbox.enqueue(conn, outbox.INCIDENT, [incident_id])
     return diagnosis_id
+
+
+# ---- buffer drops ----------------------------------------------------------
+
+
+def record_buffer_drop(
+    conn: Connection,
+    reason: str,
+    rows_dropped: int,
+    unshipped: int,
+    window_start: str | None,
+    window_end: str | None,
+) -> None:
+    """What the buffer gave up, and over which window.
+
+    Written by the sweep, read by the assembler before it concludes anything from a
+    gap. Without it a dropped window is indistinguishable from a quiet one, which is
+    the same failure three-state SourceStatus exists to prevent, one layer down.
+    """
+    conn.execute(
+        "INSERT INTO buffer_drops "
+        "(dropped_at, reason, rows_dropped, unshipped, window_start, window_end) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (_now(), reason, rows_dropped, unshipped, window_start, window_end),
+    )

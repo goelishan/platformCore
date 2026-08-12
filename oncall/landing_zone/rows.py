@@ -33,7 +33,15 @@ LANDING_ZONE_COLUMNS = ("run_id", "expires_at")
 
 
 def expiry_for(signal: Signal) -> str:
-    ttl: timedelta = config.RETENTION.get(str(signal.kind), config.RETENTION_DEFAULT)
+    """Store-side retention, computed here and carried into Postgres with the row.
+
+    Not a buffer lifetime: a signal can be entitled to thirty days in the store and
+    still be dropped from the buffer the moment it has shipped. The two tiers keep data
+    for different reasons.
+    """
+    ttl: timedelta = config.STORE_RETENTION.get(
+        str(signal.kind), config.STORE_RETENTION_DEFAULT
+    )
     return iso(signal.collected_at + ttl)
 
 def to_row(signal: Signal, run_id: str | None) -> dict[str, Any]:
