@@ -4,3 +4,8 @@ pytest>=8.3
 # Pinned to a minor floor: the client tracks Kubernetes releases and the
 # generated API surface moves between them.
 kubernetes>=31.0
+
+# The durable store. psycopg 3, not psycopg2: native support for the connection
+# pool below, and dict rows without a separate extras import.
+psycopg[binary]>=3.2
+psycopg-pool>=3.2

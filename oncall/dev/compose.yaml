@@ -1,0 +1,42 @@
+# Development store. Scoped to the subproject rather than the repo root, for the same
+# reason oncall/.gitignore is: oncall/ should be liftable into its own repository
+# without leaving dependencies behind.
+#
+# Port 5433, not 5432. PlatformCore's own Phase 1 compose stack publishes 5432, and two
+# databases fighting over one port is a confusing first ten minutes.
+#
+#   docker compose -f oncall/dev/compose.yaml up -d
+#   docker compose -f oncall/dev/compose.yaml down          # keeps the volume
+#   docker compose -f oncall/dev/compose.yaml down -v       # discards it
+#
+# Production is RDS. Nothing here is imported by application code — the agent reaches
+# the store entirely through ONCALL_STORE_* environment variables, so moving to RDS is
+# a change of configuration rather than of code.
+
+name: oncall-dev
+
+services:
+  store:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oncall
+      POSTGRES_USER: oncall
+      POSTGRES_PASSWORD: oncall
+      # Marginally faster startup and smaller images; the dev store holds nothing
+      # anyone would miss.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "5433:5432"
+    volumes:
+      - store-data:/var/lib/postgresql/data
+    healthcheck:
+      # Tests the database is accepting connections, not merely that the process is up.
+      test: ["CMD-SHELL", "pg_isready -U oncall -d oncall"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  store-data:
