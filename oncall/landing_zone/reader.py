@@ -19,7 +19,6 @@ from typing import Any
 
 from oncall.envelope import iso
 
-
 # ---- raw evidence ----------------------------------------------------------
 
 
@@ -107,18 +106,37 @@ def occurrence_times(
     return [r["event_time"] for r in rows]
 
 
-def first_seen_ever(conn: Connection, fingerprint: str) -> str | None:
-    """Turns "started after the deploy" into "has never happened before the deploy".
+# first_seen_ever lives in the store, not here. It asks whether a problem has ever
+# happened before, and the buffer only holds the last couple of days — asked here it
+# would answer "never" for anything older than the buffer window, which is the most
+# confident possible way to be wrong. See store.reader.first_seen_ever.
 
-    Everything inside an incident window started after some deploy, so the weak form
-    proves nothing. This is also why deploy signals get 30-day retention: the lookback
-    needs history to compare against.
+
+# ---- what the buffer gave up -----------------------------------------------
+
+
+def buffer_drops_in_window(
+    conn: Connection, start: datetime, end: datetime
+) -> list[sqlite3.Row]:
+    """Losses overlapping the window under examination.
+
+    The assembler consults this before concluding anything from a gap. Without it a
+    dropped window and a quiet window are the same shape, which is the failure the
+    three-state source status exists to prevent, one tier down.
     """
-    row = conn.execute(
-        "SELECT MIN(event_time) AS first_seen FROM signals WHERE fingerprint = ?",
-        (fingerprint,),
+    return conn.execute(
+        "SELECT * FROM buffer_drops "
+        "WHERE window_end >= ? AND window_start <= ? ORDER BY dropped_at",
+        (iso(start), iso(end)),
+    ).fetchall()
+
+
+def last_shipping_run(conn: Connection) -> sqlite3.Row | None:
+    """Staleness check for the shipper. A shipper that died leaves a growing outbox and
+    a stale started_at, and nothing else in the system would notice."""
+    return conn.execute(
+        "SELECT * FROM shipping_runs ORDER BY started_at DESC LIMIT 1"
     ).fetchone()
-    return row["first_seen"] if row else None
 
 
 # ---- source availability ---------------------------------------------------

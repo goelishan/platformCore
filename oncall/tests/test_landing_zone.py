@@ -14,7 +14,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from pydantic import ValidationError
 
-from oncall import config
 from oncall import landing_zone as lz
 from oncall.envelope import (
     Owner,
@@ -37,15 +36,7 @@ EVENT_TIME = datetime(2026, 8, 5, 3, 4, 12, tzinfo=UTC)
 CRASH_KEY = "payments-api|CrashLoopBackOff|1"
 
 
-@pytest.fixture()
-def db(tmp_path, monkeypatch):
-    """Redirect the landing zone at a temp directory. config resolves paths at call
-    time, so patching the module attributes is enough."""
-    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(config, "DB_PATH", tmp_path / "oncall.db")
-    monkeypatch.setattr(config, "BLOB_DIR", tmp_path / "blobs")
-    lz.bootstrap()
-    return tmp_path
+# The buffer fixture lives in conftest.py, shared by every file that needs storage.
 
 
 def make_signal(
@@ -134,7 +125,7 @@ def test_unknown_source_is_rejected():
 # ---- write path ------------------------------------------------------------
 
 
-def test_recollection_is_idempotent(db):
+def test_recollection_is_idempotent(buffer):
     sig = make_signal()
 
     with lz.connect() as conn:
@@ -148,7 +139,7 @@ def test_recollection_is_idempotent(db):
     assert rows["n"] == 1
 
 
-def test_upsert_preserves_incident_id(db):
+def test_upsert_preserves_incident_id(buffer):
     """The trap. INSERT OR REPLACE is a DELETE + INSERT, so a routine overlapping poll
     would detach evidence from its incident and retention would then delete it."""
     sig = make_signal()
@@ -178,7 +169,7 @@ def test_upsert_preserves_incident_id(db):
     assert row["run_id"] == second_run
 
 
-def test_attach_does_not_steal_from_an_earlier_incident(db):
+def test_attach_does_not_steal_from_an_earlier_incident(buffer):
     sig = make_signal()
 
     with lz.connect() as conn:
@@ -196,30 +187,28 @@ def test_attach_does_not_steal_from_an_earlier_incident(db):
     assert stolen == 0
 
 
-def test_foreign_keys_are_enforced_per_connection(db):
+def test_foreign_keys_are_enforced_per_connection(buffer):
     """Proves the pragma lives in the connection helper. In schema.sql it would only
     cover the bootstrap connection and every later one would run with FKs off."""
-    with pytest.raises(sqlite3.IntegrityError):
-        with lz.connect() as conn:
-            conn.execute(
-                "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at) "
-                "VALUES ('d1', 'no-such-incident', ?)",
-                (iso(EVENT_TIME),),
-            )
+    with pytest.raises(sqlite3.IntegrityError), lz.connect() as conn:
+        conn.execute(
+            "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at) "
+            "VALUES ('d1', 'no-such-incident', ?)",
+            (iso(EVENT_TIME),),
+        )
 
 
-def test_failed_write_rolls_back_the_whole_run(db):
+def test_failed_write_rolls_back_the_whole_run(buffer):
     """A collector run is a snapshot; the assembler cannot distinguish a half-written
     one from a quiet cluster, so partial writes must not survive."""
-    with pytest.raises(sqlite3.IntegrityError):
-        with lz.connect() as conn:
-            run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
-            lz.write_signals(conn, run, [make_signal()])
-            conn.execute(
-                "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at) "
-                "VALUES ('d1', 'no-such-incident', ?)",
-                (iso(EVENT_TIME),),
-            )
+    with pytest.raises(sqlite3.IntegrityError), lz.connect() as conn:
+        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
+        lz.write_signals(conn, run, [make_signal()])
+        conn.execute(
+            "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at) "
+            "VALUES ('d1', 'no-such-incident', ?)",
+            (iso(EVENT_TIME),),
+        )
 
     with lz.connect() as conn:
         signals = conn.execute("SELECT COUNT(*) AS n FROM signals").fetchone()
@@ -232,7 +221,7 @@ def test_failed_write_rolls_back_the_whole_run(db):
 # ---- availability ----------------------------------------------------------
 
 
-def test_unavailable_source_is_recorded_without_any_signals(db):
+def test_unavailable_source_is_recorded_without_any_signals(buffer):
     """The reason collection_runs exists. A dead Prometheus produces zero signals, so
     without this row its outage is indistinguishable from a healthy quiet cluster."""
     with lz.connect() as conn:
@@ -250,7 +239,7 @@ def test_unavailable_source_is_recorded_without_any_signals(db):
 # ---- recurrence ------------------------------------------------------------
 
 
-def test_recurrences_group_without_losing_spacing(db):
+def test_recurrences_group_without_losing_spacing(buffer):
     """Grouping happens at read time precisely so this test can pass: the gaps double,
     which is CrashLoopBackOff backing off. first/last/count alone cannot show that."""
     base = datetime(2026, 8, 5, 3, 0, 0, tzinfo=UTC)
@@ -278,48 +267,21 @@ def test_recurrences_group_without_losing_spacing(db):
     assert gaps == [10, 20, 40, 80]
 
 
-def test_first_seen_ever_looks_past_the_incident_window(db):
-    """Distinguishes "new since the deploy" from merely "after the deploy"."""
-    old = make_signal(event_time=EVENT_TIME - timedelta(days=20))
-    recent = make_signal(event_time=EVENT_TIME)
-
-    with lz.connect() as conn:
-        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
-        lz.write_signals(conn, run, [old, recent])
-
-    with lz.connect() as conn:
-        assert lz.first_seen_ever(conn, recent.fingerprint) == iso(old.event_time)
-        assert lz.first_seen_ever(conn, "never-collected") is None
+# first_seen_ever is no longer a buffer question and its test moved with it, to
+# test_store.py. The buffer holds two days; asked here it would answer "never seen
+# before" for anything older, which is the most confident possible way to be wrong.
 
 
 # ---- retention -------------------------------------------------------------
+# The buffer no longer sweeps on expires_at — that column is store-side policy and
+# travels with the row. What the buffer deletes, and what protects it from deleting
+# too much, is covered in test_buffer_retention.py.
 
 
-def test_sweep_deletes_expired_but_exempts_incident_evidence(db):
-    loose = make_signal(name="loose-pod")
-    kept = make_signal(name="kept-pod")
-
-    with lz.connect() as conn:
-        run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
-        lz.write_signals(conn, run, [loose, kept])
-        incident = lz.open_incident(conn, CLUSTER, NAMESPACE, trigger="manual")
-        conn.execute(
-            "UPDATE signals SET incident_id = ? WHERE subject_name = ?",
-            (incident, "kept-pod"),
-        )
-
-    far_future = datetime.now(UTC) + timedelta(days=400)
-
-    with lz.connect() as conn:
-        result = lz.sweep_expired(conn, now=far_future)
-        remaining = conn.execute("SELECT subject_name FROM signals").fetchall()
-
-    assert result["signals"] == 1
-    assert [r["subject_name"] for r in remaining] == ["kept-pod"]
-
-
-def test_expiry_diverges_by_kind(db):
-    """log_excerpt expires in a day, deploy in thirty. The deploy TTL is what makes the
+def test_expiry_is_stamped_per_kind_for_the_store(buffer):
+    """log_excerpt gets a day, deploy gets thirty. Computed at write time in the buffer
+    but never acted on here: a signal can be entitled to thirty days in the store and
+    still leave the buffer the moment it ships. The long deploy TTL is what makes the
     first_seen_ever lookback possible weeks after the fact."""
     log = make_signal(kind=SignalKind.LOG_EXCERPT, name="log-pod")
     deploy = make_signal(kind=SignalKind.DEPLOY, name="deploy-subject")
@@ -328,10 +290,14 @@ def test_expiry_diverges_by_kind(db):
         run = lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
         lz.write_signals(conn, run, [log, deploy])
 
-    cutoff = datetime.now(UTC) + timedelta(days=2)
-
     with lz.connect() as conn:
-        lz.sweep_expired(conn, now=cutoff)
-        kinds = [r["kind"] for r in conn.execute("SELECT kind FROM signals").fetchall()]
+        rows = {
+            r["kind"]: parse(r["expires_at"])
+            for r in conn.execute("SELECT kind, expires_at FROM signals")
+        }
 
-    assert kinds == ["deploy"]
+    # Each Signal stamps its own collected_at, so the two differ by microseconds. The
+    # policy gap is 29 days; asserting equality would pin clock jitter instead.
+    assert abs((rows["deploy"] - rows["log_excerpt"]) - timedelta(days=29)) < timedelta(
+        seconds=1
+    )

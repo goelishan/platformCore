@@ -17,14 +17,8 @@ from oncall import landing_zone as lz
 from oncall.collectors import k8s_events, k8s_pods, registry
 from oncall.envelope import SignalSource, SourceStatus
 
-
-@pytest.fixture()
-def db(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(config, "DB_PATH", tmp_path / "oncall.db")
-    monkeypatch.setattr(config, "BLOB_DIR", tmp_path / "blobs")
-    lz.bootstrap()
-    return tmp_path
+# The buffer fixture lives in conftest.py. One definition, so a change to how storage
+# is redirected cannot be applied to some test files and forgotten in others.
 
 
 # ---- the binding -----------------------------------------------------------
@@ -77,7 +71,7 @@ def test_validation_rejects_an_interval_with_no_collector(monkeypatch):
 # ---- isolation between sources ---------------------------------------------
 
 
-def test_a_raising_collector_does_not_stop_the_others(db, monkeypatch):
+def test_a_raising_collector_does_not_stop_the_others(buffer, monkeypatch):
     """A collector that raises rather than returning unavailable has escaped its own
     error handling, so the fault is in the mapping, not the cluster. The remaining
     sources still have to run: one source's evidence plus a visibly incomplete run
@@ -101,7 +95,7 @@ def test_a_raising_collector_does_not_stop_the_others(db, monkeypatch):
     assert results[SignalSource.K8S_PODS] == (SourceStatus.EMPTY, 0)
 
 
-def test_a_raising_collector_leaves_its_run_open(db, monkeypatch):
+def test_a_raising_collector_leaves_its_run_open(buffer, monkeypatch):
     """No status is invented for the crash. The run row was committed before collection
     began and still has no finished_at, which is a third state — distinct from both
     'finished and found nothing' and 'finished, source was down'."""
@@ -120,7 +114,7 @@ def test_a_raising_collector_leaves_its_run_open(db, monkeypatch):
     assert row["finished_at"] is None
 
 
-def test_run_writes_under_the_source_it_was_asked_for(db, monkeypatch):
+def test_run_writes_under_the_source_it_was_asked_for(buffer, monkeypatch):
     """The whole point of the registry. Nothing can hand run_once a function belonging
     to a different source, because nothing hands it a function at all."""
     monkeypatch.setattr(
