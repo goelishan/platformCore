@@ -50,13 +50,24 @@ def store_available() -> bool:
 
 
 @pytest.fixture()
-def store_db(store_available, monkeypatch):
+def store_db(store_available):
     """A migrated, empty store.
+
+    Everything happens at setup, and teardown touches nothing but the pool. A test that
+    leaves the store pointed at a dead port would otherwise make its own cleanup fail,
+    and cleanup that depends on the test having succeeded is not cleanup. Cleaning at
+    setup means each case starts from a known state regardless of how the previous one
+    ended, or in what order they ran.
 
     Truncating rather than recreating the database: migrations are the thing under test
     in one case and an expensive fixed cost in every other. CASCADE reaches the
     partitions, which are separate tables and would otherwise survive a truncate of the
     parent.
+
+    Note the fixture does NOT take monkeypatch. Requesting it would make monkeypatch a
+    dependency, therefore set up first and finalised last — so the patches a test applied
+    would still be live during this fixture's teardown. That is the opposite of what the
+    ordering needs, and it is not obvious from reading either piece alone.
     """
     if not store_available:
         pytest.skip("no store reachable; docker compose -f oncall/dev/compose.yaml up -d")
@@ -64,29 +75,23 @@ def store_db(store_available, monkeypatch):
     from oncall import shipper, store
     from oncall.store import connection
 
-    # Discard whatever pool exists before doing anything. The pool captures the DSN when
-    # it is built and caches it, so a test that repointed config at a dead port leaves a
-    # pool that keeps dialling that port long after monkeypatch has restored the config.
-    # Rebuilding here rather than trusting the previous test to clean up is what makes
-    # each case independent of the order it happens to run in.
+    # Discard whatever pool exists before doing anything. The pool captures its DSN when
+    # built and caches it, so a test that repointed config at a dead port leaves a pool
+    # that keeps dialling that port long after the config was restored.
     connection.close()
 
-    store.migrate()
+    # Set directly rather than through monkeypatch, so this fixture stays independent of
+    # it. The shipper latches after its first successful migration; left set between
+    # tests, a case that expects migrations to run would silently not run them.
+    shipper._schema_ready = False
 
-    # The shipper latches after its first successful migration. Left set between tests,
-    # a case that expects migrations to run would silently not run them.
-    monkeypatch.setattr(shipper, "_schema_ready", False)
+    store.migrate()
 
     with store.connect() as conn:
         conn.execute("TRUNCATE signals, incidents, diagnoses CASCADE")
 
     yield store
 
-    # Teardown runs after monkeypatch has undone its patches — function-scoped fixtures
-    # tear down in reverse order of setup, and monkeypatch is requested last by the tests
-    # that need it. So closing here rebuilds against the restored DSN, and the truncate
-    # below reaches a live database rather than the dead port the test was using.
+    # Only the pool. Closing needs no server, so this cannot fail because of whatever
+    # the test did to the connection settings.
     connection.close()
-
-    with store.connect() as conn:
-        conn.execute("TRUNCATE signals, incidents, diagnoses CASCADE")

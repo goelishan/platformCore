@@ -174,21 +174,36 @@ def test_repeated_collection_ships_one_row(buffer, store_db):
 # ---- the store is down -----------------------------------------------------
 
 
-def _break_store(monkeypatch):
-    """Point the store at a port nothing is listening on.
+_DEAD_DSN = "host=127.0.0.1 port=1 dbname=oncall user=oncall connect_timeout=1"
 
-    Closing the pool is the load-bearing half in both directions. It is built once per
-    process and captures the DSN, so without this it would keep serving healthy
-    connections from the old conninfo — and, worse, keep serving dead ones afterwards.
-    Restoring is the store_db fixture's job, because cleanup written at the end of a
-    test body does not run when an assertion above it fails.
+
+def _break_store(monkeypatch):
+    """Point the store at a port nothing is listening on. Returns a callable that puts
+    it back.
+
+    Closing the pool is load-bearing in both directions. It is built once per process
+    and captures its DSN, so without this it would keep serving healthy connections from
+    the old conninfo — and afterwards, keep serving dead ones.
+
+    The repair closure exists because monkeypatch.undo() cannot be used here. undo() is
+    global to the fixture instance, and the buffer fixture patched config through that
+    same instance — so undoing would also revert BUFFER_DB_PATH to the real data
+    directory, and the test would carry on against a database with no schema. The
+    failure surfaces as "no such table", nowhere near the call that caused it.
     """
+    good_dsn, good_timeout = config.STORE_DSN, config.STORE_CONNECT_TIMEOUT
+
     store_connection.close()
-    monkeypatch.setattr(
-        config, "STORE_DSN", "host=127.0.0.1 port=1 dbname=oncall user=oncall connect_timeout=1"
-    )
+    monkeypatch.setattr(config, "STORE_DSN", _DEAD_DSN)
     monkeypatch.setattr(config, "STORE_CONNECT_TIMEOUT", 1)
     monkeypatch.setattr(shipper, "_schema_ready", False)
+
+    def repair() -> None:
+        monkeypatch.setattr(config, "STORE_DSN", good_dsn)
+        monkeypatch.setattr(config, "STORE_CONNECT_TIMEOUT", good_timeout)
+        store_connection.close()
+
+    return repair
 
 
 def test_an_unreachable_store_leaves_the_batch_queued(buffer, store_db, monkeypatch):
@@ -233,12 +248,14 @@ def test_an_outage_is_recorded_with_its_reason(buffer, store_db, monkeypatch):
 def test_a_backlog_back_fills_on_recovery(buffer, store_db, monkeypatch):
     """The recovery half. Everything buffered during the outage arrives once the store
     returns, including rows whose month may need a partition that does not exist yet."""
-    _break_store(monkeypatch)
+    repair = _break_store(monkeypatch)
     collect([make_signal(name=f"pod-{i}", key=f"app|Error|{i}") for i in range(20)])
     assert shipper.ship_once()[0] is SourceStatus.UNAVAILABLE
 
-    monkeypatch.undo()
-    store_connection.close()
+    # Restores the store settings and nothing else. monkeypatch.undo() would also revert
+    # the buffer redirection, since the buffer fixture patched config through this same
+    # instance — the test would then be writing to the real data directory.
+    repair()
 
     status, written = shipper.ship_all()
 

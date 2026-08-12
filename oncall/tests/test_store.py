@@ -22,7 +22,14 @@ import pytest
 # exercise the hundred cases that never touch a database.
 pytest.importorskip("psycopg_pool", reason="psycopg not installed; pip install -r oncall/requirements.txt")
 
-from oncall.envelope import Owner, Signal, SignalKind, SignalSource, Subject, iso  # noqa: E402
+from oncall.envelope import (
+    Owner,
+    Signal,
+    SignalKind,
+    SignalSource,
+    Subject,
+    iso,
+)
 from oncall.landing_zone.rows import to_row
 from oncall.store import rows as store_rows
 
