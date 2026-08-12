@@ -13,7 +13,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from oncall.envelope import Owner, Signal, SignalKind, SignalSource, Subject, iso
+import pytest
+
+# Before any import that reaches the store package, which pulls in psycopg at module
+# level. A missing driver is a collection error, not a skip, and a collection error
+# fails the entire run — including every test that has nothing to do with the store.
+# The application genuinely requires psycopg; the test run should not require it to
+# exercise the hundred cases that never touch a database.
+pytest.importorskip("psycopg_pool", reason="psycopg not installed; pip install -r oncall/requirements.txt")
+
+from oncall.envelope import Owner, Signal, SignalKind, SignalSource, Subject, iso  # noqa: E402
 from oncall.landing_zone.rows import to_row
 from oncall.store import rows as store_rows
 

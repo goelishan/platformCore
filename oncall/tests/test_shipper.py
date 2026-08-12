@@ -15,7 +15,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from oncall import config, shipper
+import pytest
+
+# Before importing shipper, which reaches the store package and pulls in psycopg at
+# module level. A missing driver would otherwise be a collection error rather than a
+# skip, and one collection error fails the whole run.
+pytest.importorskip("psycopg_pool", reason="psycopg not installed; pip install -r oncall/requirements.txt")
+
+from oncall import config, shipper  # noqa: E402
 from oncall import landing_zone as lz
 from oncall.envelope import (
     Owner,
