@@ -52,6 +52,7 @@ def test_picks_the_controller_not_the_first_reference():
 
     ctrl = controller_of(pod)
 
+    assert ctrl is not None
     assert ctrl.kind == "ReplicaSet"
     assert ctrl.name == "api-7f9d4c"
 
