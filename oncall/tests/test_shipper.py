@@ -22,7 +22,7 @@ import pytest
 # skip, and one collection error fails the whole run.
 pytest.importorskip("psycopg_pool", reason="psycopg not installed; pip install -r oncall/requirements.txt")
 
-from oncall import config, shipper  # noqa: E402
+from oncall import config, shipper
 from oncall import landing_zone as lz
 from oncall.envelope import (
     Owner,
@@ -175,9 +175,14 @@ def test_repeated_collection_ships_one_row(buffer, store_db):
 
 
 def _break_store(monkeypatch):
-    """Point the pool at a port nothing is listening on. Closing the existing pool is
-    the load-bearing half: it is created once per process and would otherwise keep
-    serving healthy connections built from the old DSN."""
+    """Point the store at a port nothing is listening on.
+
+    Closing the pool is the load-bearing half in both directions. It is built once per
+    process and captures the DSN, so without this it would keep serving healthy
+    connections from the old conninfo — and, worse, keep serving dead ones afterwards.
+    Restoring is the store_db fixture's job, because cleanup written at the end of a
+    test body does not run when an assertion above it fails.
+    """
     store_connection.close()
     monkeypatch.setattr(
         config, "STORE_DSN", "host=127.0.0.1 port=1 dbname=oncall user=oncall connect_timeout=1"
@@ -198,8 +203,6 @@ def test_an_unreachable_store_leaves_the_batch_queued(buffer, store_db, monkeypa
     assert (status, written) == (SourceStatus.UNAVAILABLE, 0)
     assert shipper.backlog() == 1
 
-    store_connection.close()
-
 
 def test_collection_is_untouched_while_the_store_is_down(buffer, store_db, monkeypatch):
     """Collectors never talk to the store. An outage costs the agent its history, never
@@ -213,8 +216,6 @@ def test_collection_is_untouched_while_the_store_is_down(buffer, store_db, monke
         assert conn.execute("SELECT COUNT(*) AS n FROM signals").fetchone()["n"] == 5
         assert lz.depth(conn) == 5
 
-    store_connection.close()
-
 
 def test_an_outage_is_recorded_with_its_reason(buffer, store_db, monkeypatch):
     """A shipper that died quietly must not look like a shipper with nothing to do."""
@@ -227,8 +228,6 @@ def test_an_outage_is_recorded_with_its_reason(buffer, store_db, monkeypatch):
 
     assert run["status"] == "unavailable"
     assert run["error"]
-
-    store_connection.close()
 
 
 def test_a_backlog_back_fills_on_recovery(buffer, store_db, monkeypatch):

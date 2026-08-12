@@ -62,6 +62,14 @@ def store_db(store_available, monkeypatch):
         pytest.skip("no store reachable; docker compose -f oncall/dev/compose.yaml up -d")
 
     from oncall import shipper, store
+    from oncall.store import connection
+
+    # Discard whatever pool exists before doing anything. The pool captures the DSN when
+    # it is built and caches it, so a test that repointed config at a dead port leaves a
+    # pool that keeps dialling that port long after monkeypatch has restored the config.
+    # Rebuilding here rather than trusting the previous test to clean up is what makes
+    # each case independent of the order it happens to run in.
+    connection.close()
 
     store.migrate()
 
@@ -73,6 +81,12 @@ def store_db(store_available, monkeypatch):
         conn.execute("TRUNCATE signals, incidents, diagnoses CASCADE")
 
     yield store
+
+    # Teardown runs after monkeypatch has undone its patches — function-scoped fixtures
+    # tear down in reverse order of setup, and monkeypatch is requested last by the tests
+    # that need it. So closing here rebuilds against the restored DSN, and the truncate
+    # below reaches a live database rather than the dead port the test was using.
+    connection.close()
 
     with store.connect() as conn:
         conn.execute("TRUNCATE signals, incidents, diagnoses CASCADE")
