@@ -11,6 +11,7 @@ Public surface of the local buffer. Nothing outside this package issues SQL agai
     possible way to be wrong.
 """
 
+from oncall.landing_zone.blobs import Blob, collect_garbage, put_blob, read_blob
 from oncall.landing_zone.connection import bootstrap, connect
 from oncall.landing_zone.outbox import (
     clear_through,
@@ -44,11 +45,13 @@ from oncall.landing_zone.writer import (
 )
 
 __all__ = [
+    "Blob",
     "attach_signals",
     "bootstrap",
     "buffer_drops_in_window",
     "clear_through",
     "close_incident",
+    "collect_garbage",
     "connect",
     "depth",
     "enqueue",
@@ -59,6 +62,8 @@ __all__ = [
     "occurrence_times",
     "open_incident",
     "pending",
+    "put_blob",
+    "read_blob",
     "reclaim",
     "record_buffer_drop",
     "record_diagnosis",

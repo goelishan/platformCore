@@ -99,6 +99,31 @@ BUFFER_RETENTION = timedelta(
 BUFFER_MAX_BYTES = int(os.getenv("ONCALL_BUFFER_MAX_BYTES", str(512 * 1024 * 1024)))
 
 
+# ---- retention: blobs ------------------------------------------------------
+# Raw payloads on local disk beside the buffer, so they get the same pair of bounds and
+# the same division of labour: age is the policy, size is the backstop.
+#
+# The age matches BUFFER_RETENTION rather than the store's 24-hour log_excerpt window.
+# A blob is the unabridged version of an excerpt that is still in the buffer, and
+# expiring it first would leave a live row pointing at nothing for a day.
+#
+# Together the two ceilings are the volume budget: 512 MiB of rows plus 512 MiB of
+# blobs is what the PVC has to be able to give up without the agent dying mid-incident.
+#
+# The grace window exists because put() writes the file before the row, so every
+# in-flight write looks momentarily like an orphan. Without it the sweep would delete
+# blobs out from under a collector that is still committing them.
+
+
+BLOB_RETENTION = timedelta(hours=int(os.getenv("ONCALL_BLOB_RETENTION_HOURS", "48")))
+
+BLOB_MAX_BYTES = int(os.getenv("ONCALL_BLOB_MAX_BYTES", str(512 * 1024 * 1024)))
+
+BLOB_ORPHAN_GRACE = timedelta(
+    minutes=int(os.getenv("ONCALL_BLOB_ORPHAN_GRACE_MINUTES", "15"))
+)
+
+
 # ---- collection scope ------------------------------------------------------
 # An empty allowlist means every namespace. The agent's own namespace is always
 # excluded: without it the agent restarting emits a signal about itself, which
@@ -120,6 +145,7 @@ POLL_INTERVALS = {
     "k8s_pods": 60,
     "k8s_events": 30,
 }
+
 
 # Shipping is deliberately slower than collection. Batching is what lets a row that was
 # upserted several times between cycles cross the wire once, and nothing downstream
