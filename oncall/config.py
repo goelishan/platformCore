@@ -144,8 +144,55 @@ EXCLUDE_NAMESPACES = {"oncall", "kube-system"}
 POLL_INTERVALS = {
     "k8s_pods": 60,
     "k8s_events": 30,
+    # Slowest of the three, and last in the cycle. It reads what the other two wrote,
+    # so it is always one cycle behind them — see LOG_LOOKBACK_SECONDS.
+    "k8s_logs": 120,
 }
 
+
+# ---- log collection --------------------------------------------------------
+# Signal-driven, not a sweep. Cost scales with the number of broken pods rather than
+# with the size of the cluster, and log bytes are the most expensive thing this agent
+# handles. The trigger is also where volume is actually controlled: no per-fetch bound
+# helps if the collector is asking two hundred pods for their logs.
+#
+# WARNING is included deliberately. It is the severity k8s_pods assigns to a container
+# that is running now and was killed earlier — ready, Ready condition true, every live
+# indicator green — and the previous container's log is the only evidence that anything
+# happened at all. Dropping the floor to ERROR would skip precisely that case.
+
+
+LOG_TRIGGER_SEVERITIES = ("warning", "error", "critical")
+
+# How far back to look for triggers. Must exceed the log collector's own interval plus
+# the interval of the sources feeding it: the trigger was written by a cycle that has
+# already finished, so a window equal to one interval would miss every signal written
+# in the gap between the two runs.
+LOG_LOOKBACK_SECONDS = int(os.getenv("ONCALL_LOG_LOOKBACK_SECONDS", "600"))
+
+# Ceiling on targets per cycle. A cluster-wide failure produces hundreds of broken pods
+# at once, and asking the API server to proxy hundreds of log streams during an outage
+# is a self-inflicted second incident. When the cap bites, the run records how many
+# targets it declined — a silent cap reads downstream as "that was everything".
+LOG_MAX_TARGETS = int(os.getenv("ONCALL_LOG_MAX_TARGETS", "40"))
+
+# The window is chosen by time, not by line count. tailLines returns a span of unknown
+# duration — three seconds on a chatty pod, three days on a quiet one — and an excerpt
+# whose interval is unknown cannot be joined against anything, which is the only thing
+# this agent does with evidence.
+LOG_SINCE_SECONDS = int(os.getenv("ONCALL_LOG_SINCE_SECONDS", "600"))
+
+# And the byte cap is the backstop, not a competitor: since_seconds bounds *time* and
+# has no upper bound on volume at all — a container logging ten thousand lines a second
+# for ten minutes is millions of lines. Policy plus backstop, the same pair as the
+# buffer's age and size bounds.
+LOG_LIMIT_BYTES = int(os.getenv("ONCALL_LOG_LIMIT_BYTES", str(1024 * 1024)))
+
+# What reaches the payload, and therefore the M5 prompt. The full fetch always reaches
+# the blob, so this is a prompt-budget decision rather than a retention one, and it is
+# expected to move once there is a reasoner to measure it against.
+LOG_EXCERPT_LINES = int(os.getenv("ONCALL_LOG_EXCERPT_LINES", "60"))
+LOG_EXCERPT_BYTES = int(os.getenv("ONCALL_LOG_EXCERPT_BYTES", str(8 * 1024)))
 
 # Shipping is deliberately slower than collection. Batching is what lets a row that was
 # upserted several times between cycles cross the wire once, and nothing downstream

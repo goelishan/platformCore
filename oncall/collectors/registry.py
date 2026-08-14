@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 
 from oncall import config
-from oncall.collectors import k8s_events, k8s_pods
+from oncall.collectors import k8s_events, k8s_logs, k8s_pods
 from oncall.collectors.runner import CollectFn, run_once
 from oncall.envelope import SignalSource, SourceStatus
 
@@ -31,9 +31,19 @@ log = logging.getLogger(__name__)
 # Events are dropped by the API server once they stop being updated, so a cycle cut
 # short after the first source has to have collected them already. Pod state is a
 # snapshot that can always be re-read, and loses only freshness by going second.
+#
+# Logs break that ordering and go last anyway, because they are signal-driven: their
+# targets are rows the first two sources just wrote, so running earlier would find the
+# previous cycle's triggers or none at all. The dependency beats recoverability here,
+# and the cost is real — a previous container's log dies at its next restart, so a
+# cycle cut short before this point loses evidence that cannot be re-read. It is paid
+# down by LOG_LOOKBACK_SECONDS and LOG_SINCE_SECONDS each spanning several intervals,
+# so a trigger from the previous cycle is still in the window and its logs still in
+# range.
 COLLECTORS: dict[SignalSource, CollectFn] = {
     SignalSource.K8S_EVENTS: k8s_events.collect,
     SignalSource.K8S_PODS: k8s_pods.collect,
+    SignalSource.K8S_LOGS: k8s_logs.collect,
 }
 
 

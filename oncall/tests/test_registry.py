@@ -33,7 +33,18 @@ def test_events_are_collected_before_pod_state():
     """Registry order is collection order, least recoverable first. Events are dropped
     by the API server once they stop being updated; pod state can be re-read at any
     time and loses only freshness by going second."""
-    assert list(registry.COLLECTORS) == [SignalSource.K8S_EVENTS, SignalSource.K8S_PODS]
+    order = list(registry.COLLECTORS)
+    assert order.index(SignalSource.K8S_EVENTS) < order.index(SignalSource.K8S_PODS)
+
+
+def test_logs_are_collected_last_despite_being_unrecoverable():
+    """Logs break the least-recoverable-first rule, and the exception is deliberate.
+    The collector is signal-driven, so its targets are rows the other two sources have
+    just written; running earlier would find the previous cycle's triggers or none at
+    all, and the dependency beats the ordering principle. The cost is real — a previous
+    container's log dies at its next restart — and is paid down by LOG_LOOKBACK_SECONDS
+    and LOG_SINCE_SECONDS each spanning several intervals."""
+    assert list(registry.COLLECTORS)[-1] == SignalSource.K8S_LOGS
 
 
 def test_unregistered_source_names_what_is_registered():
@@ -54,9 +65,9 @@ def test_every_collector_has_an_interval():
 
 def test_validation_rejects_a_collector_with_no_cadence(monkeypatch):
     """The silent half of the drift: it would simply never be scheduled."""
-    monkeypatch.setitem(registry.COLLECTORS, SignalSource.K8S_LOGS, lambda c: None)
+    monkeypatch.setitem(registry.COLLECTORS, SignalSource.PROMETHEUS, lambda c: None)
 
-    with pytest.raises(RuntimeError, match="k8s_logs"):
+    with pytest.raises(RuntimeError, match="prometheus"):
         registry._validate()
 
 

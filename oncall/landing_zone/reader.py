@@ -112,6 +112,47 @@ def occurrence_times(
 # confident possible way to be wrong. See store.reader.first_seen_ever.
 
 
+# ---- log targets -----------------------------------------------------------
+# The query that makes log collection signal-driven rather than a sweep, so its cost
+# scales with how much is broken instead of with how large the cluster is.
+#
+# Returned as rows rather than grouped in SQL. The fields the log collector needs to
+# choose a container and a stream — container, waiting_reason, restart_count — live
+# inside the payload JSON, and json_extract() is a compile-time option in SQLite. A
+# query that silently returns nothing on a runtime built without JSON1 would blind this
+# collector while every other source kept reporting ok, which is the exact failure this
+# project is organised against. Grouping in Python makes a missing piece a NameError
+# instead of an empty result set.
+
+
+def log_targets(
+    conn: Connection,
+    cluster: str,
+    start: datetime,
+    end: datetime,
+    severities: tuple[str, ...],
+) -> list[sqlite3.Row]:
+    """Pod-subject signals in the window at or above the trigger severity.
+
+    Ordered most recent first, so a cap applied by the caller keeps the freshest
+    evidence rather than an arbitrary slice.
+
+    Log signals are excluded from being triggers. An excerpt about a broken pod is not
+    itself a reason to go and read that pod's logs, and without the exclusion every
+    cycle would re-trigger on its own output — the same self-feeding loop the agent's
+    own namespace is excluded to prevent, arriving by a different route.
+    """
+    placeholders = ", ".join("?" for _ in severities)
+    return conn.execute(
+        f"SELECT * FROM signals "
+        f"WHERE cluster = ? AND event_time BETWEEN ? AND ? "
+        f"  AND subject_kind = 'Pod' AND severity IN ({placeholders}) "
+        f"  AND source != 'k8s_logs' "
+        f"ORDER BY event_time DESC",
+        [cluster, iso(start), iso(end), *severities],
+    ).fetchall()
+
+
 # ---- what the buffer gave up -----------------------------------------------
 
 
