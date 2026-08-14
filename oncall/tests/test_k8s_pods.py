@@ -138,8 +138,8 @@ def test_crashloopbackoff_and_terminated_are_the_same_signal():
         )
     )
 
-    assert just_exited.dedupe_key == "app|Error|1"
-    assert backing_off.dedupe_key == "app|Error|1"
+    assert just_exited.dedupe_key == "app|Error|1|"
+    assert backing_off.dedupe_key == "app|Error|1|"
     assert just_exited.signal_id == backing_off.signal_id
 
 
@@ -156,7 +156,7 @@ def test_backoff_state_is_kept_as_context_not_identity():
         )
     )
 
-    assert backing_off.dedupe_key == "app|OOMKilled|137"
+    assert backing_off.dedupe_key == "app|OOMKilled|137|"
     assert backing_off.payload["waiting_reason"] == "CrashLoopBackOff"
 
 
@@ -169,7 +169,7 @@ def test_image_pull_names_collapse_to_one_key():
         pod(containers=[container(state_waiting=waiting("ImagePullBackOff", "Back-off pulling"))])
     )
 
-    assert attempt.dedupe_key == backoff.dedupe_key == "app|ErrImagePull|"
+    assert attempt.dedupe_key == backoff.dedupe_key == "app|ErrImagePull||"
     assert attempt.fingerprint == backoff.fingerprint
     assert backoff.payload["waiting_reason"] == "ImagePullBackOff"
 
@@ -192,7 +192,7 @@ def test_three_failures_that_share_a_field_stay_distinct():
     )
 
     keys = {app_error.dedupe_key, oom.dedupe_key, killed.dedupe_key}
-    assert keys == {"app|Error|1", "app|OOMKilled|137", "app|Error|137"}
+    assert keys == {"app|Error|1|", "app|OOMKilled|137|", "app|Error|137|"}
 
     fingerprints = {app_error.fingerprint, oom.fingerprint, killed.fingerprint}
     assert len(fingerprints) == 3
@@ -219,7 +219,7 @@ def test_running_with_restarts_keys_on_the_last_termination():
         )
     )
 
-    assert sig.dedupe_key == "app|Error|137"
+    assert sig.dedupe_key == "app|Error|137|"
     assert sig.severity == Severity.WARNING
     assert sig.event_time == T0
 
@@ -232,7 +232,7 @@ def test_healthy_container_is_stable_across_polls():
     first = only(pod(containers=[container(state_running=running(started), ready=True)]))
     later = only(pod(containers=[container(state_running=running(started), ready=True)]))
 
-    assert first.dedupe_key == "app|Running|"
+    assert first.dedupe_key == "app|Running||"
     assert first.severity == Severity.INFO
     assert first.signal_id == later.signal_id
 
@@ -263,9 +263,73 @@ def test_unschedulable_pod_still_gets_an_event_time():
     )
 
     assert sig.event_time == scheduled_at
-    assert sig.dedupe_key == "|Unschedulable|"
+    assert sig.dedupe_key.startswith("|Unschedulable|")
     assert sig.kind == SignalKind.POD_STATE
     assert sig.source == SignalSource.K8S_PODS
+
+
+def test_a_reconciled_reason_merges_its_causes_and_says_so():
+    """A deliberate over-merge, pinned so nobody 'fixes' it into the bug underneath.
+
+    ErrImagePull and ImagePullBackOff are two phases of one condition and each writes
+    its own message, so no message-derived key can be stable across them — the
+    fingerprint would depend on which phase a poll caught. Merging the causes is the
+    lesser evil: a coarse identity loses structure, an unstable one invents it. The
+    distinction survives in the payload for read time.
+    """
+    host = only(pod(containers=[container(state_waiting=waiting("ErrImagePull", "no such host"))]))
+    manifest = only(
+        pod(containers=[container(state_waiting=waiting("ErrImagePull", "manifest unknown"))])
+    )
+
+    assert host.fingerprint == manifest.fingerprint
+    assert host.payload["message_template"] != manifest.payload["message_template"]
+    assert "keyed_on_message" not in host.payload
+
+
+def test_a_standalone_reason_keys_on_its_message_and_says_so():
+    """The other half of the same distinction: a template that is present and a
+    template that is load-bearing are different facts, and the second cannot be
+    inferred from the row without being written down."""
+    sig = only(
+        pod(containers=[container(state_waiting=waiting("CreateContainerConfigError", "no cm"))])
+    )
+
+    assert sig.payload["keyed_on_message"] is True
+
+
+def test_unschedulable_causes_do_not_share_a_fingerprint():
+    """The reason on a PodScheduled condition is always 'Unschedulable', so before the
+    message template entered the key an untolerated taint and insufficient CPU — two
+    problems with two different fixes — read as one recurring problem with double the
+    occurrences. The template separates them; the counts and node numbers it removes
+    are what still lets each group with itself."""
+
+    def unschedulable(message: str):
+        return only(
+            pod(
+                "pending-1",
+                phase="Pending",
+                start_time=None,
+                node=None,
+                conditions=[
+                    condition(
+                        "PodScheduled", "False", reason="Unschedulable",
+                        message=message, at=T0,
+                    )
+                ],
+            )
+        )
+
+    cpu = unschedulable("0/3 nodes are available: 3 Insufficient cpu.")
+    cpu_wider = unschedulable("0/5 nodes are available: 5 Insufficient cpu.")
+    taint = unschedulable(
+        "0/3 nodes are available: 3 node(s) had untolerated taint "
+        "{node-role.kubernetes.io/control-plane: }."
+    )
+
+    assert cpu.fingerprint != taint.fingerprint
+    assert cpu.fingerprint == cpu_wider.fingerprint
 
 
 def test_waiting_container_falls_back_to_the_ready_condition():
@@ -278,7 +342,7 @@ def test_waiting_container_falls_back_to_the_ready_condition():
     )
 
     assert sig.event_time == ready_at
-    assert sig.dedupe_key == "app|CreateContainerConfigError|"
+    assert sig.dedupe_key.startswith("app|CreateContainerConfigError|")
     assert sig.payload["message"] == "no cm"
 
 
@@ -300,7 +364,7 @@ def test_one_signal_per_container():
     )
 
     assert len(signals) == 2
-    assert {s.dedupe_key for s in signals} == {"app|Error|1", "sidecar|Running|"}
+    assert {s.dedupe_key for s in signals} == {"app|Error|1|", "sidecar|Running||"}
     assert len({s.fingerprint for s in signals}) == 2
     # Same pod, so the subject is shared; the container lives in the key.
     assert {s.subject.name for s in signals} == {"api-7f9"}

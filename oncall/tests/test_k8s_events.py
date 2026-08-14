@@ -270,21 +270,39 @@ def test_two_containers_sharing_a_reason_stay_distinct():
     app = sig(event(obj=involved(field_path="spec.containers{app}")))
     car = sig(event(obj=involved(field_path="spec.containers{sidecar}")))
 
-    assert app.dedupe_key == "app|BackOff"
-    assert car.dedupe_key == "sidecar|BackOff"
+    assert app.dedupe_key.startswith("app|BackOff|")
+    assert car.dedupe_key.startswith("sidecar|BackOff|")
     assert app.fingerprint != car.fingerprint
 
 
-def test_message_is_not_part_of_identity():
-    """Messages carry volatile tokens — back-off intervals, addresses, counts. In the
-    key, every occurrence would be unique, every recurrence group would have size one,
-    and read-time collapse would find nothing to collapse. Extracting the stable part
-    is the same problem as M3 log templating and is deferred to solve once."""
+def test_volatile_tokens_in_a_message_do_not_split_one_problem():
+    """The raw message carries back-off intervals, addresses and counts, so keying on
+    it would make every occurrence unique and every recurrence group size one. The
+    template removes exactly those tokens, so the two halves of a widening backoff stay
+    one problem — and the unmasked text still travels in the payload."""
     a = sig(event(message="back-off 10s restarting failed container"))
     b = sig(event(message="back-off 5m0s restarting failed container"))
 
     assert a.fingerprint == b.fingerprint
     assert a.payload["message"] != b.payload["message"]
+
+
+def test_conditions_sharing_a_reason_are_separated_by_their_message():
+    """'Unhealthy' covers a probe that timed out and a probe that could not resolve its
+    host. Same reason, same container, different fixes — before the template entered
+    the key they were one fingerprint and the assembler ranked them as one problem."""
+    timeout = sig(
+        event(reason="Unhealthy", message='Liveness probe failed: Get "http://10.244.0.7:8080/healthz": context deadline exceeded')
+    )
+    dns = sig(
+        event(reason="Unhealthy", message='Liveness probe failed: Get "http://10.244.0.7:8080/healthz": no such host')
+    )
+    rescheduled = sig(
+        event(reason="Unhealthy", message='Liveness probe failed: Get "http://10.244.3.19:8080/healthz": context deadline exceeded')
+    )
+
+    assert timeout.fingerprint != dns.fingerprint
+    assert timeout.fingerprint == rescheduled.fingerprint
 
 
 def test_component_is_provenance_not_identity():
@@ -308,7 +326,7 @@ def test_field_path_parsing():
 
 def test_pod_level_event_has_no_container_in_its_key():
     s = sig(event(reason="FailedScheduling", obj=involved(field_path=None)))
-    assert s.dedupe_key == "|FailedScheduling"
+    assert s.dedupe_key.startswith("|FailedScheduling|")
     assert "container" not in s.payload
 
 

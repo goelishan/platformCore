@@ -35,6 +35,8 @@ from oncall.envelope import (
     SourceStatus,
     Subject,
     iso,
+    redact,
+    template_of,
 )
 
 WARNING_TYPE = "Warning"
@@ -199,8 +201,8 @@ def _container_from_field_path(field_path: str | None) -> str:
     return field_path.split("{", 1)[1].rstrip("}")
 
 
-def _dedupe_key(container: str, reason: str | None) -> str:
-    """container|reason.
+def _dedupe_key(container: str, reason: str | None, message_key: str) -> str:
+    """container|reason|message_template.
 
     The container half mirrors the pod collector's one-signal-per-container rule:
     two containers in one pod failing their readiness probes are two problems that
@@ -211,13 +213,15 @@ def _dedupe_key(container: str, reason: str | None) -> str:
     fingerprint. Including it would split one problem in two the moment a different
     component reported the same condition.
 
-    The message is absent for the opposite reason: it carries volatile tokens — back-off
-    intervals, addresses, node names, counts — so every occurrence would be unique,
-    every recurrence group would have size one, and read-time collapse would find
-    nothing to collapse. Extracting the stable part of a message is the same problem
-    as M3 log templating, and is deferred to land once for both collectors.
+    The message is present only as a template. Raw, it carries volatile tokens —
+    back-off intervals, addresses, node names, counts — so every occurrence would be
+    unique, every recurrence group would have size one, and read-time collapse would
+    find nothing to collapse. Masked, what is left is the part that repeats, which is
+    what separates a liveness probe timing out from the same container failing to
+    resolve a hostname: two conditions that share the reason 'Unhealthy' and nothing
+    else.
     """
-    return f"{container}|{reason or ''}"
+    return f"{container}|{reason or ''}|{message_key}"
 
 
 def _component_of(ev: Any) -> str | None:
@@ -236,11 +240,18 @@ def signal_for_event(
     out to one Signal per container."""
     owner, node, marker = _resolve_subject(ev, objects_by_uid, resolver)
     container = _container_from_field_path(ev.involved_object.field_path)
-    message = ev.message or None
+
+    # Redacted before truncation, and templated before both. Truncating first could cut
+    # a credential in half and store the surviving fragment; templating the full text
+    # keeps the key stable no matter where the cut lands, so the storage bound never
+    # becomes an identity decision.
+    message, message_redacted = redact(ev.message or None)
+    template = template_of(message)
 
     payload: dict[str, Any] = {
         "reason": ev.reason,
         "message": message[:MAX_MESSAGE_CHARS] if message else None,
+        "message_template": template.text or None,
         "message_truncated": bool(message and len(message) > MAX_MESSAGE_CHARS) or None,
         "type": ev.type,
         "container": container or None,
@@ -284,7 +295,8 @@ def signal_for_event(
         # that belongs in the assembler, where it can be revised without a
         # re-collection that this source cannot support.
         severity=Severity.WARNING if ev.type == WARNING_TYPE else Severity.INFO,
-        dedupe_key=_dedupe_key(container, ev.reason),
+        dedupe_key=_dedupe_key(container, ev.reason, template.key),
+        redacted=message_redacted,
         payload={k: v for k, v in payload.items() if v is not None},
     )
 

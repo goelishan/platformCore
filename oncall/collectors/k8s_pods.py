@@ -28,6 +28,8 @@ from oncall.envelope import (
     SourceStatus,
     Subject,
     iso,
+    redact,
+    template_of,
 )
 
 RUNNING_REASON = "Running"
@@ -43,6 +45,13 @@ BACKOFF_REASONS = {"CrashLoopBackOff"}
 # cycle would otherwise split one failure across two fingerprints. Key on the
 # attempt, keep the backoff name as context in the payload.
 BACKOFF_ALIASES = {"ImagePullBackOff": "ErrImagePull"}
+
+# Both sides of every aliased pair. Reconciliation is a property of the pair, not of
+# the name that happened to get rewritten, so anything keyed off "was this aliased"
+# has to test membership here. Applying it to the renamed half alone leaves the two
+# phases keyed differently through whatever else varies between them — the same split
+# the alias exists to prevent, surviving in a form that is harder to see.
+RECONCILED_REASONS = set(BACKOFF_ALIASES) | set(BACKOFF_ALIASES.values())
 
 
 # ---- timestamp ladder ------------------------------------------------------
@@ -114,6 +123,13 @@ def _container_facts(pod: Any, cs: Any) -> dict[str, Any]:
 
         if waiting.reason in BACKOFF_REASONS and last:
             facts = _from_terminated(last, Severity.ERROR)
+            # Kept as context, deliberately not as key_message. This text describes the
+            # kubelet's backoff — "back-off 5m0s restarting failed container" — not the
+            # cause, which is the termination this branch already keyed on. Letting it
+            # into identity would split one crashloop across the two representations
+            # the branch exists to reconcile, since state.terminated carries no message
+            # of its own and the fingerprint would flip every time the poll landed on
+            # the other side.
             facts["message"] = waiting.message
             facts["waiting_reason"] = waiting.reason
             return facts
@@ -122,11 +138,25 @@ def _container_facts(pod: Any, cs: Any) -> dict[str, Any]:
         # reason is the whole story. Aliased first, because a pull failure oscillates
         # between two names for one condition.
         reason = BACKOFF_ALIASES.get(waiting.reason, waiting.reason)
+        reconciled = waiting.reason in RECONCILED_REASONS
         return {
             "event_time": _fallback_time(pod),
             "reason": reason,
             "exit_code": None,
             "message": waiting.message,
+            # Identity-bearing only when the reason stands on its own. A reconciled
+            # pair oscillates between two phases of one condition and each phase writes
+            # its own message — "no such host" while pulling, "Back-off pulling image"
+            # while waiting — so a message-derived key cannot be stable across them and
+            # the fingerprint would depend on which phase the poll happened to catch.
+            #
+            # The cost is a genuine over-merge: a missing host and an unknown manifest
+            # are different causes of a pull failure and now share a fingerprint. Taken
+            # knowingly, because an identity that flips with poll timing is worse than
+            # a coarse one — it does not lose structure, it invents it. The message and
+            # its template still travel in the payload, so the distinction survives at
+            # read time, which is where it can be revised.
+            "key_message": None if reconciled else waiting.message,
             "waiting_reason": waiting.reason if reason != waiting.reason else None,
             "severity": Severity.ERROR,
         }
@@ -156,6 +186,11 @@ def _pod_level_facts(pod: Any) -> dict[str, Any]:
                 "event_time": cond.last_transition_time,
                 "reason": cond.reason,
                 "message": cond.message,
+                # The one place the message is the whole diagnosis. Every unschedulable
+                # pod in the cluster carries reason 'Unschedulable' whatever the cause,
+                # so without the message an untolerated taint and insufficient CPU are
+                # one fingerprint.
+                "key_message": cond.message,
                 "exit_code": None,
                 "severity": Severity.ERROR,
             }
@@ -171,12 +206,29 @@ def _pod_level_facts(pod: Any) -> dict[str, Any]:
 # ---- signal construction ---------------------------------------------------
 
 
-def _dedupe_key(container: str, reason: str | None, exit_code: int | None) -> str:
-    """container|reason|exit_code. Every part is stable across occurrences of the
-    same failure. A restart counter must never appear here: it increments, so each
-    restart would form its own recurrence group and the spacing analysis would see
-    N problems of one occurrence rather than one problem occurring N times."""
-    return f"{container}|{reason or ''}|{'' if exit_code is None else exit_code}"
+def _dedupe_key(
+    container: str,
+    reason: str | None,
+    exit_code: int | None,
+    message_key: str,
+) -> str:
+    """container|reason|exit_code|message_template. Every part is stable across
+    occurrences of the same failure. A restart counter must never appear here: it
+    increments, so each restart would form its own recurrence group and the spacing
+    analysis would see N problems of one occurrence rather than one problem occurring
+    N times.
+
+    The message template is the last part and the newest. Without it every
+    unschedulable pod in the cluster keyed as |Unschedulable| regardless of cause, so
+    an untolerated taint and insufficient CPU — two problems with two different fixes —
+    shared a fingerprint and were reported as one recurring problem. The raw message
+    could not go in for the opposite reason: it carries counts and addresses, so every
+    occurrence would have been unique. The template is the stable middle.
+    """
+    return (
+        f"{container}|{reason or ''}|"
+        f"{'' if exit_code is None else exit_code}|{message_key}"
+    )
 
 
 def _build(
@@ -190,6 +242,26 @@ def _build(
     container = cs.name if cs else ""
     exit_code = facts.get("exit_code")
 
+    # Redaction happens before anything is stored, not before the prompt: this row is
+    # about to be written to a file on a volume and shipped to Postgres, so stripping
+    # a credential later would still have persisted it twice. Kubernetes messages are
+    # not a common place for secrets, but they quote whatever a controller was handed.
+    message, message_redacted = redact(facts.get("message"))
+
+    # Two different questions, so two different values. Everything observed is stored;
+    # only what describes the same condition the reason names reaches the key. Where a
+    # reason was reconciled across representations — a crashloop's two states, a pull
+    # failure's two phases — the message follows the representation rather than the
+    # condition, and keying on it would re-split exactly what the reconciliation joined.
+    key_message, _ = redact(facts.get("key_message"))
+    template = template_of(key_message)
+
+    # The payload's template comes from the full message, not from key_message, so a
+    # reader can still separate causes the key had to merge. keyed_on_message says
+    # which of the two happened, because a template that is present and a template that
+    # is load-bearing are different facts and one of them cannot be inferred.
+    shown = template_of(message)
+
     # Fields are chosen explicitly rather than dumping the object. A serialised pod
     # carries managedFields and the full spec, none of which helps a diagnosis and
     # all of which costs prompt budget in M5.
@@ -201,7 +273,12 @@ def _build(
         "ready": cs.ready if cs else None,
         "image": cs.image if cs else None,
         "exit_code": exit_code,
-        "message": facts.get("message"),
+        "message": message or None,
+        # The masked form. Readable, so a recurrence group can be explained without
+        # re-deriving anything, and it costs a line of text rather than a hash nobody
+        # can interpret.
+        "message_template": shown.text or None,
+        "keyed_on_message": bool(template.key) or None,
         # The current scheduling state, kept out of the key but useful context: the
         # LLM should know a container is in backoff, not only why it died.
         "waiting_reason": facts.get("waiting_reason"),
@@ -229,7 +306,8 @@ def _build(
         owner=owner,
         node=pod.spec.node_name,
         severity=facts["severity"],
-        dedupe_key=_dedupe_key(container, facts.get("reason"), exit_code),
+        dedupe_key=_dedupe_key(container, facts.get("reason"), exit_code, template.key),
+        redacted=message_redacted,
         payload={k: v for k, v in payload.items() if v is not None},
     )
 
