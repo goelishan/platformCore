@@ -45,6 +45,10 @@ SIGNAL_COLUMNS = (
     "run_id",
     "incident_id",
     "expires_at",
+    # Copied from the buffer like every other column, never re-read from the constant.
+    # Re-stamping here would relabel rows written by an older normaliser with the
+    # running version, which is the one thing this column exists to make impossible.
+    "normalizer_version",
 )
 
 _TIMESTAMPS = ("event_time", "collected_at", "expires_at")

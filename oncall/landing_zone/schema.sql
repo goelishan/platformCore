@@ -52,6 +52,10 @@ CREATE TABLE IF NOT EXISTS incidents (
 );
 
 
+-- blob_id is the sha256 of the bytes, and path is relative to BLOB_DIR. Relative,
+-- because an absolute path is correct until the data directory moves between a laptop,
+-- a PVC and a restored backup — after which every row asserts something false about
+-- the local filesystem.
 CREATE TABLE IF NOT EXISTS blobs (
     blob_id    TEXT PRIMARY KEY,
     path       TEXT NOT NULL,            -- raw logs live on disk, not in rows
@@ -59,6 +63,11 @@ CREATE TABLE IF NOT EXISTS blobs (
     created_at TEXT NOT NULL,
     expires_at TEXT
 );
+
+-- Drives the age sweep, which is the only one that runs on a cadence.
+CREATE INDEX IF NOT EXISTS idx_blob_expiry ON blobs(expires_at);
+-- Drop order for the size backstop: oldest bytes first.
+CREATE INDEX IF NOT EXISTS idx_blob_created ON blobs(created_at);
 
 
 CREATE TABLE IF NOT EXISTS signals (
@@ -85,7 +94,17 @@ CREATE TABLE IF NOT EXISTS signals (
     -- added by the landing zone
     run_id        TEXT REFERENCES collection_runs(run_id),
     incident_id   TEXT REFERENCES incidents(incident_id),
-    expires_at    TEXT                   -- store-side retention, not buffer-side
+    expires_at    TEXT,                  -- store-side retention, not buffer-side
+
+    -- Which version of envelope/template.py produced the key behind this fingerprint.
+    -- Stamped here rather than carried on the envelope, because it describes the
+    -- process doing the writing and not anything a collector observed -- and a
+    -- collector able to set it is a collector able to get it wrong. Changing the mask
+    -- rules re-keys some population of messages, so a weeks-old problem acquires a
+    -- fresh fingerprint the day that change ships and first_seen_ever answers "never"
+    -- with nothing raising. This column is what lets a query see that seam rather than
+    -- walk into it.
+    normalizer_version INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_sig_corr

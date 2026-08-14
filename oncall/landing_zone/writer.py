@@ -25,7 +25,7 @@ from typing import Any
 
 from oncall.envelope import Signal, SignalSource, SourceStatus, iso
 from oncall.landing_zone import outbox
-from oncall.landing_zone.rows import COLLECTOR_COLUMNS, to_row
+from oncall.landing_zone.rows import COLLECTOR_COLUMNS, LANDING_ZONE_COLUMNS, to_row
 
 
 def _now() -> str:
@@ -104,15 +104,21 @@ def finish_shipping_run(
 # makes the incident_id exclusion impossible to break by accident.
 
 
-_ALL_COLUMNS = ("signal_id", *COLLECTOR_COLUMNS, "run_id", "expires_at")
+_ALL_COLUMNS = ("signal_id", *COLLECTOR_COLUMNS, *LANDING_ZONE_COLUMNS)
 
+# The update list is generated from both tuples rather than naming the landing-zone
+# columns by hand. Spelled out, a column added to LANDING_ZONE_COLUMNS reaches the
+# insert list and stops there, so it is written once on first collection and then
+# frozen while every other column keeps moving -- which looks like data rather than
+# like a bug.
 _UPSERT_SIGNAL = f"""
 INSERT INTO signals ({", ".join(_ALL_COLUMNS)})
 VALUES ({", ".join(f":{c}" for c in _ALL_COLUMNS)})
 ON CONFLICT(signal_id) DO UPDATE SET
-    {", ".join(f"{c} = excluded.{c}" for c in COLLECTOR_COLUMNS)},
-    run_id     = excluded.run_id,
-    expires_at = excluded.expires_at
+    {", ".join(
+        f"{c} = excluded.{c}"
+        for c in (*COLLECTOR_COLUMNS, *LANDING_ZONE_COLUMNS)
+    )}
 """
 
 

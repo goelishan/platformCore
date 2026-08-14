@@ -15,11 +15,11 @@ from datetime import timedelta
 from typing import Any
 
 from oncall import config
-from oncall.envelope import Signal, iso
+from oncall.envelope import NORMALIZER_VERSION, Signal, iso
 
-# Columns a collector owns. run_id and expires_at are landing-zone additions and are
-# listed separately; incident_id appears in neither, because it is back-filled by us
-# and must survive a re-collection untouched.
+# Columns a collector owns. run_id, expires_at and normalizer_version are landing-zone
+# additions and are listed separately; incident_id appears in neither, because it is
+# back-filled by us and must survive a re-collection untouched.
 
 COLLECTOR_COLUMNS = (
     "fingerprint", "source", "kind", "event_time", "collected_at","cluster",
@@ -29,7 +29,7 @@ COLLECTOR_COLUMNS = (
 )
 
 
-LANDING_ZONE_COLUMNS = ("run_id", "expires_at")
+LANDING_ZONE_COLUMNS = ("run_id", "expires_at", "normalizer_version")
 
 
 def expiry_for(signal: Signal) -> str:
@@ -66,4 +66,8 @@ def to_row(signal: Signal, run_id: str | None) -> dict[str, Any]:
         "blob_id": signal.blob_id,
         "run_id": run_id,
         "expires_at": expiry_for(signal),
+        # Read from the constant at write time, never from the signal. A re-collected
+        # row is re-stamped with the version that produced the key it currently
+        # carries, which is the only value that can be true of it.
+        "normalizer_version": NORMALIZER_VERSION,
     }
