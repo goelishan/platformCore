@@ -28,9 +28,16 @@ from oncall.envelope import (
     SourceStatus,
     Subject,
     iso,
+    partition_payload,
     redact,
     template_of,
 )
+
+# How the fingerprint was built, not what the cluster did. It exists so a reader
+# can tell a template that is present from a template that is load-bearing, which
+# is a question about this collector's keying rules rather than about the pod.
+PROVENANCE_KEYS = frozenset({"keyed_on_message"})
+
 
 RUNNING_REASON = "Running"
 
@@ -308,7 +315,7 @@ def _build(
         severity=facts["severity"],
         dedupe_key=_dedupe_key(container, facts.get("reason"), exit_code, template.key),
         redacted=message_redacted,
-        payload={k: v for k, v in payload.items() if v is not None},
+        payload=partition_payload(payload, PROVENANCE_KEYS),
     )
 
 

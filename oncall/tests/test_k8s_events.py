@@ -21,7 +21,7 @@ from oncall.collectors.k8s_events import (
     signal_for_event,
 )
 from oncall.collectors.owners import OwnerResolver
-from oncall.envelope import Severity, SignalKind, SignalSource
+from oncall.envelope import Severity, SignalKind, SignalSource, provenance_of
 
 CLUSTER = "test-cluster"
 T0 = datetime(2026, 8, 12, 3, 14, 0, tzinfo=UTC)
@@ -165,7 +165,7 @@ def test_count_carries_the_identity_of_the_object_that_counted_it():
     Without event_uid the reader sees a count sequence of 38 then 6 for a single
     group and cannot tell a reset from a decrease from two interleaved counters.
     """
-    assert sig(event(uid="uid-ev-1")).payload["event_uid"] == "uid-ev-1"
+    assert provenance_of(sig(event(uid="uid-ev-1")).payload)["event_uid"] == "uid-ev-1"
 
 
 def test_two_generations_of_one_problem_share_a_fingerprint():
@@ -177,7 +177,7 @@ def test_two_generations_of_one_problem_share_a_fingerprint():
 
     assert before.fingerprint == after.fingerprint
     assert before.signal_id != after.signal_id
-    assert before.payload["event_uid"] != after.payload["event_uid"]
+    assert provenance_of(before.payload)["event_uid"] != provenance_of(after.payload)["event_uid"]
 
 
 def test_a_fossil_event_collapses_to_one_row_however_often_it_is_recollected():
@@ -313,8 +313,8 @@ def test_component_is_provenance_not_identity():
     b = sig(event(component="default-scheduler"))
 
     assert a.fingerprint == b.fingerprint
-    assert a.payload["component"] == "kubelet"
-    assert b.payload["component"] == "default-scheduler"
+    assert provenance_of(a.payload)["component"] == "kubelet"
+    assert provenance_of(b.payload)["component"] == "default-scheduler"
 
 
 def test_field_path_parsing():

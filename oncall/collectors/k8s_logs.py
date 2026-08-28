@@ -42,11 +42,33 @@ from oncall.envelope import (
     Subject,
     iso,
     parse,
+    partition_payload,
     redact,
     template_of,
 )
 
 STREAM_PREVIOUS = "previous"
+# The two halves of what this row points at rather than states.
+#
+# window_start and window_end come off the clock and describe the interval that was
+# requested; covered_through is derived from the runtime's own line timestamps and
+# describes what came back. Only the second is evidence, and it is the cheaper of
+# the two by a factor of seven. The requested window stays here because the overlap
+# test that correlates this excerpt with anything else is computed from it.
+#
+# trigger_* is the join back to the failure that caused the read. A consumer should
+# render the relationship, never the hex: trigger_signal_id takes a new value on
+# every poll by construction, so shown verbatim it is the noisiest field in the
+# payload and says nothing a reader can act on.
+PROVENANCE_KEYS = frozenset({
+    "window_start",
+    "window_end",
+    "trigger_source",
+    "trigger_fingerprint",
+    "trigger_signal_id",
+})
+
+
 STREAM_CURRENT = "current"
 
 # Sources that can put a Pod-subject signal in front of this collector. Named rather
@@ -277,12 +299,24 @@ def build_excerpt(
 
 
 class Fetch(NamedTuple):
+    """text is what the excerpt is built from; raw is what the blob stores.
+
+    Both, and not one derived from the other at the point of use. blob_id is the sha256
+    of the bytes, so hashing a re-encoding of a lossily decoded string would address a
+    sanitised copy rather than what the container actually emitted — and two different
+    malformed logs could then collapse onto one blob.
+
+    raw carries a default so a caller that only cares about the decoded form cannot
+    accidentally construct a Fetch that stores an empty blob beside a non-empty excerpt.
+    """
+
     status: str
     text: str
     stream: str
     truncated: bool
     fell_back: bool
     error: str | None
+    raw: bytes = b""
 
 
 def _dedupe_key(container: str | None, stream: str) -> str:
@@ -364,7 +398,7 @@ def build_signal(
         dedupe_key=_dedupe_key(target.container, fetch.stream),
         redacted=bool(excerpt and excerpt.redacted),
         blob_id=blob_id,
-        payload={k: v for k, v in payload.items() if v is not None},
+        payload=partition_payload(payload, PROVENANCE_KEYS),
     )
 
 
@@ -379,12 +413,22 @@ def _read_log(target: Target, stream: str) -> Fetch:
     see, and is recorded against this target alone: one unreadable pod must not turn
     the whole source unavailable, because the other thirty-nine targets are real
     evidence and withholding them helps nobody.
+
+    The body is taken unparsed. A log endpoint is declared as returning a string, and
+    the generated client turns the response into one by calling str() on its bytes
+    rather than decoding them — so the caller receives the repr of a bytes object,
+    newlines included as their two-character escape. Nothing raises: the value is a
+    str, it is non-empty, and every mechanism downstream keeps working on it. Line
+    splitting then finds one line, the runtime timestamp prefix never matches, and an
+    empty log arrives as the four characters b'' and is recorded as ok with content.
+    Owning the decode is what removes all of that, and it is only visible from outside
+    the process — a stub that returns a real string reproduces none of it.
     """
     want_previous = stream == STREAM_PREVIOUS
 
     for attempt, previous in enumerate((want_previous, False) if want_previous else (False,)):
         try:
-            text = k8s.core_v1().read_namespaced_pod_log(
+            resp = k8s.core_v1().read_namespaced_pod_log(
                 name=target.pod,
                 namespace=target.namespace,
                 container=target.container,
@@ -393,6 +437,7 @@ def _read_log(target: Target, stream: str) -> Fetch:
                 limit_bytes=config.LOG_LIMIT_BYTES,
                 timestamps=True,
                 _request_timeout=k8s.REQUEST_TIMEOUT,
+                _preload_content=False,
             )
         except ApiException as exc:
             if exc.status == 400 and previous:
@@ -408,22 +453,32 @@ def _read_log(target: Target, stream: str) -> Fetch:
                 f"{type(exc).__name__}: {exc}",
             )
 
-        raw = text or ""
+        raw: bytes = resp.data or b""
+
+        # replace rather than strict. A container emits whatever bytes it likes, and a
+        # decoding error would end the cycle for every target after this one — the same
+        # blast radius the per-target error handling above exists to prevent.
+        text = raw.decode("utf-8", errors="replace")
         used = STREAM_PREVIOUS if previous else STREAM_CURRENT
 
         # The API gives no truncation flag, so this is inferred from hitting the cap.
+        # Measured on the bytes the server sent, which is the unit limit_bytes bounds;
+        # measuring the decoded string would count replacement characters as though
+        # they were the bytes they stand in for.
+        #
         # It can over-claim when a log is exactly the cap long, and that is the right
         # direction to be wrong in: over-claiming costs a caveat, under-claiming lets
         # the reasoner state that there were no errors in the logs.
-        truncated = len(raw.encode()) >= config.LOG_LIMIT_BYTES
+        truncated = len(raw) >= config.LOG_LIMIT_BYTES
 
         return Fetch(
-            str(SourceStatus.OK if raw.strip() else SourceStatus.EMPTY),
-            raw,
+            str(SourceStatus.OK if text.strip() else SourceStatus.EMPTY),
+            text,
             used,
             truncated,
             bool(attempt),
             None,
+            raw,
         )
 
     return Fetch(str(SourceStatus.EMPTY), "", STREAM_CURRENT, False, True, None)
@@ -488,8 +543,11 @@ def collect(cluster: str) -> tuple[SourceStatus, list[Signal], str | None]:
         with lz.connect() as conn:
             for target, fetch in fetched:
                 excerpt = build_excerpt(fetch.text) if fetch.text else None
+                # Keyed off raw rather than text, so the condition and the stored bytes
+                # are the same value. Deciding on the decoded form would let a Fetch
+                # carrying an excerpt but no bytes write an empty blob under a real id.
                 blob_id = (
-                    lz.put_blob(conn, fetch.text.encode()) if fetch.text.strip() else None
+                    lz.put_blob(conn, fetch.raw) if fetch.raw.strip() else None
                 )
                 signals.append(
                     build_signal(target, fetch, excerpt, blob_id, cluster, start, end)

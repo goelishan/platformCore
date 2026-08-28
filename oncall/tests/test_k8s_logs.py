@@ -22,6 +22,7 @@ from oncall.envelope import (
     SignalSource,
     SourceStatus,
     Subject,
+    provenance_of,
 )
 
 NOW = datetime(2026, 8, 14, 3, 14, 7, tzinfo=UTC)
@@ -363,7 +364,7 @@ def test_a_truncated_fetch_says_where_it_stops():
     )
 
     assert signal.payload["truncated"] is True
-    assert signal.payload["window_start"]
+    assert provenance_of(signal.payload)["window_start"]
     assert signal.payload["covered_through"] == "2026-08-14T03:14:05.100000Z"
 
 
@@ -373,7 +374,7 @@ def test_the_trigger_is_recorded_so_the_join_exists():
         NOW, NOW,
     )
 
-    assert signal.payload["trigger_signal_id"] == "s" * 32
+    assert provenance_of(signal.payload)["trigger_signal_id"] == "s" * 32
     assert signal.blob_id == "b" * 64
 
 

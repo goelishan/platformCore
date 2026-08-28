@@ -15,7 +15,7 @@ from datetime import UTC, datetime, timedelta
 
 from oncall.collectors.k8s_pods import signals_for_pod
 from oncall.collectors.owners import OwnerResolver
-from oncall.envelope import Severity, SignalKind, SignalSource
+from oncall.envelope import Severity, SignalKind, SignalSource, provenance_of
 
 CLUSTER = "test-cluster"
 T0 = datetime(2026, 8, 10, 13, 0, 0, tzinfo=UTC)
@@ -284,7 +284,7 @@ def test_a_reconciled_reason_merges_its_causes_and_says_so():
 
     assert host.fingerprint == manifest.fingerprint
     assert host.payload["message_template"] != manifest.payload["message_template"]
-    assert "keyed_on_message" not in host.payload
+    assert "keyed_on_message" not in provenance_of(host.payload)
 
 
 def test_a_standalone_reason_keys_on_its_message_and_says_so():
@@ -295,7 +295,7 @@ def test_a_standalone_reason_keys_on_its_message_and_says_so():
         pod(containers=[container(state_waiting=waiting("CreateContainerConfigError", "no cm"))])
     )
 
-    assert sig.payload["keyed_on_message"] is True
+    assert provenance_of(sig.payload)["keyed_on_message"] is True
 
 
 def test_unschedulable_causes_do_not_share_a_fingerprint():

@@ -35,9 +35,22 @@ from oncall.envelope import (
     SourceStatus,
     Subject,
     iso,
+    partition_payload,
     redact,
     template_of,
 )
+
+# event_uid identifies the object doing the counting, and component identifies the
+# thing that reported it. Both are provenance in the strict sense: they describe the
+# observation rather than the cluster, and component is already excluded from
+# dedupe_key on the same grounds.
+#
+# event_uid is hidden rather than dropped because the assembler cannot do counter
+# arithmetic without it. Aggregation is client-side, so a kubelet restart abandons
+# one counter and starts another from one; diffing across that boundary invents a
+# drop that never happened. Grouping by uid first is what makes the delta real.
+PROVENANCE_KEYS = frozenset({"event_uid", "component"})
+
 
 WARNING_TYPE = "Warning"
 
@@ -297,7 +310,7 @@ def signal_for_event(
         severity=Severity.WARNING if ev.type == WARNING_TYPE else Severity.INFO,
         dedupe_key=_dedupe_key(container, ev.reason, template.key),
         redacted=message_redacted,
-        payload={k: v for k, v in payload.items() if v is not None},
+        payload=partition_payload(payload, PROVENANCE_KEYS),
     )
 
 
