@@ -76,6 +76,28 @@ fastapi:
     dbName: platformcore
     dbUser: fastapi
   
+  # Readiness and liveness are tuned apart because a wrong answer costs different
+  # things. Readiness hits /ready, which touches RDS: being wrong costs one Pod its
+  # place in the endpoint list, so it fails fast — 2 failures at a 5s period pulls a
+  # Pod out within ~10s. Liveness hits /health, which is DB-free: being wrong costs a
+  # restart and a cold start, so it tolerates two minutes of silence before killing
+  # the process. cacheTtlSeconds bounds how long /ready may answer from its last good
+  # check; it lives here to stay visible beside the period it is tuned against.
+  probes:
+    readiness:
+      path: /ready
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 2
+      cacheTtlSeconds: 10
+    liveness:
+      path: /health
+      initialDelaySeconds: 15
+      periodSeconds: 20
+      timeoutSeconds: 3
+      failureThreshold: 6
+
   serviceMonitor:
     enabled: true
 
