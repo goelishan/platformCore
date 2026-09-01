@@ -6,11 +6,13 @@
 #   Safe here because connections are per-request; pooling would require
 #   explicit token-refresh logic before reuse.
 # - Health split: /health (liveness) is DB-free — never restart on DB outage.
-#   /ready (readiness) touches DB — pulls Pod from rotation without restarting.
+#   /ready (readiness) touches DB — pulls Pod from rotation without restarting,
+#   and caches its last success briefly to bound probe-driven connection churn.
 
 
 from fastapi import FastAPI, HTTPException
 import os
+import time
 import boto3
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -82,9 +84,34 @@ def health():
     """Liveness probe. DB-free by design."""
     return {"status": "healthy"}
 
+
+# Wired to a readiness probe, /ready runs on every period, on every replica, forever,
+# and every call opens a fresh psycopg connection — a TLS handshake and an auth round
+# trip charged to RDS to re-answer a question answered seconds ago. A successful check
+# is therefore cached for a TTL that ships beside the probe period in the chart, which
+# halves the connection rate at the chart's defaults. Failures are never cached, so a
+# database that recovers is seen on the very next probe. The cost is bounded and
+# deliberate: a cached success can hide an outage for at most one TTL, putting worst
+# case detection at TTL + periodSeconds x failureThreshold, or about 20 seconds.
+READY_CACHE_TTL_SECONDS = float(os.environ.get("READY_CACHE_TTL_SECONDS", "10"))
+
+_ready_ok_until = 0.0  # monotonic deadline of the cached success; 0.0 means none held
+
+
+def _reset_ready_cache():
+    """Drop the cached success. Nothing on the request path calls this; tests do,
+    because the cache is process-global and would otherwise leak between them."""
+    global _ready_ok_until
+    _ready_ok_until = 0.0
+
+
 @app.get("/ready")
 def ready():
     """Readiness probe. Confirms RDS reachability via IAM auth token."""
+    global _ready_ok_until
+    now = time.monotonic()
+    if now < _ready_ok_until:
+        return {"status": "ready"}
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -95,6 +122,7 @@ def ready():
     except Exception as e:
         logger.error(f"readiness check failed: {e}")
         raise HTTPException(status_code=503, detail=f"DB unreachable: {e}")
+    _ready_ok_until = now + READY_CACHE_TTL_SECONDS
     return {"status": "ready"}
 
 

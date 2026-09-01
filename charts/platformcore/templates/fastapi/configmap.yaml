@@ -12,3 +12,6 @@ data:
   RDS_DB_NAME: {{ .Values.fastapi.rds.dbName | quote }}
   RDS_USER: {{ .Values.fastapi.rds.dbUser | quote }}
   AWS_DEFAULT_REGION: {{ .Values.global.aws.region | quote }}
+  # Read by /ready. Sourced from the probe block so the cache window and the probe
+  # period it is tuned against cannot drift apart.
+  READY_CACHE_TTL_SECONDS: {{ .Values.fastapi.probes.readiness.cacheTtlSeconds | toString | quote }}
