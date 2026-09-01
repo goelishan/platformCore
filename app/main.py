@@ -56,7 +56,7 @@ def get_db_connection():
     """
     for var in ("RDS_HOST", "RDS_USER", "RDS_DB_NAME", "AWS_DEFAULT_REGION"):
         if not os.environ.get(var):
-            logger.error(f"missing required env vars: {vars}")
+            logger.error(f"missing required env var: {var}")
             raise HTTPException(
                 status_code=503,
                 detail=f"{var} not configured; DB routes unavailable",
