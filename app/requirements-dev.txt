@@ -1,0 +1,6 @@
+# Test-only dependencies, kept out of requirements.txt so the runtime image does not
+# grow a test runner. CI installs both files: the suite imports the application module,
+# so everything main.py touches at import time has to be present.
+
+pytest==8.3.3
+httpx==0.27.2          # transport behind starlette's TestClient
