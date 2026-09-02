@@ -69,7 +69,11 @@ def get_db_connection():
         f"dbname={os.environ['RDS_DB_NAME']} "
         f"user={os.environ['RDS_USER']} "
         f"password={token} "
-        f"sslmode=require"
+        f"sslmode=require "
+        # Bounded so a database that drops packets fails this call instead of
+        # occupying a threadpool worker for the OS TCP retry budget. Sourced from
+        # the chart beside the readiness timeout it must not exceed.
+        f"connect_timeout={os.environ.get('RDS_CONNECT_TIMEOUT_SECONDS', '2')}"
     )
     return psycopg.connect(conn_str)
 
@@ -80,8 +84,13 @@ def root():
 
 
 @app.get("/health")
-def health():
+async def health():
     """Liveness probe. DB-free by design."""
+    # async rather than sync so it answers on the event loop. Sync handlers share one
+    # bounded threadpool with the DB-touching routes; during a database stall that
+    # pool fills, a sync /health would queue behind it, and the liveness probe would
+    # restart every replica over a dependency outage - the exact outcome the split
+    # between these two endpoints exists to prevent.
     return {"status": "healthy"}
 
 

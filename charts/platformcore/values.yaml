@@ -90,6 +90,12 @@ fastapi:
     port: 5432
     dbName: platformcore
     dbUser: fastapi
+    # Kept at or below probes.readiness.timeoutSeconds. Without it psycopg inherits
+    # the OS TCP retry budget - roughly two minutes when packets are dropped rather
+    # than refused, which is what a security-group or NACL change looks like. The
+    # kubelet gives up after its own timeout but the handler keeps running, so an
+    # unbounded connect leaks a worker per probe until none are left.
+    connectTimeoutSeconds: 2
   
   # Readiness and liveness are tuned apart because a wrong answer costs different
   # things. Readiness hits /ready, which touches RDS: being wrong costs one Pod its

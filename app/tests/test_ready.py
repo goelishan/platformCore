@@ -23,6 +23,10 @@ def test_ready_returns_200_when_the_connection_succeeds(client, connect_spy):
     # The probe is only worth its cost if it actually round-trips to the database.
     assert len(connect_spy.calls) == 1
     assert connect_spy.connections[0].cursors[0].executed == ["SELECT 1"]
+    # And the round-trip is bounded. An unbounded connect holds a threadpool worker
+    # for the OS retry budget long after the kubelet has given up on the probe, which
+    # is how a stalled database turns into a restart of every replica.
+    assert "connect_timeout=" in connect_spy.calls[0]
 
 
 def test_ready_returns_503_when_the_connection_raises(client, connect_spy):
