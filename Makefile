@@ -292,7 +292,11 @@ helm-pins:
 # the Dockerfile's --require-hashes something to check. requirements-dev.txt is a
 # superset of the runtime lock rather than a second file beside it: pip refuses to
 # mix hashed and unhashed requirement files, and two independently resolved locks
-# would eventually disagree about a shared transitive dependency.
+# would eventually disagree about a shared transitive dependency. Including the
+# runtime intent is not enough to prevent that: --constraint pins the dev resolution
+# to the versions the runtime lock already chose, so CI cannot test a stack the image
+# does not ship. Order matters here - the runtime lock is written first, and the dev
+# compile reads it.
 lock-python:
 	@command -v uv >/dev/null || { echo "uv not found - brew install uv"; exit 1; }
 	uv pip compile app/requirements.in \
@@ -302,6 +306,7 @@ lock-python:
 	  --custom-compile-command "make lock-python" \
 	  -o app/requirements.txt
 	uv pip compile app/requirements-dev.in \
+	  --constraint app/requirements.txt \
 	  --generate-hashes \
 	  --python-version 3.12 \
 	  --python-platform x86_64-unknown-linux-gnu \

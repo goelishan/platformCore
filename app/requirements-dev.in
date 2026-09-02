@@ -11,6 +11,12 @@
 # It includes the runtime intent rather than standing beside it because pip
 # refuses to mix hashed and unhashed requirement files, and two independently
 # resolved locks would eventually disagree about a shared transitive version.
+#
+# Including the intent is not on its own enough to stop that: the ranges below
+# resolve freely unless the compile is constrained by the runtime lock itself.
+# `make lock-python` passes --constraint app/requirements.txt for that reason, so
+# every shared package here is the version the image ships, not merely a version
+# the same range allows.
 
 
 -r requirements.in
