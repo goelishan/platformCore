@@ -46,15 +46,15 @@ jobs:
           python-version: "3.12"   # same minor the image is built on
           cache: pip
           # Both files, so a change to either invalidates the cache key.
-          cache-dependency-path: |
-            app/requirements.txt
-            app/requirements-dev.txt
+          cache-dependency-path: app/requirements-dev.txt
 
       - name: Install dependencies
-        # Runtime requirements as well as the test ones. The suite imports the
-        # application module, so anything main.py touches at import time has to
-        # be installed here too.
-        run: pip install -r app/requirements.txt -r app/requirements-dev.txt
+        # requirements-dev.txt is a superset of the runtime lock, so one file covers
+        # both the application module the suite imports and the suite's own tools.
+        # --require-hashes is stated rather than left implicit: pip would enable it
+        # anyway on a fully hashed file, and naming it means a lock that loses its
+        # hashes fails here instead of quietly installing whatever resolves.
+        run: pip install --require-hashes -r app/requirements-dev.txt
 
       - name: Run pytest
         # No database and no AWS credentials in this job, deliberately. The suite
