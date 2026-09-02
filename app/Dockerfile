@@ -1,4 +1,8 @@
-FROM python:3.12-slim
+# Tag for humans, digest for the build. python:3.12-slim is reassigned to a new
+# patch release every few weeks; without the digest, two builds of the same commit
+# can sit on different interpreters. The tag records the intent, 3.12 slim, and is
+# ignored at pull time in favour of the digest.
+FROM python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea
 
 WORKDIR /app
 

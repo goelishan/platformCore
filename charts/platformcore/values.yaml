@@ -15,10 +15,22 @@ global:
 #--------------------------------------------------------------------------------------------------------
 
 
+# Images are pinned as tag + digest. Container tags are mutable — `alpine` and `17`
+# are reassigned upstream every few weeks — and there is no lockfile for them, so the
+# digest is the lock. The tag records which release was intended for a human reading
+# this file; the digest is what actually resolves. Kubernetes pulls by digest and
+# ignores the tag when both are present, so editing one without the other changes
+# nothing except the documentation. Move them together, or leave both alone.
+#
+# The digest pinned is the manifest list's, not a single architecture's, so the same
+# reference resolves on the amd64 nodes and on an arm64 laptop. Refresh with
+# `docker buildx imagetools inspect <repo>:<tag>` and update both fields.
+
 nginx:
   image:
     repository: nginx
-    tag: alpine
+    tag: 1.31.4-alpine
+    digest: sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913
   
   config:
     appEnv: dev
@@ -52,6 +64,9 @@ nginx:
 
 
 fastapi:
+  # No digest here: CI writes the commit SHA into the tag below and the ECR
+  # repository is configured immutable, so the tag cannot be reassigned to
+  # different content. The commit is the pin.
   image:
     repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app
     tag: 733848d3941c851a40f6314ef17658df9d76c877
@@ -110,7 +125,8 @@ postgres:
   enabled: true
   image:
     repository: postgres
-    tag: "17"
+    tag: "17.11"
+    digest: sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
   replicas: 1
 
   auth:
