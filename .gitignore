@@ -18,6 +18,10 @@ venv/
 *.tmp
 .~lock.*
 
+# Helm dependency tarballs: reproducible from charts/platform-bootstrap/Chart.lock
+# by `helm dependency build`, so the lock is tracked and the payload is not.
+charts/platform-bootstrap/charts/
+
 # Terraform
 terraform/.terraform/
 terraform/*.tfstate
