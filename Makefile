@@ -1,4 +1,4 @@
-.PHONY: up down down-all rebuild status logs curl helm-relock helm-pins lock-python
+.PHONY: up down down-all rebuild status logs curl helm-repos helm-relock helm-pins lock-python
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -15,9 +15,24 @@
 BOOTSTRAP := charts/platform-bootstrap
 VENDORED  := $(BOOTSTRAP)/charts
 
+# Helm resolves a dependency's `repository:` URL against the repositories registered
+# on the machine, not over the network: both `dependency build` and `dependency update`
+# check every URL is known before downloading anything, and abort with "no repository
+# definition for ..." otherwise. The URLs in Chart.lock are the pin; these lines are
+# what makes the machine able to act on it, and they are why a fresh laptop or CI
+# runner can bootstrap at all. --force-update keeps them idempotent. Moving the
+# dependencies to OCI references would remove this step entirely.
+helm-repos:
+	@helm repo add eks https://aws.github.io/eks-charts --force-update >/dev/null
+	@helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
+	@helm repo add grafana https://grafana.github.io/helm-charts --force-update >/dev/null
+	@helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
+	@helm repo add external-secrets https://charts.external-secrets.io --force-update >/dev/null
+	@helm repo update >/dev/null
+
 # Reads one operator's toggle out of the bootstrap chart's values.yaml, so turning
 # a tier off is an edit to that file rather than a commented-out block in here.
-enabled = $(shell awk '/^$(1):/{f=1} f&&/enabled:/{print $$2;exit}' $(BOOTSTRAP)/values.yaml)
+enabled = $(shell awk '$$0 == "$(1):" {f=1;next} /^[^ #]/{f=0} f&&/enabled:/{print $$2;exit}' $(BOOTSTRAP)/values.yaml)
 
 
 # Bring the full stack up.
@@ -47,6 +62,7 @@ up:
 	@echo "==> Updating kubeconfig..."
 	aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager
 	@echo "==> Vendoring pinned operator charts..."
+	@$(MAKE) --no-print-directory helm-repos
 	helm dependency build $(BOOTSTRAP)
 	@echo "==> Installing ALB Controller..."
 	@if [ "$(call enabled,aws-load-balancer-controller)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
@@ -259,7 +275,7 @@ rebuild: down up
 # charts/platform-bootstrap/Chart.yaml, run this, and review the Chart.lock diff.
 # Running it without editing Chart.yaml is a no-op beyond the generated timestamp,
 # which is the point - the lock does not drift on its own.
-helm-relock:
+helm-relock: helm-repos
 	helm dependency update $(BOOTSTRAP)
 
 

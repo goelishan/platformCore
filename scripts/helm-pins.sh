@@ -29,14 +29,22 @@ fi
 printf '%-34s %-12s %-12s\n' CHART PINNED LATEST
 
 behind=0
+unreachable=0
 while IFS="$(printf '\t')" read -r name repo version; do
   # `helm show chart --repo` reads the repository index over HTTP without
   # registering the repo, so this reports on a laptop that has never run
   # `helm repo add` and leaves no helm state behind either way.
-  latest="$(helm show chart --repo "$repo" "$name" 2>/dev/null | awk '$1 == "version:" { print $2; exit }')"
-  latest="${latest:-unreachable}"
+  # `|| true` matters: under `set -e` an assignment takes the exit status of its
+  # command substitution, so a repository that is down would end the whole run here
+  # and the fallback below would never execute - a silently truncated table.
+  latest="$(helm show chart --repo "$repo" "$name" 2>/dev/null | awk '$1 == "version:" { print $2; exit }' || true)"
 
-  if [ "$latest" = "$version" ]; then
+  if [ -z "$latest" ]; then
+    # Unreachable is not behind. Counting it as behind would tell someone to bump a
+    # pin because their network was down, which is worse than reporting nothing.
+    unreachable=$((unreachable + 1))
+    printf '%-34s %-12s %-12s  <- could not reach the repository\n' "$name" "$version" "-"
+  elif [ "$latest" = "$version" ]; then
     printf '%-34s %-12s %-12s\n' "$name" "$version" "$latest"
   else
     behind=$((behind + 1))
@@ -49,8 +57,12 @@ done < <(awk '
 ' "$LOCK")
 
 echo
-if [ "$behind" -eq 0 ]; then
-  echo "every pin matches upstream."
-else
+if [ "$behind" -gt 0 ]; then
   echo "$behind chart(s) behind upstream. Bump in $CHART_DIR/Chart.yaml, then: make helm-relock"
+elif [ "$unreachable" -eq 0 ]; then
+  echo "every pin matches upstream."
+fi
+
+if [ "$unreachable" -gt 0 ]; then
+  echo "$unreachable repository/repositories could not be reached - those rows say nothing."
 fi
