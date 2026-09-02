@@ -1,4 +1,4 @@
-.PHONY: up down down-all rebuild status logs curl helm-relock helm-pins
+.PHONY: up down down-all rebuild status logs curl helm-relock helm-pins lock-python
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -266,6 +266,31 @@ helm-relock:
 # What is pinned, and what has upstream published since?
 helm-pins:
 	@bash scripts/helm-pins.sh $(BOOTSTRAP)
+
+
+# Recompile the Python locks from the .in files.
+#
+# Resolution targets the image's interpreter and platform rather than whichever
+# laptop runs this, so the lock describes what will actually be installed in the
+# container. --generate-hashes writes a digest per artifact, which is what gives
+# the Dockerfile's --require-hashes something to check. requirements-dev.txt is a
+# superset of the runtime lock rather than a second file beside it: pip refuses to
+# mix hashed and unhashed requirement files, and two independently resolved locks
+# would eventually disagree about a shared transitive dependency.
+lock-python:
+	@command -v uv >/dev/null || { echo "uv not found - brew install uv"; exit 1; }
+	uv pip compile app/requirements.in \
+	  --generate-hashes \
+	  --python-version 3.12 \
+	  --python-platform x86_64-unknown-linux-gnu \
+	  --custom-compile-command "make lock-python" \
+	  -o app/requirements.txt
+	uv pip compile app/requirements-dev.in \
+	  --generate-hashes \
+	  --python-version 3.12 \
+	  --python-platform x86_64-unknown-linux-gnu \
+	  --custom-compile-command "make lock-python" \
+	  -o app/requirements-dev.txt
 
 
 # What's currently provisioned?

@@ -1,0 +1,22 @@
+#--------------------------------------------------------------------------------------------------------
+# TEST DEPENDENCIES — INTENT
+#--------------------------------------------------------------------------------------------------------
+#
+#   - the runtime set, plus what the suite needs to import and drive the app
+#
+#   - resolved into requirements-dev.txt, which is a superset of requirements.txt
+#
+#   - regenerate with `make lock-python`
+#
+# It includes the runtime intent rather than standing beside it because pip
+# refuses to mix hashed and unhashed requirement files, and two independently
+# resolved locks would eventually disagree about a shared transitive version.
+
+
+-r requirements.in
+
+pytest>=8.3,<9
+
+# Transport behind starlette's TestClient. Held below 0.28, which changed the
+# client constructor starlette 0.38 calls.
+httpx>=0.27,<0.28
