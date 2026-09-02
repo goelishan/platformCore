@@ -11,6 +11,8 @@
 # 2026-04-25 (only 17 is eligible on db.t3.micro). Free Tier is a tuple
 # constraint on (instance_class, engine, engine_version, region); pinning any
 # axis independently produces silent breakage on the next AWS rotation.
+# Eligibility is assessed on the major version, so the full minor pin below
+# narrows what gets created without touching that constraint.
 
 
 
@@ -124,22 +126,22 @@ resource "aws_secretsmanager_secret_version" "db_master" {
 }
 
 resource "aws_secretsmanager_secret" "nginx_api_key" {
-  name = "${var.project_name}/app/nginx-api-key"
+  name                    = "${var.project_name}/app/nginx-api-key"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "nginx_api_key" {
-  secret_id = aws_secretsmanager_secret.nginx_api_key.id
+  secret_id     = aws_secretsmanager_secret.nginx_api_key.id
   secret_string = jsonencode({ API_KEY = "placeholder-api-key" })
 }
 
 resource "aws_secretsmanager_secret" "postgres_app_password" {
-  name = "${var.project_name}/app/postgres-password"
+  name                    = "${var.project_name}/app/postgres-password"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "postgres_app_password" {
-  secret_id = aws_secretsmanager_secret.postgres_app_password.id
+  secret_id     = aws_secretsmanager_secret.postgres_app_password.id
   secret_string = jsonencode({ POSTGRES_PASSWORD = "platformcore" })
 }
 
@@ -153,13 +155,40 @@ resource "aws_secretsmanager_secret_version" "postgres_app_password" {
 #   deletion_protection     = true
 #   backup_retention_period = 7..35
 #   apply_immediately       = false  (defer to maintenance window)
+#
+# Why the engine version is fully qualified: engine_version = "17" lets RDS pick
+# the minor at create time, so two applies of the same commit can produce different
+# database versions. 17.11 is the newest minor offered in us-east-1 at the time of
+# this change, so the pin freezes the version forward rather than stranding the
+# instance on an older patch than it would otherwise have received.
+#
+# Why auto_minor_version_upgrade is false: the argument defaults to TRUE. Until
+# now AWS could move the engine during the maintenance window with nothing changing
+# in this repository - the one upgrade path in the platform that no diff described
+# and no revert could undo. It is off so that an engine version change is a commit.
+#
+# What that costs: minor releases carry security fixes, and they now wait for a
+# human. The bump is engine_version above, reviewed like any other line. AWS still
+# forces the version at end of standard support for Postgres 17, so this defers the
+# upgrade rather than declining it - and backup_retention_period = 0 means there is
+# no automated restore point on the day it lands. That is the flip-list item most
+# coupled to this decision, not an independent one.
+#
+# Why the maintenance window is explicit: disabling minor upgrades does not empty
+# the window. AWS still applies required patching and hardware maintenance in it,
+# and an unset window is assigned at random within a region-wide block. Sunday
+# 06:00-06:30 UTC is 11:30 IST on a weekend. No backup window is set to pair with
+# it because retention is 0; the two are set together or not at all.
 
 
 
 resource "aws_db_instance" "main" {
   identifier     = "${var.project_name}-db"
   engine         = "postgres"
-  engine_version = "17"
+  engine_version = "17.11"
+
+  auto_minor_version_upgrade = false
+  maintenance_window         = "sun:06:00-sun:06:30"
 
   instance_class    = "db.t3.micro"
   allocated_storage = 20
