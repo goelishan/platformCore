@@ -1,0 +1,21 @@
+dependencies:
+- name: aws-load-balancer-controller
+  repository: https://aws.github.io/eks-charts
+  version: 3.3.0
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 86.1.0
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 7.0.0
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.17.1
+- name: external-secrets
+  repository: https://charts.external-secrets.io
+  version: 2.5.0
+- name: argo-cd
+  repository: https://argoproj.github.io/argo-helm
+  version: 9.5.17
+digest: sha256:5d8d0a4f2ca47a6550e015061096ba9d6b7ed9b77337d44e9a9b5416826c3e51
+generated: "2026-09-02T18:41:26.158458+05:30"

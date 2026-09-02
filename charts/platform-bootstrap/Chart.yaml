@@ -1,0 +1,88 @@
+#--------------------------------------------------------------------------------------------------------
+# PLATFORM BOOTSTRAP — THE OPERATOR LAYER, PINNED
+#--------------------------------------------------------------------------------------------------------
+#
+#   - the six upstream charts the cluster needs before the application chart syncs
+#
+#   - versions declared here, resolved versions recorded in Chart.lock
+#
+#   - no templates: this chart is a dependency manifest, not a release
+#
+# `make up` runs `helm dependency build` against the committed Chart.lock, which
+# downloads exactly these versions into charts/, then installs each tarball as its
+# own release. Two runs from the same commit therefore install the same operators.
+# Before this file existed, every bootstrap resolved to whatever upstream had
+# published that morning.
+#
+# They are not subcharts of charts/platformcore, and the reasons are structural
+# rather than stylistic. Each lands in a different namespace (kube-system,
+# monitoring, external-secrets, argocd) and Helm renders subcharts into the parent
+# release's namespace. Each must exist before the application chart is applied — the
+# ALB controller before the first Ingress, the ESO and Prometheus CRDs before the
+# ExternalSecret and ServiceMonitor objects the chart ships. And Argo CD is the
+# thing that syncs charts/platformcore, so it cannot be delivered by it.
+
+
+apiVersion: v2
+name: platform-bootstrap
+description: Pinned operator charts installed before the platformcore release
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.28.0-0"
+home: https://github.com/goelishan/platformCore
+maintainers:
+  - name: Ishan Goel
+    email: ishan.goel24@hotmail.com
+
+
+#--------------------------------------------------------------------------------------------------------
+# DEPENDENCIES
+#--------------------------------------------------------------------------------------------------------
+#
+# Versions are the newest release published on or before 2026-06-04, the last date
+# the bootstrap is recorded as having run end to end. This change freezes what was
+# working; it does not move anything forward. Bumping one is a deliberate edit here
+# followed by `make helm-relock`, which shows up as a Chart.lock diff in review.
+
+
+dependencies:
+  # Chart version and controller version move together in the 3.x line, and the
+  # controller's IAM policy is fetched by terraform at the matching upstream tag
+  # (modules/eks/irsa_alb.tf, v3.3.0). Bumping this without moving that URL grants
+  # the controller a policy from a different release, which surfaces as AccessDenied
+  # on the first Ingress rather than at apply time.
+  - name: aws-load-balancer-controller
+    version: 3.3.0
+    repository: https://aws.github.io/eks-charts
+    condition: aws-load-balancer-controller.enabled
+
+  # Ships the Prometheus operator CRDs that charts/platformcore's ServiceMonitor and
+  # PrometheusRule objects are written against.
+  - name: kube-prometheus-stack
+    version: 86.1.0
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: kube-prometheus-stack.enabled
+
+  - name: loki
+    version: 7.0.0
+    repository: https://grafana.github.io/helm-charts
+    condition: loki.enabled
+
+  # Deprecated upstream and receiving no further releases; 6.17.1 is the last one.
+  # The pin is what keeps that fact from being discovered during a rebuild.
+  - name: promtail
+    version: 6.17.1
+    repository: https://grafana.github.io/helm-charts
+    condition: promtail.enabled
+
+  # Ships the ExternalSecret and ClusterSecretStore CRDs the application chart uses.
+  - name: external-secrets
+    version: 2.5.0
+    repository: https://charts.external-secrets.io
+    condition: external-secrets.enabled
+
+  - name: argo-cd
+    version: 9.5.17
+    repository: https://argoproj.github.io/argo-helm
+    condition: argo-cd.enabled
