@@ -80,7 +80,7 @@ That is where CI stops. Argo CD runs inside the cluster, watches this repository
 | Edge | Application Load Balancer, ACM, Route 53, AWS Load Balancer Controller (chart 3.3.0) |
 | Storage | Amazon EBS gp3 through a `Retain` StorageClass, EBS CSI Driver as a managed add-on |
 | Data | Amazon RDS for PostgreSQL 17, `db.t3.micro`, encryption at rest, RDS IAM Authentication |
-| Application | FastAPI on Python 3.12, uvicorn, nginx `1.27-alpine` |
+| Application | FastAPI on Python 3.12, uvicorn, nginx `1.31.4-alpine` |
 | Identity | IAM, EKS Access Entries, OIDC federation, IRSA for every workload that touches an AWS API |
 | Packaging | A single Helm chart that ships the nginx, FastAPI and Postgres tiers under one release |
 | Delivery | GitHub Actions for build and tag, Argo CD for sync, the repository as the source of truth |
