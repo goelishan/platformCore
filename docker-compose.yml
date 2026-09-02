@@ -21,6 +21,10 @@ networks:
 
 services:
   nginx:
+    # The local stack keeps plain version tags on purpose. Digests are pinned where
+    # a cluster resolves them and a rebuild has to be reproducible months later; here
+    # the cost of a stale digest is a developer pulling an image nobody reviewed, and
+    # the benefit of a readable tag is the whole point of the file.
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
