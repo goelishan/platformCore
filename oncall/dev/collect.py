@@ -16,6 +16,7 @@ from __future__ import annotations
 import sys
 
 from oncall import config
+from oncall import landing_zone as lz
 from oncall.collectors import registry
 from oncall.envelope import SourceStatus
 
@@ -25,6 +26,13 @@ def main() -> int:
     print(f"namespaces: {', '.join(config.NAMESPACES) or 'all except ' + ', '.join(sorted(config.EXCLUDE_NAMESPACES))}")
     print(f"buffer:     {config.BUFFER_DB_PATH}")
     print()
+
+    # connect() does not apply the schema; bootstrap() does, and nothing else calls it.
+    # It is idempotent by CREATE TABLE IF NOT EXISTS, and it reconciles columns added to
+    # schema.sql after a buffer already existed on disk — which matters here, because a
+    # buffer written before a schema change keeps its old shape and fails at the first
+    # write naming a new column rather than at startup.
+    lz.bootstrap()
 
     results = registry.run_all()
 

@@ -139,8 +139,12 @@ env:
 	@echo "export ONCALL_NAMESPACES=$(LAB_NS)"
 
 
+# PYTHONPATH because python puts the *script's* directory on sys.path, which is
+# dev/, not the repo root, so `import oncall` finds nothing. The proper fix is a
+# pyproject.toml and an editable install, which would also let requires-python state
+# the 3.11 floor instead of this Makefile asserting it.
 collect:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
-	cd .. && ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
 	  oncall/$(VENV)/bin/python oncall/dev/collect.py
