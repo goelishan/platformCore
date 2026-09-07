@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     created_at    TEXT NOT NULL,
     model         TEXT,
     bundle_sha256 TEXT,                  -- ties a verdict to exact evidence
+    prompt_sha256 TEXT,                  -- ties it to the bytes the model was shown
     hypotheses    TEXT,                  -- JSON
     commands      TEXT,                  -- JSON
     input_tokens  INTEGER,

@@ -70,6 +70,7 @@ DIAGNOSIS_COLUMNS = (
     "created_at",
     "model",
     "bundle_sha256",
+    "prompt_sha256",
     "hypotheses",
     "commands",
     "input_tokens",

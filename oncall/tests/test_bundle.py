@@ -18,6 +18,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from oncall import config
 from oncall import landing_zone as lz
 from oncall.envelope import (
     Severity,
@@ -26,6 +27,7 @@ from oncall.envelope import (
     SignalSource,
     SourceStatus,
     Subject,
+    iso,
     partition_payload,
     provenance_of,
     visible,
@@ -77,9 +79,16 @@ def store(signals: list[Signal], source: SignalSource = SignalSource.K8S_PODS) -
         lz.finish_run(conn, run, SourceStatus.OK, len(signals))
 
 
-def build(subject: str | None = POD) -> bundle.Bundle:
+def build(subject: str | None = POD, **kwargs) -> bundle.Bundle:
+    """History is off unless a case asks for it, so the suite never depends on a
+    reachable store to exercise anything that is not about history."""
+    kwargs.setdefault("history", False)
     with lz.connect() as conn:
-        return bundle.build(conn, CLUSTER, START, END, subject_name=subject)
+        return bundle.build(conn, CLUSTER, START, END, subject_name=subject, **kwargs)
+
+
+def marked(payload: dict, *provenance: str) -> dict:
+    return partition_payload(payload, frozenset(provenance))
 
 
 # ---- the payload contract --------------------------------------------------
@@ -350,3 +359,380 @@ def test_the_subject_filter_is_optional(buffer, subject):
     ])
 
     assert len(build(subject).findings) == (1 if subject else 2)
+
+
+# ---- ranking by what a finding says ----------------------------------------
+
+
+def test_a_log_that_saw_nothing_cannot_outrank_the_failure_it_explains(buffer):
+    """Severity is inherited from the trigger because a log's own text cannot be
+    ranked — reading a level out of arbitrary formatting would make an unfamiliar
+    format look calmer than a familiar one. That was right at collection time and is
+    wrong at ranking time: an empty read carries the crash's severity and none of its
+    evidence, so left alone it sorts above the crash."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=5), key="crash", severity=Severity.ERROR),
+    ])
+    store(
+        [
+            make_signal(
+                when=NOW - timedelta(minutes=4),
+                key="app|previous",
+                source=SignalSource.K8S_LOGS,
+                kind=SignalKind.LOG_EXCERPT,
+                severity=Severity.ERROR,
+                payload={"log_status": str(SourceStatus.EMPTY)},
+            )
+        ],
+        source=SignalSource.K8S_LOGS,
+    )
+
+    ordered = build().findings
+
+    assert ordered[0].source == SignalSource.K8S_PODS
+    assert ordered[1].observational is True
+    assert ordered[1].severity == Severity.ERROR
+    assert ordered[1].rank < ordered[0].rank
+
+
+def test_being_unable_to_see_ranks_above_having_seen_nothing(buffer):
+    """Different facts. Empty means the container printed nothing; unavailable means
+    this agent is blind, which is worth more of a reader's attention even though
+    neither carries evidence about the workload."""
+    for key, status in (("a", SourceStatus.EMPTY), ("b", SourceStatus.UNAVAILABLE)):
+        store(
+            [
+                make_signal(
+                    when=NOW - timedelta(minutes=5),
+                    key=key,
+                    source=SignalSource.K8S_LOGS,
+                    kind=SignalKind.LOG_EXCERPT,
+                    severity=Severity.ERROR,
+                    payload={"log_status": str(status)},
+                )
+            ],
+            source=SignalSource.K8S_LOGS,
+        )
+
+    blind, quiet = build().findings
+
+    assert blind.blind is True
+    assert quiet.blind is False
+    assert blind.rank > quiet.rank
+
+
+def test_a_finding_that_saw_something_keeps_its_severity(buffer):
+    store(
+        [
+            make_signal(
+                when=NOW - timedelta(minutes=5),
+                source=SignalSource.K8S_LOGS,
+                kind=SignalKind.LOG_EXCERPT,
+                severity=Severity.ERROR,
+                payload={"log_status": str(SourceStatus.OK), "excerpt": "panic"},
+            )
+        ],
+        source=SignalSource.K8S_LOGS,
+    )
+
+    finding = build().findings[0]
+
+    assert finding.observational is False
+    assert finding.rank == bundle.SEVERITY_RANK[str(Severity.ERROR)]
+
+
+# ---- counters --------------------------------------------------------------
+
+
+def test_a_counter_is_diffed_across_its_observations(buffer):
+    store([
+        make_signal(when=NOW - timedelta(minutes=m), payload={"restart_count": n})
+        for m, n in ((9, 110), (6, 118), (3, 124))
+    ])
+
+    delta = build().findings[0].deltas[0]
+
+    assert (delta.key, delta.first, delta.last, delta.change) == ("restart_count", 110, 124, 14)
+
+
+def test_a_restarted_counter_is_summed_rather_than_subtracted_across(buffer):
+    """Aggregation is client-side and cached in the reporting component's memory, so a
+    kubelet restart abandons one object and starts another from one. Both stay live and
+    both land on this fingerprint. Subtracting straight across gives 6 - 38, a decrease
+    that never happened; the series that appeared later began inside the window, so its
+    whole value is what it contributed."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=m), payload=marked({"count": n, "event_uid": u}, "event_uid"))
+        for m, n, u in ((9, 30, "uid-old"), (6, 38, "uid-old"), (3, 6, "uid-new"))
+    ])
+
+    delta = build().findings[0].deltas[0]
+
+    assert delta.series == 2
+    assert delta.change == (38 - 30) + 6
+    assert "summed" in delta.basis
+
+
+def test_a_counter_that_predates_the_provenance_change_is_still_one_series(buffer):
+    """event_uid moved into _provenance, and a window spanning that change holds rows
+    of both shapes. Read only in its new home, the older rows have no series identity,
+    one uninterrupted counter looks like two, and the later half is summed as though it
+    had started from zero — a reset invented by the migration, in the field that exists
+    to make real resets visible."""
+    flat = {"count": 30, "event_uid": "uid-1"}
+    nested = marked({"count": 93, "event_uid": "uid-1"}, "event_uid")
+    store([
+        make_signal(when=NOW - timedelta(minutes=9), payload=flat),
+        make_signal(when=NOW - timedelta(minutes=3), payload=nested),
+    ])
+
+    delta = build().findings[0].deltas[0]
+
+    assert delta.series == 1
+    assert delta.change == 63
+
+
+def test_a_single_observation_of_a_series_that_began_in_the_window_is_its_own_delta(buffer):
+    """The resolution of the one-occurrence problem, and it comes from the field that
+    looked like pure provenance until the live output was read: api_first_timestamp.
+    With one row there is nothing to subtract from, but a series that started inside
+    the window has an absolute value that already is the change."""
+    began = iso(NOW - timedelta(minutes=10))
+    store([
+        make_signal(
+            when=NOW - timedelta(minutes=5),
+            payload={"count": 67, "api_first_timestamp": began},
+        )
+    ])
+
+    delta = build().findings[0].deltas[0]
+
+    assert delta.change == 67
+    assert "began inside the window" in delta.basis
+
+
+def test_a_single_observation_of_an_older_series_states_no_change(buffer):
+    """The honest answer is the absolute value and no subtraction. A counter is only
+    meaningful relative to the lifetime of the thing counting it, and here that
+    lifetime starts before anything this bundle can see."""
+    began = iso(START - timedelta(hours=2))
+    store([
+        make_signal(
+            when=NOW - timedelta(minutes=5),
+            payload={"count": 67, "api_first_timestamp": began},
+        )
+    ])
+
+    finding = build().findings[0]
+
+    assert finding.deltas == []
+    assert finding.facts["count"] == 67
+
+
+def test_a_number_that_goes_down_is_not_a_counter(buffer):
+    """container_lifetime_seconds is the live example: 59 then 51 is two containers
+    that died after different intervals. A difference across that describes nothing
+    that happened, so it stays a trend."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=m), payload={"container_lifetime_seconds": n})
+        for m, n in ((9, 59), (3, 51))
+    ])
+
+    finding = build().findings[0]
+
+    assert finding.deltas == []
+    assert finding.trends["container_lifetime_seconds"] == [59, 51]
+
+
+# ---- the window ------------------------------------------------------------
+
+
+def test_the_window_reaches_back_to_where_the_leading_problem_started(buffer):
+    """A window chosen before the evidence is read describes the alert, not the
+    incident. A crash three hours old inside a one-hour window looks an hour old, and
+    that invites a correlation with whatever else happened an hour ago."""
+    began = NOW - timedelta(seconds=config.BUNDLE_LOOKBACK_SECONDS + 900)
+    store([
+        make_signal(when=began, payload={"reason": "OOMKilled"}),
+        make_signal(when=NOW - timedelta(minutes=2), payload={"reason": "OOMKilled"}),
+    ])
+
+    with lz.connect() as conn:
+        start, end, basis = bundle.derive_window(conn, CLUSTER, NOW, POD)
+
+    assert start == began
+    assert basis == bundle.WINDOW_EXTENDED
+
+
+def test_the_window_stops_at_the_retention_horizon(buffer):
+    """The cap is not a performance bound. The buffer holds two days, so a window
+    reaching past it becomes a window over whatever survived the sweep — and reports
+    the sweep's edge as the moment the problem began."""
+    ancient = NOW - timedelta(seconds=config.BUNDLE_MAX_LOOKBACK_SECONDS + 3600)
+    store([
+        make_signal(when=ancient, payload={"reason": "OOMKilled"}),
+        make_signal(when=NOW - timedelta(minutes=2), payload={"reason": "OOMKilled"}),
+    ])
+
+    with lz.connect() as conn:
+        start, _, basis = bundle.derive_window(conn, CLUSTER, NOW, POD)
+
+    assert basis == bundle.WINDOW_CAPPED
+    assert start > ancient
+
+
+def test_a_problem_that_started_inside_the_window_does_not_move_it(buffer):
+    store([make_signal(when=NOW - timedelta(minutes=5), payload={"reason": "OOMKilled"})])
+
+    with lz.connect() as conn:
+        _, _, basis = bundle.derive_window(conn, CLUSTER, NOW, POD)
+
+    assert basis == bundle.WINDOW_FIXED
+
+
+# ---- the budget ------------------------------------------------------------
+
+
+def test_what_the_budget_leaves_out_is_recorded(buffer):
+    """The same rule as declined targets, buffer drops and a truncated excerpt. A
+    bundle that omits silently reads as complete, and that is the one failure a
+    reasoner cannot detect from the inside."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=n), key=f"k{n}", severity=Severity.WARNING)
+        for n in range(2, 8)
+    ])
+
+    result = build(max_findings=2)
+
+    assert len(result.findings) == 2
+    assert len(result.omitted) == 4
+    assert all(o.occurrences == 1 for o in result.omitted)
+    assert all("rank" in o.reason for o in result.omitted)
+
+
+def test_the_budget_keeps_the_highest_ranked(buffer):
+    store([
+        make_signal(when=NOW - timedelta(minutes=5), key="low", severity=Severity.INFO),
+        make_signal(when=NOW - timedelta(minutes=5), key="high", severity=Severity.CRITICAL),
+    ])
+
+    result = build(max_findings=1)
+
+    assert result.findings[0].severity == Severity.CRITICAL
+    assert result.omitted[0].severity == str(Severity.INFO)
+
+
+# ---- degradation -----------------------------------------------------------
+
+
+def test_an_unreachable_store_costs_the_history_claims_and_says_which(buffer, monkeypatch):
+    monkeypatch.setattr(bundle, "history_for", lambda fps, since: ({}, [bundle.HISTORY_DROPPED]))
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build(history=True)
+
+    assert result.degraded == [bundle.HISTORY_DROPPED]
+    assert result.findings[0].history is None
+
+
+def test_history_reaches_the_finding_when_the_store_answers(buffer, monkeypatch):
+    """The claim the store exists to make. first_seen_ever lives there rather than in
+    the buffer because the buffer holds two days: asked here it would answer "never
+    seen before" for anything older, which is the most confident way to be wrong."""
+    seen = bundle.History(first_seen_ever=NOW - timedelta(days=9), is_new=False)
+    monkeypatch.setattr(
+        bundle, "history_for", lambda fingerprints, since: ({fp: seen for fp in fingerprints}, [])
+    )
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build(history=True)
+
+    assert result.degraded == []
+    assert result.findings[0].history is not None
+    assert result.findings[0].history.is_new is False
+
+
+def test_a_window_spanning_a_normalizer_change_says_so(buffer):
+    """A recurrence query across a bump is answering about the keying rules as much as
+    about the cluster: the same problem acquires a new fingerprint the moment the rules
+    change, and first_seen then reports 'never' with nothing raising anywhere."""
+    store([make_signal(when=NOW - timedelta(minutes=m)) for m in (9, 3)])
+
+    with lz.connect() as conn:
+        rows = conn.execute("SELECT signal_id FROM signals ORDER BY event_time").fetchall()
+        conn.execute(
+            "UPDATE signals SET normalizer_version = 'v2' WHERE signal_id = ?",
+            (rows[-1]["signal_id"],),
+        )
+
+    result = build()
+
+    assert len(result.normalizer_versions) == 2
+    assert any("normalizer" in note for note in result.degraded)
+
+
+# ---- the two receipts ------------------------------------------------------
+
+
+def test_the_evidence_receipt_ignores_how_the_findings_are_ordered(buffer):
+    """Order is what the model reads, so it belongs to the prompt receipt. Changing a
+    ranking rule changes the prompt; it does not change which evidence was selected."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=5), key="a", severity=Severity.ERROR),
+        make_signal(when=NOW - timedelta(minutes=4), key="b", severity=Severity.INFO),
+    ])
+
+    result = build()
+    before = bundle.evidence_receipt(result)
+    result.findings.reverse()
+
+    assert bundle.evidence_receipt(result) == before
+
+
+def test_the_evidence_receipt_moves_when_a_source_goes_dark(buffer):
+    """A diagnosis made blind to a source and one made with it are different verdicts
+    against different inputs, and the corpus has to be able to tell them apart."""
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build()
+    before = bundle.evidence_receipt(result)
+    result.sources[0].status = SourceStatus.UNAVAILABLE
+
+    assert bundle.evidence_receipt(result) != before
+
+
+def test_the_evidence_receipt_ignores_provenance_and_observation_timing(buffer):
+    """Fold these in and no two runs ever share a receipt, which is exactly as useless
+    as a hash that never moves."""
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build()
+    before = bundle.evidence_receipt(result)
+
+    result.findings[0].provenance = {"trigger_signal_id": "z" * 32}
+    result.findings[0].signal_ids = ["nonsense"]
+    result.sources[0].last_started = NOW
+    result.sources[0].signals = 999
+
+    assert bundle.evidence_receipt(result) == before
+
+
+def test_the_evidence_receipt_records_what_was_left_out(buffer):
+    """Forty findings dropped and none dropped are different inputs."""
+    store([
+        make_signal(when=NOW - timedelta(minutes=n), key=f"k{n}", severity=Severity.WARNING)
+        for n in range(2, 6)
+    ])
+
+    assert bundle.evidence_receipt(build(max_findings=4)) != bundle.evidence_receipt(
+        build(max_findings=2)
+    )
+
+
+def test_the_prompt_receipt_moves_with_the_wording(buffer):
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    rendered = bundle.render(build())
+
+    assert bundle.prompt_receipt(rendered) != bundle.prompt_receipt(rendered + " ")
+    assert bundle.prompt_receipt(rendered) == bundle.prompt_receipt(rendered)

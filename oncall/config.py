@@ -202,3 +202,29 @@ SHIP_INTERVAL = int(os.getenv("ONCALL_SHIP_INTERVAL", "120"))
 # Caps one shipping cycle so a large backlog drains over several bounded transactions
 # rather than one long one holding a write lock on the buffer.
 SHIP_BATCH_SIZE = int(os.getenv("ONCALL_SHIP_BATCH_SIZE", "1000"))
+
+
+# ---- assembler --------------------------------------------------------------
+# What one incident's evidence window starts as, before anything is known about the
+# evidence. Wide enough to hold the pre-incident history that usually contains the
+# cause, and narrow enough that a busy namespace does not bury the subject.
+BUNDLE_LOOKBACK_SECONDS = int(os.getenv("ONCALL_BUNDLE_LOOKBACK_SECONDS", "3600"))
+
+# How far back the window may be extended once the evidence has been read. Extension
+# exists so a problem that started before the alert is described from its beginning;
+# the cap exists because the buffer holds two days and a window reaching past that
+# silently becomes a window over whatever survived retention.
+BUNDLE_MAX_LOOKBACK_SECONDS = int(os.getenv("ONCALL_BUNDLE_MAX_LOOKBACK_SECONDS", "21600"))
+
+# How many findings may enter a bundle. Everything above this is recorded as an
+# omission rather than dropped, because a bundle that silently omits reads as complete.
+BUNDLE_MAX_FINDINGS = int(os.getenv("ONCALL_BUNDLE_MAX_FINDINGS", "40"))
+
+# Unabridged log text the bundle may carry, in total. The excerpt is lossy by
+# construction and the blob is not, so this buys back the loss where it matters most —
+# and it is a prompt budget, not a storage one: the bytes are already on disk.
+BUNDLE_PROMOTE_BYTES = int(os.getenv("ONCALL_BUNDLE_PROMOTE_BYTES", str(16 * 1024)))
+
+# Below this many occurrences there is no spacing to speak of: two timestamps make one
+# gap, and one gap has no shape.
+BUNDLE_MIN_SPACING_SAMPLES = int(os.getenv("ONCALL_BUNDLE_MIN_SPACING_SAMPLES", "3"))

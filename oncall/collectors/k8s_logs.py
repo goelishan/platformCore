@@ -306,8 +306,12 @@ class Fetch(NamedTuple):
     sanitised copy rather than what the container actually emitted — and two different
     malformed logs could then collapse onto one blob.
 
-    raw carries a default so a caller that only cares about the decoded form cannot
-    accidentally construct a Fetch that stores an empty blob beside a non-empty excerpt.
+    raw has no default, so every construction site has to say what the bytes were.
+    A default would let a caller that only cares about the decoded form build a Fetch
+    carrying an excerpt and no bytes — a value _read_log cannot produce, since text is
+    derived from raw — and blob writing keys off raw.strip(). The test fixture did
+    exactly that for as long as the default existed, which is how a whole function
+    stayed uncovered without anything looking wrong.
     """
 
     status: str
@@ -316,7 +320,7 @@ class Fetch(NamedTuple):
     truncated: bool
     fell_back: bool
     error: str | None
-    raw: bytes = b""
+    raw: bytes
 
 
 def _dedupe_key(container: str | None, stream: str) -> str:
@@ -428,7 +432,14 @@ def _read_log(target: Target, stream: str) -> Fetch:
 
     for attempt, previous in enumerate((want_previous, False) if want_previous else (False,)):
         try:
-            resp = k8s.core_v1().read_namespaced_pod_log(
+            # Annotated rather than inferred, because the generated signature is wrong
+            # here and a checker that believes it will reject the correct code. The
+            # method is declared as returning str; under _preload_content=False the
+            # client hands back the urllib3 response untouched and never looks at the
+            # body. That declaration is the same one that produced the bug this flag
+            # exists to fix — it is why the client called str() on the bytes — so
+            # deferring to it now would be agreeing with the thing that was broken.
+            resp: Any = k8s.core_v1().read_namespaced_pod_log(
                 name=target.pod,
                 namespace=target.namespace,
                 container=target.container,
@@ -445,12 +456,12 @@ def _read_log(target: Target, stream: str) -> Fetch:
                 continue
             return Fetch(
                 str(SourceStatus.UNAVAILABLE), "", stream, False, False,
-                f"ApiException {exc.status}: {exc.reason}",
+                f"ApiException {exc.status}: {exc.reason}", b"",
             )
         except Exception as exc:  # noqa: BLE001 - any failure to read means the same
             return Fetch(
                 str(SourceStatus.UNAVAILABLE), "", stream, False, False,
-                f"{type(exc).__name__}: {exc}",
+                f"{type(exc).__name__}: {exc}", b"",
             )
 
         raw: bytes = resp.data or b""
@@ -481,7 +492,7 @@ def _read_log(target: Target, stream: str) -> Fetch:
             raw,
         )
 
-    return Fetch(str(SourceStatus.EMPTY), "", STREAM_CURRENT, False, True, None)
+    return Fetch(str(SourceStatus.EMPTY), "", STREAM_CURRENT, False, True, None, b"")
 
 
 def _upstream_verdict(statuses: list[Any]) -> str | None:

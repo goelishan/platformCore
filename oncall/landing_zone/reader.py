@@ -153,6 +153,60 @@ def log_targets(
     ).fetchall()
 
 
+# ---- blast radius ----------------------------------------------------------
+
+
+def spread_of(
+    conn: Connection, fingerprint: str, start: datetime, end: datetime
+) -> sqlite3.Row:
+    """How widely one problem is occurring, independent of the subject being examined.
+
+    Five pods failing across five nodes and five pods failing on one node are different
+    diagnoses, and node was promoted out of the payload into a column precisely so that
+    telling them apart is a GROUP BY. This is the query that promotion was for.
+
+    No cluster filter and no subject filter: the question is whether the fingerprint is
+    confined to what the caller happens to be looking at, and a query scoped to the
+    subject could only ever answer yes.
+    """
+    return conn.execute(
+        """
+        SELECT COUNT(DISTINCT subject_name) AS subjects,
+               COUNT(DISTINCT node_name)    AS nodes,
+               COUNT(DISTINCT namespace)    AS namespaces,
+               COUNT(DISTINCT cluster)      AS clusters
+        FROM signals
+        WHERE fingerprint = ? AND event_time BETWEEN ? AND ?
+        """,
+        (fingerprint, iso(start), iso(end)),
+    ).fetchone()
+
+
+# ---- collection attempts ---------------------------------------------------
+
+
+def run_counts_in_window(
+    conn: Connection, start: datetime, end: datetime
+) -> list[sqlite3.Row]:
+    """Every attempt in the window, grouped by how it ended.
+
+    source_status_in_window answers with the newest run alone, which is the right shape
+    for "is this source working now" and the wrong one for "was this source working
+    while the incident was happening". A source that failed four times and then
+    succeeded reports ok there and reports four failures here, and a bundle drawing
+    conclusions from a quiet source needs the second answer.
+    """
+    return conn.execute(
+        """
+        SELECT source, status, COUNT(*) AS attempts
+        FROM collection_runs
+        WHERE started_at BETWEEN ? AND ?
+        GROUP BY source, status
+        """,
+        (iso(start), iso(end)),
+    ).fetchall()
+
+
 # ---- what the buffer gave up -----------------------------------------------
 
 

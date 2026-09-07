@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from kubernetes.client.exceptions import ApiException
 
 from oncall import config
 from oncall import landing_zone as lz
@@ -296,6 +297,12 @@ def _target(**overrides) -> k8s_logs.Target:
 
 
 def _fetch(**overrides) -> k8s_logs.Fetch:
+    """A Fetch the real read path could have produced.
+
+    raw is derived from text unless a caller states it, because in _read_log text is
+    the decode of raw and the two can never disagree about being empty. A fixture that
+    carried an excerpt with no bytes described a value the collector cannot build, and
+    blob writing keys off raw."""
     base = dict(
         status=str(SourceStatus.OK),
         text=STREAM,
@@ -304,7 +311,9 @@ def _fetch(**overrides) -> k8s_logs.Fetch:
         fell_back=False,
         error=None,
     )
-    return k8s_logs.Fetch(**{**base, **overrides})
+    merged = {**base, **overrides}
+    merged.setdefault("raw", str(merged["text"]).encode())
+    return k8s_logs.Fetch(**merged)
 
 
 def test_event_time_is_inherited_from_the_trigger():
@@ -389,3 +398,116 @@ def test_re_running_the_same_trigger_is_idempotent():
     )
 
     assert first.signal_id == again.signal_id
+
+
+# ---- the read ---------------------------------------------------------------
+# The only part of this module that crosses the client boundary, and the part that was
+# wrong in production for two weeks with a green suite. These stubs answer with bytes
+# because that is what the transport carries; the previous stub answered with a str
+# because that is what the generated signature claims, and it was the signature that
+# was wrong. This is closer to the wire and still not a substitute for a test against a
+# real API server — it cannot catch the next thing the client does differently from its
+# own declaration.
+
+
+class _Resp:
+    """What the client returns under _preload_content=False: the response, unread."""
+
+    def __init__(self, data: bytes):
+        self.data = data
+
+
+class _Client:
+    def __init__(self, *answers):
+        self._answers = list(answers)
+        self.calls: list[bool] = []
+
+    def read_namespaced_pod_log(self, **kwargs):
+        self.calls.append(kwargs["previous"])
+        answer = self._answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+@pytest.fixture()
+def client(monkeypatch):
+    def install(*answers) -> _Client:
+        stub = _Client(*answers)
+        monkeypatch.setattr(k8s_logs.k8s, "core_v1", lambda: stub)
+        return stub
+
+    return install
+
+
+def test_the_body_is_decoded_rather_than_stringified(client):
+    """The bug that made this collector's output worthless for two weeks.
+
+    The generated client produced its declared str by calling str() on the bytes, so
+    the caller received the repr of a bytes object: one line, no parseable timestamps,
+    and b'' read as truthy content. Asserting on the decoded text is the cheapest
+    statement that the bytes were owned here."""
+    client(_Resp(STREAM.encode()))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.text == STREAM
+    assert fetch.raw == STREAM.encode()
+    assert "\\n" not in fetch.text
+    assert len(fetch.text.splitlines()) > 1
+
+
+def test_an_empty_log_is_empty_and_not_ok(client):
+    """b'' is four truthy characters once it has been stringified, which is how a
+    container that printed nothing was recorded as successfully read."""
+    client(_Resp(b""))
+
+    assert k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT).status == str(
+        SourceStatus.EMPTY
+    )
+
+
+def test_truncation_is_measured_on_the_bytes_the_server_sent(client, monkeypatch):
+    """limit_bytes bounds bytes, so the cap has to be compared against bytes.
+
+    Eight undecodable bytes under a cap of twenty: the server sent well under the
+    limit and nothing was cut. Each one decodes to U+FFFD, which re-encodes to three
+    bytes, so measuring the decoded form finds twenty-four and claims a truncation
+    that never happened — a replacement character counted as though it were the bytes
+    it stands in for.
+
+    The cap and the payload are chosen so the two measurements disagree. An earlier
+    version of this test used a cap of eight, where every candidate measurement
+    answers True and the case cannot tell them apart."""
+    monkeypatch.setattr(config, "LOG_LIMIT_BYTES", 20)
+    client(_Resp(b"\xff" * 8))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert len(fetch.raw) == 8
+    assert fetch.truncated is False
+
+
+def test_a_missing_previous_container_falls_back_and_says_so(client):
+    """A 400 here is a fact about this pod, not a failure to see it: the container has
+    not restarted yet. The running stream is real evidence and the row records that it
+    is not the stream that was asked for."""
+    stub = client(ApiException(status=400, reason="Bad Request"), _Resp(STREAM.encode()))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_PREVIOUS)
+
+    assert stub.calls == [True, False]
+    assert fetch.stream == k8s_logs.STREAM_CURRENT
+    assert fetch.fell_back is True
+
+
+def test_one_unreadable_target_does_not_take_the_source_down(client):
+    """Recorded against this target alone. Thirty-nine other pods are real evidence and
+    withholding them helps nobody, so the failure stays local and named."""
+    client(ApiException(status=500, reason="Internal Server Error"))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.UNAVAILABLE)
+    assert fetch.raw == b""
+    assert "500" in (fetch.error or "")

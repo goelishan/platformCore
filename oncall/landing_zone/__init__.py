@@ -27,9 +27,11 @@ from oncall.landing_zone.reader import (
     log_targets,
     occurrence_times,
     recurrences,
+    run_counts_in_window,
     signals_for_incident,
     signals_in_window,
     source_status_in_window,
+    spread_of,
 )
 from oncall.landing_zone.retention import reclaim, sweep_blobs, sweep_buffer
 from oncall.landing_zone.writer import (
@@ -70,9 +72,11 @@ __all__ = [
     "record_buffer_drop",
     "record_diagnosis",
     "recurrences",
+    "run_counts_in_window",
     "signals_for_incident",
     "signals_in_window",
     "source_status_in_window",
+    "spread_of",
     "start_run",
     "start_shipping_run",
     "sweep_blobs",

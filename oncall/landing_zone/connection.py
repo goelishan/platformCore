@@ -52,10 +52,44 @@ def bootstrap(db_path: Path | None = None) -> None:
     conn=sqlite3.connect(path)
     try:
         conn.executescript(SCHEMA_PATH.read_text())
+        _ensure_added_columns(conn)
         conn.commit()
         _ensure_incremental_vacuum(conn)
     finally:
         conn.close()
+
+
+# Columns added to schema.sql after a buffer may already exist on disk.
+#
+# The schema is CREATE TABLE IF NOT EXISTS, which is what makes bootstrap idempotent
+# and also what makes it silent: an existing file keeps whatever shape it was created
+# with, and the first write naming a new column fails at runtime rather than at
+# startup. The store has a migration runner; the buffer deliberately does not, because
+# it is rebuildable and a two-day cache does not deserve one.
+#
+# Rebuildable is not the same as disposable, though. A buffer holding unshipped rows
+# is the only copy of them, so "delete it and start again" costs real evidence at
+# exactly the moment the store is down and the outbox is deepest. Adding a column is
+# the one schema change that cannot lose data, so that subset is reconciled here and
+# nothing else is: anything beyond it — a changed type, a dropped column, a new
+# constraint — is a rebuild, and should be an explicit one rather than something this
+# function attempts quietly.
+_ADDED_COLUMNS: dict[str, dict[str, str]] = {
+    "diagnoses": {"prompt_sha256": "TEXT"},
+}
+
+
+def _ensure_added_columns(conn: sqlite3.Connection) -> None:
+    for table, columns in _ADDED_COLUMNS.items():
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if not existing:
+            # The table is not there at all, which means schema.sql just created it
+            # with every column, or this is not a buffer. Either way, nothing to add.
+            continue
+
+        for name, decl in columns.items():
+            if name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
 
 
 # 2 is INCREMENTAL; 0 is none. SQLite accepts "PRAGMA auto_vacuum = INCREMENTAL" and

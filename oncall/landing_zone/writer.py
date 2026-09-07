@@ -243,21 +243,37 @@ def record_diagnosis(
     bundle_sha256: str,
     hypotheses: list[dict[str, Any]],
     commands: list[dict[str, Any]],
+    prompt_sha256: str | None = None,
     input_tokens: int | None = None,
     output_tokens: int | None = None,
     latency_ms: int | None = None,
 ) -> str:
+    """Two receipts, because one hash cannot carry two promises.
+
+    bundle_sha256 identifies the evidence that was selected and is independent of
+    wording, so a reworded template leaves last month's diagnoses comparable with
+    today's. prompt_sha256 identifies the bytes the model was shown and moves whenever
+    the rendering moves, which is what catches a template edit that quietly dropped a
+    section — under the evidence receipt alone the inputs would still look identical
+    and the regression would be blamed on the model.
+
+    prompt_sha256 is optional so a caller that has not rendered anything yet can still
+    journal a diagnosis. A null there means nobody hashed the prompt, which is a
+    different and more honest thing than a hash of something that was never sent.
+    """
     diagnosis_id = uuid.uuid4().hex
     conn.execute(
         "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at, model, "
-        "bundle_sha256, hypotheses, commands, input_tokens, output_tokens, latency_ms) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "bundle_sha256, prompt_sha256, hypotheses, commands, input_tokens, "
+        "output_tokens, latency_ms) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             diagnosis_id,
             incident_id,
             _now(),
             model,
             bundle_sha256,
+            prompt_sha256,
             json.dumps(hypotheses),
             json.dumps(commands),
             input_tokens,
