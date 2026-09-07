@@ -1,0 +1,14 @@
+# Build context excludes. The image needs the application and its runtime lock, and
+# nothing else: tests, the dev lock and local caches would otherwise be COPYd in by
+# the wildcard below the requirements install, growing the runtime image with a test
+# suite it never runs and a second requirements file it must not install.
+
+tests/
+requirements-dev.in
+requirements-dev.txt
+requirements.in
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

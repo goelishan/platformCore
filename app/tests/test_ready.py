@@ -13,6 +13,7 @@
 
 
 import logging
+import re
 
 
 def test_ready_returns_200_when_the_connection_succeeds(client, connect_spy):
@@ -25,20 +26,29 @@ def test_ready_returns_200_when_the_connection_succeeds(client, connect_spy):
     assert connect_spy.connections[0].cursors[0].executed == ["SELECT 1"]
     # And the round-trip is bounded. An unbounded connect holds a threadpool worker
     # for the OS retry budget long after the kubelet has given up on the probe, which
-    # is how a stalled database turns into a restart of every replica.
-    assert "connect_timeout=" in connect_spy.calls[0]
+    # is how a stalled database turns into a restart of every replica. Matched as a
+    # whole keyword with a numeric value: a substring check also accepts a misspelt
+    # key, which libpq would ignore rather than reject.
+    # [1-9] rather than \d: libpq reads connect_timeout=0 as "wait indefinitely",
+    # which is the unbounded behaviour this asserts against, spelt differently.
+    assert re.search(r"(^| )connect_timeout=[1-9]\d*( |$)", connect_spy.calls[0])
 
 
-def test_ready_returns_503_when_the_connection_raises(client, connect_spy):
-    connect_spy.raising(OSError("connection refused"))
+def test_ready_returns_503_when_the_connection_raises(client, connect_spy, caplog):
+    connect_spy.raising(OSError("connection refused at db.invalid for user fastapi"))
 
-    response = client.get("/ready")
+    with caplog.at_level(logging.ERROR, logger="platformcore"):
+        response = client.get("/ready")
 
-    # 503 is what removes the Pod from the Service endpoints. Any 5xx that FastAPI
+    # 503 is what removes the Pod from the Service endpoints. Any 5xx FastAPI
     # produced by accident would read as unhealthy to the kubelet too, so the body is
     # asserted as well: this failure has to be the deliberate one.
     assert response.status_code == 503
-    assert "connection refused" in response.json()["detail"]
+    assert response.json()["detail"] == "database unreachable"
+    # The driver's message names the host and the user. It goes to the log, and it
+    # does not go to a caller who reached this endpoint through the public ALB.
+    assert "db.invalid" in caplog.text
+    assert "db.invalid" not in response.text
 
 
 def test_ready_returns_503_naming_the_missing_variable(client, connect_spy, monkeypatch, caplog):
