@@ -33,8 +33,92 @@ jobs:
         # typos that would otherwise only surface on a dev laptop.
         run: docker compose config > /dev/null
 
+  test:
+    name: Application tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   # same minor the image is built on
+          cache: pip
+          # The dev lock is a superset of the runtime one and the only file this job
+          # installs, so it is the whole cache key.
+          cache-dependency-path: app/requirements-dev.txt
+
+      - name: Install dependencies
+        # requirements-dev.txt is a superset of the runtime lock, so one file covers
+        # both the application module the suite imports and the suite's own tools.
+        # --require-hashes is stated rather than left implicit: pip would enable it
+        # anyway on a fully hashed file, and naming it means a lock that loses its
+        # hashes fails here instead of quietly installing whatever resolves.
+        run: pip install --require-hashes -r app/requirements-dev.txt
+
+      - name: Run pytest
+        # No database and no AWS credentials in this job, deliberately. The suite
+        # mocks at the driver boundary, so a runner that could reach RDS would be
+        # testing something the cluster never does.
+        run: pytest app/tests -q
+
+  chart:
+    name: Chart renders as documented
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Resolve the operator lock
+        # On a runner that has never seen these repositories, which is the only place
+        # the bootstrap path gets an honest test. A laptop with them already
+        # registered cannot tell a working `make up` from a broken one.
+        run: |
+          make helm-repos
+          helm dependency build charts/platform-bootstrap
+
+      - name: Lint both charts
+        run: helm lint charts/platformcore charts/platform-bootstrap
+
+      - name: Assert the rendered chart
+        # Probe wiring, probe separation, image digests, and the tuning invariants.
+        # The unit tests import the application and cannot see any of it.
+        run: make chart-check
+
+  terraform:
+    name: Terraform validates and is formatted
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Check formatting
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Validate
+        # -backend=false: validation needs provider schemas, not the S3 state, so it
+        # runs with no AWS credential and no lock on the real state file.
+        run: |
+          terraform -chdir=terraform init -backend=false
+          terraform -chdir=terraform validate
+
   build-and-push:
-    needs: validate
+    # Gated on the three jobs that speak to what gets deployed. terraform runs
+    # beside them and is not a gate: its formatting has no bearing on whether this
+    # image is safe to push, and coupling them would block a fix on an unrelated
+    # file.
+    needs: [validate, test, chart]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -66,8 +150,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update fastapi image tag in values.yaml
-        # Scoped to the line following the ECR repo URL — avoids touching
-        # nginx (tag: alpine) and postgres (tag: "17") image tag lines.
+        # Scoped to the line following the ECR repo URL — avoids touching the nginx
+        # and postgres image tags, which are pinned tag-plus-digest and must never be
+        # rewritten by CI.
         run: |
           sed -i '/platformcore-app/{n;s|tag: .*|tag: ${{ github.sha }}|}' charts/platformcore/values.yaml
 

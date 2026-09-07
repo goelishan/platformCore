@@ -1,4 +1,39 @@
-.PHONY: up down down-all rebuild status logs curl
+.PHONY: up down down-all rebuild status logs curl helm-repos helm-relock helm-pins chart-check lock-python
+
+
+#--------------------------------------------------------------------------------------------------------
+# OPERATOR LAYER — VERSIONS COME FROM THE LOCK
+#--------------------------------------------------------------------------------------------------------
+#
+# charts/platform-bootstrap/Chart.lock names the exact version of each operator
+# chart. `helm dependency build` downloads those versions and refuses anything the
+# lock does not cover, so the tarballs installed below are the pinned ones by
+# construction rather than by a flag someone has to remember to pass. They are
+# installed as six releases rather than one because they land in six different
+# namespaces and must exist before Argo CD syncs the application chart.
+
+BOOTSTRAP := charts/platform-bootstrap
+VENDORED  := $(BOOTSTRAP)/charts
+
+# Helm resolves a dependency's `repository:` URL against the repositories registered
+# on the machine, not over the network: both `dependency build` and `dependency update`
+# check every URL is known before downloading anything, and abort with "no repository
+# definition for ..." otherwise. The URLs in Chart.lock are the pin; these lines are
+# what makes the machine able to act on it, and they are why a fresh laptop or CI
+# runner can bootstrap at all. --force-update keeps them idempotent. Moving the
+# dependencies to OCI references would remove this step entirely.
+helm-repos:
+	@helm repo add eks https://aws.github.io/eks-charts --force-update >/dev/null
+	@helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
+	@helm repo add grafana https://grafana.github.io/helm-charts --force-update >/dev/null
+	@helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
+	@helm repo add external-secrets https://charts.external-secrets.io --force-update >/dev/null
+	@helm repo update >/dev/null
+
+# Reads one operator's toggle out of the bootstrap chart's values.yaml, so turning
+# a tier off is an edit to that file rather than a commented-out block in here.
+enabled = $(shell awk '$$0 == "$(1):" {f=1;next} /^[^ #]/{f=0} f&&/enabled:/{print $$2;exit}' $(BOOTSTRAP)/values.yaml)
+
 
 # Bring the full stack up.
 #
@@ -13,6 +48,10 @@
 #   7. ArgoCD installed — GitOps controller; watches repo, syncs app chart to cluster
 #      (app deploy is NOT triggered here — CI push → image tag commit → ArgoCD sync)
 #
+# Every operator version above comes from charts/platform-bootstrap/Chart.lock,
+# not from whatever upstream published this morning. `make helm-pins` reports the
+# pins against upstream; `make helm-relock` is the only way to move one.
+#
 # The platformcore app itself is deployed by the CI pipeline (push to main),
 # not by make up, so image tagging stays owned by CI.
 #
@@ -22,51 +61,59 @@ up:
 	cd terraform && terraform apply -auto-approve
 	@echo "==> Updating kubeconfig..."
 	aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager
-	@echo "==> Adding Helm repos..."
-	helm repo add eks https://aws.github.io/eks-charts --force-update 2>/dev/null || true
-	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update 2>/dev/null || true
-	helm repo add grafana https://grafana.github.io/helm-charts --force-update 2>/dev/null || true
-	helm repo add argo https://argoproj.github.io/argo-helm --force-update 2>/dev/null || true
-	helm repo add external-secrets https://charts.external-secrets.io --force-update 2>/dev/null || true
-	helm repo update
+	@echo "==> Vendoring pinned operator charts..."
+	@$(MAKE) --no-print-directory helm-repos
+	helm dependency build $(BOOTSTRAP)
 	@echo "==> Installing ALB Controller..."
-	@ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
-	VPC_ID=$$(cd terraform && terraform output -raw vpc_id); \
-	helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
-	  -n kube-system \
-	  --set clusterName=platformcore \
-	  --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ALB_ROLE" \
-	  --set vpcId=$$VPC_ID \
-	  --set region=us-east-1 \
-	  --set replicaCount=1 \
-	  --wait
+	@if [ "$(call enabled,aws-load-balancer-controller)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  ALB_ROLE=$$(cd terraform && terraform output -raw alb_controller_role_arn); \
+	  VPC_ID=$$(cd terraform && terraform output -raw vpc_id); \
+	  helm upgrade --install aws-load-balancer-controller $(VENDORED)/aws-load-balancer-controller-*.tgz \
+	    -n kube-system \
+	    --set clusterName=platformcore \
+	    --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ALB_ROLE" \
+	    --set vpcId=$$VPC_ID \
+	    --set region=us-east-1 \
+	    --set replicaCount=1 \
+	    --wait; \
+	fi
 	@echo "==> Installing kube-prometheus-stack..."
-	helm upgrade --install kps prometheus-community/kube-prometheus-stack \
-	  -n monitoring --create-namespace \
-	  -f helm/monitoring/values.yaml \
-	  --wait --timeout 10m
+	@if [ "$(call enabled,kube-prometheus-stack)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  helm upgrade --install kps $(VENDORED)/kube-prometheus-stack-*.tgz \
+	    -n monitoring --create-namespace \
+	    -f helm/monitoring/values.yaml \
+	    --wait --timeout 10m; \
+	fi
 	@echo "==> Installing Loki..."
-	helm upgrade --install loki grafana/loki \
-	  -n monitoring \
-	  -f helm/monitoring/loki-values.yaml \
-	  --wait --timeout 5m
+	@if [ "$(call enabled,loki)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  helm upgrade --install loki $(VENDORED)/loki-*.tgz \
+	    -n monitoring \
+	    -f helm/monitoring/loki-values.yaml \
+	    --wait --timeout 5m; \
+	fi
 	@echo "==> Installing Promtail..."
-	helm upgrade --install promtail grafana/promtail \
-	  -n monitoring \
-	  -f helm/monitoring/promtail-values.yaml \
-	  --wait --timeout 5m
+	@if [ "$(call enabled,promtail)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  helm upgrade --install promtail $(VENDORED)/promtail-*.tgz \
+	    -n monitoring \
+	    -f helm/monitoring/promtail-values.yaml \
+	    --wait --timeout 5m; \
+	fi
 	@echo "==> Installing External Secrets Operator..."
-	@ESO_ROLE=$$(cd terraform && terraform output -raw eso_role_arn); \
-	helm upgrade --install external-secrets external-secrets/external-secrets \
-	  -n external-secrets --create-namespace \
-	  -f helm/eso/values.yaml \
-	  --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ESO_ROLE" \
-	  --wait --timeout 5m
+	@if [ "$(call enabled,external-secrets)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  ESO_ROLE=$$(cd terraform && terraform output -raw eso_role_arn); \
+	  helm upgrade --install external-secrets $(VENDORED)/external-secrets-*.tgz \
+	    -n external-secrets --create-namespace \
+	    -f helm/eso/values.yaml \
+	    --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=$$ESO_ROLE" \
+	    --wait --timeout 5m; \
+	fi
 	@echo "==> Installing ArgoCD..."
-	helm upgrade --install argocd argo/argo-cd \
-	  -n argocd --create-namespace \
-	  -f helm/argocd/values.yaml \
-	  --wait --timeout 5m
+	@if [ "$(call enabled,argo-cd)" != "true" ]; then echo "  disabled in $(BOOTSTRAP)/values.yaml - skipping"; else \
+	  helm upgrade --install argocd $(VENDORED)/argo-cd-*.tgz \
+	    -n argocd --create-namespace \
+	    -f helm/argocd/values.yaml \
+	    --wait --timeout 5m; \
+	fi
 	@echo "==> Bootstrapping RDS IAM auth user..."
 	@bash scripts/rds-bootstrap.sh
 	@echo "==> Bootstrap complete. Push to main to deploy the platformcore app."
@@ -220,6 +267,61 @@ down-all:
 # End-of-day teardown + morning rebuild shortcut.
 rebuild: down up
 
+
+
+# Re-resolve the operator charts against Chart.yaml and rewrite Chart.lock.
+#
+# The only supported way to move an operator version: edit the version in
+# charts/platform-bootstrap/Chart.yaml, run this, and review the Chart.lock diff.
+# Running it without editing Chart.yaml is a no-op beyond the generated timestamp,
+# which is the point - the lock does not drift on its own.
+helm-relock: helm-repos
+	helm dependency update $(BOOTSTRAP)
+
+
+# What is pinned, and what has upstream published since?
+helm-pins:
+	@bash scripts/helm-pins.sh $(BOOTSTRAP)
+
+
+# Render the application chart and assert the properties its templates promise.
+#
+# The unit suite imports app/main.py and cannot see the chart, so the defect that
+# started this work was invisible to it. This is the layer that catches it, and it
+# needs no cluster: probe wiring, probe separation, image digests, and the two
+# tuning invariants that were previously only sentences in comments.
+chart-check:
+	@bash scripts/check-chart.sh charts/platformcore
+
+
+# Recompile the Python locks from the .in files.
+#
+# Resolution targets the image's interpreter and platform rather than whichever
+# laptop runs this, so the lock describes what will actually be installed in the
+# container. --generate-hashes writes a digest per artifact, which is what gives
+# the Dockerfile's --require-hashes something to check. requirements-dev.txt is a
+# superset of the runtime lock rather than a second file beside it: pip refuses to
+# mix hashed and unhashed requirement files, and two independently resolved locks
+# would eventually disagree about a shared transitive dependency. Including the
+# runtime intent is not enough to prevent that: --constraint pins the dev resolution
+# to the versions the runtime lock already chose, so CI cannot test a stack the image
+# does not ship. Order matters here - the runtime lock is written first, and the dev
+# compile reads it.
+lock-python:
+	@command -v uv >/dev/null || { echo "uv not found - brew install uv"; exit 1; }
+	uv pip compile app/requirements.in \
+	  --generate-hashes \
+	  --python-version 3.12 \
+	  --python-platform x86_64-unknown-linux-gnu \
+	  --custom-compile-command "make lock-python" \
+	  -o app/requirements.txt
+	uv pip compile app/requirements-dev.in \
+	  --constraint app/requirements.txt \
+	  --generate-hashes \
+	  --python-version 3.12 \
+	  --python-platform x86_64-unknown-linux-gnu \
+	  --custom-compile-command "make lock-python" \
+	  -o app/requirements-dev.txt
 
 
 # What's currently provisioned?

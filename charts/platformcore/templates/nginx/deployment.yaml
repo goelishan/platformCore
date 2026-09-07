@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}
+          image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}@{{ required "nginx.image.digest is required - see values.yaml" .Values.nginx.image.digest }}
           env:
             - name: APP_ENV
               valueFrom:

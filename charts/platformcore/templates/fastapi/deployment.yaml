@@ -31,17 +31,22 @@ spec:
                 name: fastapi-config
           resources:
             {{- toYaml .Values.fastapi.resources | nindent 12 }}
+          # Readiness gates traffic, liveness gates the process, and the app keeps
+          # two endpoints so those questions stay separable. Tuning, and why the two
+          # sets of numbers differ, live in values.yaml.
           readinessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.fastapi.probes.readiness.path }}
               port: 8000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.fastapi.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.fastapi.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.fastapi.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.fastapi.probes.readiness.failureThreshold }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.fastapi.probes.liveness.path }}
               port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 15
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.fastapi.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.fastapi.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.fastapi.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.fastapi.probes.liveness.failureThreshold }}

@@ -8,20 +8,20 @@ data "aws_iam_policy_document" "eso_trust" {
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
-      type = "Federated"
+      type        = "Federated"
       identifiers = [aws_iam_openid_connect_provider.eks.id]
     }
 
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
-      values = ["system:serviceaccount:external-secrets:external-secrets"]
+      values   = ["system:serviceaccount:external-secrets:external-secrets"]
     }
 
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
-      values = ["sts.amazonaws.com"]
+      values   = ["sts.amazonaws.com"]
     }
   }
 }
@@ -29,12 +29,12 @@ data "aws_iam_policy_document" "eso_trust" {
 data "aws_iam_policy_document" "eso_secrets" {
   statement {
     actions = [
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
     ]
 
     resources = [
-        "arn:aws:secretsmanager:${data.aws_region.fastapi.name}:${data.aws_caller_identity.fastapi.account_id}:secret:platformcore/*"
+      "arn:aws:secretsmanager:${data.aws_region.fastapi.name}:${data.aws_caller_identity.fastapi.account_id}:secret:platformcore/*"
     ]
   }
 }

@@ -1,0 +1,31 @@
+#--------------------------------------------------------------------------------------------------------
+# RUNTIME DEPENDENCIES — INTENT
+#--------------------------------------------------------------------------------------------------------
+#
+#   - direct dependencies only, with the ranges that are actually meant
+#
+#   - resolved and hash-pinned into requirements.txt; edit here, never there
+#
+#   - regenerate with `make lock-python`
+#
+# Every bound sits at the next minor. A relock therefore moves patch versions
+# only; crossing a minor is an edit to this file, reviewed on its own rather
+# than arriving inside a regenerated lock nobody reads line by line.
+
+
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.32,<0.33
+
+# psycopg's binary extra ships the libpq wheel, which is what keeps the image
+# free of a build toolchain and a system libpq.
+psycopg[binary]>=3.2,<3.3
+
+# Signs the RDS IAM auth token. Unpinned until now, which meant every image
+# build picked up a new AWS SDK without a diff anywhere in the repository.
+boto3>=1.43,<1.44
+
+prometheus-fastapi-instrumentator>=7.0,<7.1
+
+# Reload backend for the Compose override. uvicorn[standard] already pulls it;
+# it is named here because the developer loop depends on it directly.
+watchfiles>=1.2,<1.3

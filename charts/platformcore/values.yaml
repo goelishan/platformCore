@@ -15,10 +15,22 @@ global:
 #--------------------------------------------------------------------------------------------------------
 
 
+# Images are pinned as tag + digest. Container tags are mutable — `alpine` and `17`
+# are reassigned upstream every few weeks — and there is no lockfile for them, so the
+# digest is the lock. The tag records which release was intended for a human reading
+# this file; the digest is what actually resolves. Kubernetes pulls by digest and
+# ignores the tag when both are present, so editing one without the other changes
+# nothing except the documentation. Move them together, or leave both alone.
+#
+# The digest pinned is the manifest list's, not a single architecture's, so the same
+# reference resolves on the amd64 nodes and on an arm64 laptop. Refresh with
+# `docker buildx imagetools inspect <repo>:<tag>` and update both fields.
+
 nginx:
   image:
     repository: nginx
-    tag: alpine
+    tag: 1.31.4-alpine
+    digest: sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913
   
   config:
     appEnv: dev
@@ -52,6 +64,9 @@ nginx:
 
 
 fastapi:
+  # No digest here: CI writes the commit SHA into the tag below and the ECR
+  # repository is configured immutable, so the tag cannot be reassigned to
+  # different content. The commit is the pin.
   image:
     repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app
     tag: 16773ec9c3292fe6b1e96d1eaa85b22f6e1532e7
@@ -75,7 +90,35 @@ fastapi:
     port: 5432
     dbName: platformcore
     dbUser: fastapi
+    # Kept at or below probes.readiness.timeoutSeconds. Without it psycopg inherits
+    # the OS TCP retry budget - roughly two minutes when packets are dropped rather
+    # than refused, which is what a security-group or NACL change looks like. The
+    # kubelet gives up after its own timeout but the handler keeps running, so an
+    # unbounded connect leaks a worker per probe until none are left.
+    connectTimeoutSeconds: 2
   
+  # Readiness and liveness are tuned apart because a wrong answer costs different
+  # things. Readiness hits /ready, which touches RDS: being wrong costs one Pod its
+  # place in the endpoint list, so it fails fast — 2 failures at a 5s period pulls a
+  # Pod out within ~10s. Liveness hits /health, which is DB-free: being wrong costs a
+  # restart and a cold start, so it tolerates two minutes of silence before killing
+  # the process. cacheTtlSeconds bounds how long /ready may answer from its last good
+  # check; it lives here to stay visible beside the period it is tuned against.
+  probes:
+    readiness:
+      path: /ready
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 2
+      cacheTtlSeconds: 10
+    liveness:
+      path: /health
+      initialDelaySeconds: 15
+      periodSeconds: 20
+      timeoutSeconds: 3
+      failureThreshold: 6
+
   serviceMonitor:
     enabled: true
 
@@ -88,7 +131,8 @@ postgres:
   enabled: true
   image:
     repository: postgres
-    tag: "17"
+    tag: "17.11"
+    digest: sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
   replicas: 1
 
   auth:

@@ -6,11 +6,13 @@
 #   Safe here because connections are per-request; pooling would require
 #   explicit token-refresh logic before reuse.
 # - Health split: /health (liveness) is DB-free — never restart on DB outage.
-#   /ready (readiness) touches DB — pulls Pod from rotation without restarting.
+#   /ready (readiness) touches DB — pulls Pod from rotation without restarting,
+#   and caches its last success briefly to bound probe-driven connection churn.
 
 
 from fastapi import FastAPI, HTTPException
 import os
+import time
 import boto3
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -54,7 +56,7 @@ def get_db_connection():
     """
     for var in ("RDS_HOST", "RDS_USER", "RDS_DB_NAME", "AWS_DEFAULT_REGION"):
         if not os.environ.get(var):
-            logger.error(f"missing required env vars: {vars}")
+            logger.error(f"missing required env var: {var}")
             raise HTTPException(
                 status_code=503,
                 detail=f"{var} not configured; DB routes unavailable",
@@ -67,7 +69,11 @@ def get_db_connection():
         f"dbname={os.environ['RDS_DB_NAME']} "
         f"user={os.environ['RDS_USER']} "
         f"password={token} "
-        f"sslmode=require"
+        f"sslmode=require "
+        # Bounded so a database that drops packets fails this call instead of
+        # occupying a threadpool worker for the OS TCP retry budget. Sourced from
+        # the chart beside the readiness timeout it must not exceed.
+        f"connect_timeout={os.environ.get('RDS_CONNECT_TIMEOUT_SECONDS', '2')}"
     )
     return psycopg.connect(conn_str)
 
@@ -78,13 +84,50 @@ def root():
 
 
 @app.get("/health")
-def health():
+async def health():
     """Liveness probe. DB-free by design."""
+    # async rather than sync so it answers on the event loop. Sync handlers share one
+    # bounded threadpool with the DB-touching routes; during a database stall that
+    # pool fills, a sync /health would queue behind it, and the liveness probe would
+    # restart every replica over a dependency outage - the exact outcome the split
+    # between these two endpoints exists to prevent.
     return {"status": "healthy"}
+
+
+# Wired to a readiness probe, /ready runs on every period, on every replica, forever,
+# and every call opens a fresh psycopg connection — a TLS handshake and an auth round
+# trip charged to RDS to re-answer a question answered seconds ago. A successful check
+# is therefore cached for a TTL that ships beside the probe period in the chart, which
+# halves the connection rate while the database is healthy. Failures are never cached,
+# so a database that recovers is seen on the very next probe - and equally, a database
+# that is failing gets a fresh connection attempt on every period from every replica.
+# This is a saving on the healthy path, not a bound on load during an outage; what
+# bounds that is the connect timeout, which fails a stuck attempt inside the probe's
+# own timeout instead of holding a worker for the OS retry budget.
+#
+# What the cache does bound is staleness: a cached success can hide an outage for at
+# most one TTL, putting worst case detection at TTL + periodSeconds x failureThreshold,
+# or about 20 seconds. scripts/check-chart.sh enforces that the TTL stays inside that
+# budget.
+READY_CACHE_TTL_SECONDS = float(os.environ.get("READY_CACHE_TTL_SECONDS", "10"))
+
+_ready_ok_until = 0.0  # monotonic deadline of the cached success; 0.0 means none held
+
+
+def _reset_ready_cache():
+    """Drop the cached success. Nothing on the request path calls this; tests do,
+    because the cache is process-global and would otherwise leak between them."""
+    global _ready_ok_until
+    _ready_ok_until = 0.0
+
 
 @app.get("/ready")
 def ready():
     """Readiness probe. Confirms RDS reachability via IAM auth token."""
+    global _ready_ok_until
+    now = time.monotonic()
+    if now < _ready_ok_until:
+        return {"status": "ready"}
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -93,8 +136,12 @@ def ready():
     except HTTPException:
         raise
     except Exception as e:
+        # The driver's message names the host and the user it tried to reach with.
+        # That belongs in the log stream Promtail ships to Loki, not in a response
+        # body: this endpoint answers through the same ALB the application does.
         logger.error(f"readiness check failed: {e}")
-        raise HTTPException(status_code=503, detail=f"DB unreachable: {e}")
+        raise HTTPException(status_code=503, detail="database unreachable")
+    _ready_ok_until = now + READY_CACHE_TTL_SECONDS
     return {"status": "ready"}
 
 

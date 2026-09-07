@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: {{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}
+          image: {{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}@{{ required "postgres.image.digest is required - see values.yaml" .Values.postgres.image.digest }}
           env:
             - name: POSTGRES_USER
               valueFrom:

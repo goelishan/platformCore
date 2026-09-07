@@ -1,0 +1,31 @@
+#--------------------------------------------------------------------------------------------------------
+# BOOTSTRAP TOGGLES
+#--------------------------------------------------------------------------------------------------------
+#
+# One switch per operator, matching the `condition` on each dependency in Chart.yaml.
+# `make up` reads these to decide which tiers to install, so turning one off here is
+# how a cluster is brought up without it — a monitoring-free run, say, or a rebuild
+# that skips Argo CD while the GitOps loop is being reworked.
+#
+# Per-operator configuration is not here. Each chart is installed as its own release
+# with its own values file under helm/, because these are separate releases in
+# separate namespaces rather than subcharts of one.
+
+
+aws-load-balancer-controller:
+  enabled: true
+
+kube-prometheus-stack:
+  enabled: true
+
+loki:
+  enabled: true
+
+promtail:
+  enabled: true
+
+external-secrets:
+  enabled: true
+
+argo-cd:
+  enabled: true
