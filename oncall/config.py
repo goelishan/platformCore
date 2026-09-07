@@ -147,6 +147,10 @@ POLL_INTERVALS = {
     # and the pods behind it are observed close enough together to be read as one
     # moment when the assembler joins them.
     "k8s_services": 60,
+    # Slower than the rest. Node conditions change on the order of minutes when they
+    # change at all, and a tighter interval buys nothing while costing a list of
+    # every node in the cluster.
+    "k8s_nodes": 120,
     "k8s_events": 30,
     # Slowest of the three, and last in the cycle. It reads what the other two wrote,
     # so it is always one cycle behind them — see LOG_LOOKBACK_SECONDS.

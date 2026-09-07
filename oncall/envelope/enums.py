@@ -20,6 +20,7 @@ class SignalSource(StrEnum):
     K8S_EVENTS = "k8s_events"
     K8S_LOGS = "k8s_logs"
     K8S_SERVICES = "k8s_services"
+    K8S_NODES = "k8s_nodes"
     PROMETHEUS = "prometheus"
     ARGOCD = "argocd"
 
@@ -29,6 +30,7 @@ class SignalKind(StrEnum):
     EVENT = "event"
     LOG_EXCERPT = "log_excerpt"
     SERVICE_STATE = "service_state"
+    NODE_STATE = "node_state"
     METRIC = "metric"
     DEPLOY = "deploy"
 
