@@ -174,11 +174,28 @@ resource "aws_secretsmanager_secret_version" "postgres_app_password" {
 # no automated restore point on the day it lands. That is the flip-list item most
 # coupled to this decision, not an independent one.
 #
+# What a forced upgrade looks like here: AWS moves the instance to, say, 17.12, the
+# next plan proposes returning it to the pinned 17.11, and RDS rejects downgrades, so
+# the apply fails. That is the intended behaviour and not a gap to paper over. The
+# alternative, lifecycle { ignore_changes = [engine_version] }, would silence the
+# diff and leave the file describing a version the instance no longer runs, which is
+# the failure this pin was added to end. The recovery is one line: read the running
+# version, set it here, apply.
+#
+# apply_immediately = true above means a version bump made from this repository
+# reboots the instance when it is applied rather than waiting for the window below.
+# The window governs what AWS initiates, not what terraform does; on a learning
+# environment that is the wanted behaviour, and on the production flip-list it turns
+# off with the other three.
+#
 # Why the maintenance window is explicit: disabling minor upgrades does not empty
 # the window. AWS still applies required patching and hardware maintenance in it,
 # and an unset window is assigned at random within a region-wide block. Sunday
 # 06:00-06:30 UTC is 11:30 IST on a weekend. No backup window is set to pair with
-# it because retention is 0; the two are set together or not at all.
+# it because retention is 0; the two are set together or not at all. RDS assigns a
+# backup window regardless and refuses one that overlaps the maintenance window, but
+# only when both are named explicitly: leaving it unset lets RDS pick a
+# non-overlapping slot itself, which is one fewer number to keep true here.
 
 
 
