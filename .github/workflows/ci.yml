@@ -63,8 +63,62 @@ jobs:
         # testing something the cluster never does.
         run: pytest app/tests -q
 
+  chart:
+    name: Chart renders as documented
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Resolve the operator lock
+        # On a runner that has never seen these repositories, which is the only place
+        # the bootstrap path gets an honest test. A laptop with them already
+        # registered cannot tell a working `make up` from a broken one.
+        run: |
+          make helm-repos
+          helm dependency build charts/platform-bootstrap
+
+      - name: Lint both charts
+        run: helm lint charts/platformcore charts/platform-bootstrap
+
+      - name: Assert the rendered chart
+        # Probe wiring, probe separation, image digests, and the tuning invariants.
+        # The unit tests import the application and cannot see any of it.
+        run: make chart-check
+
+  terraform:
+    name: Terraform validates and is formatted
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Check formatting
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Validate
+        # -backend=false: validation needs provider schemas, not the S3 state, so it
+        # runs with no AWS credential and no lock on the real state file.
+        run: |
+          terraform -chdir=terraform init -backend=false
+          terraform -chdir=terraform validate
+
   build-and-push:
-    needs: [validate, test]
+    # Gated on the three jobs that speak to what gets deployed. terraform runs
+    # beside them and is not a gate: its formatting has no bearing on whether this
+    # image is safe to push, and coupling them would block a fix on an unrelated
+    # file.
+    needs: [validate, test, chart]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:

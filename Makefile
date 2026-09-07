@@ -1,4 +1,4 @@
-.PHONY: up down down-all rebuild status logs curl helm-repos helm-relock helm-pins lock-python
+.PHONY: up down down-all rebuild status logs curl helm-repos helm-relock helm-pins chart-check lock-python
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -282,6 +282,16 @@ helm-relock: helm-repos
 # What is pinned, and what has upstream published since?
 helm-pins:
 	@bash scripts/helm-pins.sh $(BOOTSTRAP)
+
+
+# Render the application chart and assert the properties its templates promise.
+#
+# The unit suite imports app/main.py and cannot see the chart, so the defect that
+# started this work was invisible to it. This is the layer that catches it, and it
+# needs no cluster: probe wiring, probe separation, image digests, and the two
+# tuning invariants that were previously only sentences in comments.
+chart-check:
+	@bash scripts/check-chart.sh charts/platformcore
 
 
 # Recompile the Python locks from the .in files.
