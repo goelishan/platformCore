@@ -325,7 +325,12 @@ def test_event_time_is_inherited_from_the_trigger():
     assert signal.event_time.isoformat().startswith("2026-08-14T03:14:07")
 
 
-def test_severity_is_inherited_never_parsed():
+def test_severity_describes_the_fetch_not_the_trigger():
+    """It used to be inherited, and a live run showed that was unstable: an excerpt
+    keeps the severity of whichever trigger was inside the lookback window, and a pod
+    stuck waiting has a frozen event_time that ages out of it, leaving only events able
+    to trigger. The same fingerprint changed severity between runs because the schedule
+    moved and nothing about the pod did."""
     signal = k8s_logs.build_signal(
         _target(severity=str(Severity.CRITICAL)),
         _fetch(),
@@ -335,7 +340,40 @@ def test_severity_is_inherited_never_parsed():
         NOW,
         NOW,
     )
-    assert signal.severity == Severity.CRITICAL
+
+    assert signal.severity == Severity.INFO
+    # The incident's severity is still reachable, on the signal this is attached to.
+    assert provenance_of(signal.payload)["trigger_fingerprint"]
+
+
+def test_an_unreadable_log_is_a_warning_because_it_is_a_gap_in_evidence():
+    signal = k8s_logs.build_signal(
+        _target(severity=str(Severity.INFO)),
+        _fetch(status=str(SourceStatus.UNAVAILABLE), text="", error="ApiException 500"),
+        None,
+        None,
+        "oncall-dev",
+        NOW,
+        NOW,
+    )
+
+    assert signal.severity == Severity.WARNING
+
+
+def test_severity_no_longer_moves_with_the_trigger():
+    """Two triggers of different severity over one identical fetch. Before this rule
+    those produced two severities for one fingerprint."""
+    from_pods = k8s_logs.build_signal(
+        _target(severity=str(Severity.ERROR)), _fetch(),
+        k8s_logs.build_excerpt(STREAM), None, "oncall-dev", NOW, NOW,
+    )
+    from_events = k8s_logs.build_signal(
+        _target(severity=str(Severity.WARNING)), _fetch(),
+        k8s_logs.build_excerpt(STREAM), None, "oncall-dev", NOW, NOW,
+    )
+
+    assert from_pods.fingerprint == from_events.fingerprint
+    assert from_pods.severity == from_events.severity
 
 
 def test_a_failed_read_is_distinguishable_from_an_empty_one():
@@ -511,3 +549,94 @@ def test_one_unreadable_target_does_not_take_the_source_down(client):
     assert fetch.status == str(SourceStatus.UNAVAILABLE)
     assert fetch.raw == b""
     assert "500" in (fetch.error or "")
+
+
+# ---- nothing to read from --------------------------------------------------
+# Five of nine rows in the first live corpus contained nothing but "ApiException 400:
+# Bad Request". badimage never pulled an image and configerror never resolved its
+# ConfigMap, so neither container has ever existed and every fetch was doomed before it
+# was made. Recorded as unavailable — "nothing is known" — when in fact everything was
+# known: there is no container, therefore there is no log.
+
+
+def test_a_container_that_never_started_is_not_fetched_at_all():
+    """Knowable from the trigger without an API call, which is the difference between
+    two doomed requests per pod per cycle and none."""
+    for reason in ("ErrImagePull", "ImagePullBackOff", "CreateContainerConfigError"):
+        payload = {"reason": reason, "restart_count": 0, "exit_code": None,
+                   "waiting_reason": reason, "container": "app"}
+        assert k8s_logs._streams_for(payload, str(SignalSource.K8S_PODS)) == (
+            k8s_logs.STREAM_NONE,
+        )
+
+
+def test_a_restarted_container_now_failing_to_pull_is_still_read():
+    """The reason alone is not enough. A pod that ran eleven times and is now in
+    ImagePullBackOff because someone deleted the tag does have a previous stream, and
+    refusing to read it would discard the only evidence there is."""
+    payload = {"reason": "ImagePullBackOff", "restart_count": 11, "exit_code": 1,
+               "waiting_reason": "ImagePullBackOff", "container": "app"}
+
+    assert k8s_logs._streams_for(payload, str(SignalSource.K8S_PODS)) != (
+        k8s_logs.STREAM_NONE,
+    )
+
+
+def test_the_no_container_marker_short_circuits_the_read(client):
+    stub = client()
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_NONE)
+
+    assert fetch.status == k8s_logs.LOG_STATUS_NO_CONTAINER
+    assert stub.calls == []          # no request was made at all
+    assert fetch.error is None       # and none is claimed
+
+
+def test_a_400_on_the_running_stream_means_no_container_not_unavailable(client):
+    """The gap the trigger-side rule cannot close, because an event payload carries no
+    restart count. The API says the same thing with its own authority."""
+    client(ApiException(status=400, reason="Bad Request"))
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == k8s_logs.LOG_STATUS_NO_CONTAINER
+    assert fetch.error is None
+
+
+def test_a_500_is_still_unavailable(client):
+    """The distinction has to stay narrow. A server error genuinely means nothing is
+    known, and collapsing it into no_container would claim a pod has no container
+    because the API server was busy."""
+    client(ApiException(status=500, reason="Internal Server Error"))
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.UNAVAILABLE)
+    assert "500" in fetch.error
+
+
+# ---- the runtime's complaint is not the container's output -----------------
+
+
+def test_a_runtime_error_body_is_not_stored_as_a_log(client):
+    """kubelet answers 200 with an error string rather than a status code when the
+    runtime cannot hand over a log. Stored naively that arrived as log_status=ok with
+    one line of content, and the same fingerprint then held one row of infrastructure
+    noise and one row of the real failure with nothing to tell them apart."""
+    body = b"unable to retrieve container logs for containerd://3bdd38793aeeb04f8d55"
+    client(_Resp(body))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.UNAVAILABLE)
+    assert fetch.text == ""
+    assert "unable to retrieve" in fetch.error
+
+
+def test_a_log_line_that_merely_mentions_the_phrase_is_still_a_log(client):
+    """The match is anchored at the start for a reason: an application logging "unable
+    to retrieve container logs from upstream" is reporting its own problem, and
+    discarding it would delete the diagnosis."""
+    client(_Resp(b"2026-09-07T18:19:20Z ERROR unable to retrieve container logs from upstream\n"))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.OK)
+    assert "upstream" in fetch.text

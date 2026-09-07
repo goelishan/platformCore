@@ -60,7 +60,16 @@ STREAM_PREVIOUS = "previous"
 # render the relationship, never the hex: trigger_signal_id takes a new value on
 # every poll by construction, so shown verbatim it is the noisiest field in the
 # payload and says nothing a reader can act on.
+# Which revision of this collector's rules wrote the row. The cheap form of a problem
+# the first live run made concrete: fixing a collector silently reinterprets every row
+# already in the buffer, and two versions' output then sits side by side with nothing
+# saying which rules produced which. normalizer_version covers message templating and
+# nothing else. A column would be the proper form; this is a payload key, and it is
+# here now rather than correct later.
+COLLECTOR_VERSION = 2
+
 PROVENANCE_KEYS = frozenset({
+    "collector_version",
     "window_start",
     "window_end",
     "trigger_source",
@@ -70,6 +79,34 @@ PROVENANCE_KEYS = frozenset({
 
 
 STREAM_CURRENT = "current"
+
+# Not a stream. The marker for a trigger we already know has nothing to read, so the
+# fetch is skipped rather than attempted and failed.
+STREAM_NONE = "none"
+
+# Waiting reasons where no container was ever created, so no stream exists — not a
+# current one and not a previous one. Distinct from CrashLoopBackOff, which means the
+# container ran, died, and its previous stream holds the whole diagnosis.
+NEVER_STARTED_REASONS = frozenset({
+    "ErrImagePull", "ImagePullBackOff", "InvalidImageName",
+    "CreateContainerConfigError", "CreateContainerError", "ContainerCreating",
+})
+
+# The fourth status, and the one the first live run showed was missing. `empty` means
+# the container ran and printed nothing; `unavailable` means nothing is known. This
+# means there was never anything to read from, which is a fact about the pod rather
+# than a failure of this collector — and recording it as unavailable claimed nothing
+# was known when everything was.
+LOG_STATUS_NO_CONTAINER = "no_container"
+
+# kubelet answers 200 with an error string in the body, rather than a status code, when
+# the runtime cannot hand over a log. Decoded naively that lands as log_status=ok with
+# one line of content: infrastructure noise wearing the label of evidence, which is a
+# worse outcome than any error.
+RUNTIME_ERROR_BODY = re.compile(
+    r"^(unable to retrieve container log|failed to try resolving symlinks)",
+    re.IGNORECASE,
+)
 
 # Sources that can put a Pod-subject signal in front of this collector. Named rather
 # than inferred, because the health check below has to know which runs to look for and
@@ -132,6 +169,9 @@ def _streams_for(payload: dict[str, Any], source: str) -> tuple[str, ...]:
     recorded as such and can be made again. That asymmetry is why a reason-shaped
     heuristic is acceptable here and refused in dedupe_key.
     """
+    if _never_started(payload):
+        return (STREAM_NONE,)
+
     if source == str(SignalSource.K8S_PODS):
         restarted = bool(payload.get("restart_count"))
         terminated = payload.get("exit_code") is not None
@@ -148,6 +188,24 @@ def _streams_for(payload: dict[str, Any], source: str) -> tuple[str, ...]:
     # severity are overwhelmingly about a container that has already stopped; the fetch
     # falls back to current when there is no previous container.
     return (STREAM_PREVIOUS,)
+
+
+def _never_started(payload: dict[str, Any]) -> bool:
+    """No container was ever created for this trigger, so no stream exists to read.
+
+    All three conditions, not the reason alone: a pod that has restarted eleven times
+    and is now in ImagePullBackOff because someone deleted the tag does have a previous
+    stream, and refusing to read it would discard the only evidence there is.
+
+    Only a pod-state payload carries the restart count and exit code this needs, so an
+    event trigger never matches here. That gap is closed at the fetch instead, where a
+    400 on the running stream says the same thing with the API's own authority.
+    """
+    return (
+        payload.get("reason") in NEVER_STARTED_REASONS
+        and not payload.get("restart_count")
+        and payload.get("exit_code") is None
+    )
 
 
 def targets_from_rows(rows: list[Any], limit: int) -> tuple[list[Target], int]:
@@ -338,6 +396,14 @@ def _dedupe_key(container: str | None, stream: str) -> str:
     return f"{container or ''}|{stream}"
 
 
+def _severity_for(status: str) -> Severity:
+    """unavailable is a gap in the evidence and worth noticing. Everything else is
+    evidence, or its documented absence, and neither is a finding in its own right."""
+    if status == str(SourceStatus.UNAVAILABLE):
+        return Severity.WARNING
+    return Severity.INFO
+
+
 def build_signal(
     target: Target,
     fetch: Fetch,
@@ -356,6 +422,7 @@ def build_signal(
         # known — and a reasoner cannot tell them apart from an absent excerpt.
         "log_status": fetch.status,
         "error": fetch.error,
+        "collector_version": COLLECTOR_VERSION,
         # The interval that was asked for, and the last moment actually covered by a
         # line. Without covered_through a truncated fetch tells the reasoner that
         # something is missing but not where, and a gap of unknown position is barely
@@ -395,10 +462,20 @@ def build_signal(
             else None
         ),
         node=target.node,
-        # Inherited, not derived. Reading a level out of arbitrary log formatting would
-        # make an unfamiliar format read as less serious than a familiar one, which is
-        # the escalation-list mistake with worse input.
-        severity=Severity(target.severity) if target.severity else None,
+        # A property of the fetch, not of the incident.
+        #
+        # It used to be inherited from the trigger, which was unstable in a way only a
+        # live run showed: an excerpt keeps the severity of whichever trigger was
+        # inside LOG_LOOKBACK_SECONDS, and a pod stuck waiting has a frozen event_time
+        # that ages out of that window, leaving only events able to trigger it. The
+        # same fingerprint then changed severity between runs because the schedule
+        # moved and nothing about the pod did.
+        #
+        # Still not read out of the log text, for the reason that decision was made
+        # first: an unfamiliar format would read as less serious than a familiar one.
+        # The incident's severity lives on the signal this excerpt is attached to, and
+        # trigger_fingerprint is how to reach it.
+        severity=_severity_for(fetch.status),
         dedupe_key=_dedupe_key(target.container, fetch.stream),
         redacted=bool(excerpt and excerpt.redacted),
         blob_id=blob_id,
@@ -428,6 +505,12 @@ def _read_log(target: Target, stream: str) -> Fetch:
     Owning the decode is what removes all of that, and it is only visible from outside
     the process — a stub that returns a real string reproduces none of it.
     """
+    if stream == STREAM_NONE:
+        # Known before asking. Recorded rather than skipped, because "there is nothing
+        # to read" is a fact the reasoner needs: silence would leave it wondering why a
+        # visibly failing pod has no logs, and wondering is where invention starts.
+        return Fetch(LOG_STATUS_NO_CONTAINER, "", STREAM_NONE, False, False, None, b"")
+
     want_previous = stream == STREAM_PREVIOUS
 
     for attempt, previous in enumerate((want_previous, False) if want_previous else (False,)):
@@ -454,6 +537,15 @@ def _read_log(target: Target, stream: str) -> Fetch:
             if exc.status == 400 and previous:
                 # No previous container. Fall through to the running one.
                 continue
+            if exc.status == 400:
+                # 400 on the running stream is the API stating there is no container to
+                # read from: waiting to start, or never created at all. Recording that
+                # as unavailable was the defect the first live run exposed — five rows
+                # whose entire content was "ApiException 400: Bad Request", which reads
+                # as a broken log subsystem rather than as a pod that never ran.
+                return Fetch(
+                    LOG_STATUS_NO_CONTAINER, "", stream, False, bool(attempt), None, b"",
+                )
             return Fetch(
                 str(SourceStatus.UNAVAILABLE), "", stream, False, False,
                 f"ApiException {exc.status}: {exc.reason}", b"",
@@ -471,6 +563,16 @@ def _read_log(target: Target, stream: str) -> Fetch:
         # blast radius the per-target error handling above exists to prevent.
         text = raw.decode("utf-8", errors="replace")
         used = STREAM_PREVIOUS if previous else STREAM_CURRENT
+
+        if RUNTIME_ERROR_BODY.match(text.strip()):
+            # The runtime's complaint, not the container's output. Moved to error and
+            # out of the excerpt: stored as content it was a one-line log marked ok,
+            # and the same fingerprint then held one row of infrastructure noise and
+            # one row of the real failure with nothing to tell them apart.
+            return Fetch(
+                str(SourceStatus.UNAVAILABLE), "", used, False, bool(attempt),
+                text.strip()[:200], b"",
+            )
 
         # The API gives no truncation flag, so this is inferred from hitting the cap.
         # Measured on the bytes the server sent, which is the unit limit_bytes bounds;
