@@ -1,8 +1,9 @@
 # Deliberately broken workloads for local development.
 #
-# Every failure mode the pod collector has to map, in one namespace. Mostly
-# Deployments, so owner resolution has a real ReplicaSet -> Deployment chain to walk,
-# plus a Job and a CronJob for the chains that have neither.
+# Every failure mode the collectors have to map, in one namespace. Mostly Deployments,
+# so owner resolution has a real ReplicaSet -> Deployment chain to walk, plus a Job and
+# a CronJob for the chains that have neither, and two Services for the faults that
+# exist only in the join between objects.
 #
 #   kubectl apply -f oncall/dev/broken-workloads.yaml
 #   kubectl delete namespace oncall-lab
@@ -16,7 +17,8 @@
 # reaches ImagePullBackOff after a couple of retries, unschedulable and unboundpvc
 # stay Pending forever for different reasons, probefail restarts on a fixed interval,
 # notready never restarts and never serves, configerror never starts, failingjob
-# exhausts its backoffLimit and stops, failingcronjob fails again every two minutes.
+# exhausts its backoffLimit and stops, failingcronjob fails again every two minutes,
+# and the two Services report NoEndpoints and NoReadyEndpoints respectively.
 #
 # Namespace deletion waits on stuckterminating's 120s grace period. Add
 # --force --grace-period=0 on those Pods if that is in the way.
@@ -350,3 +352,62 @@ spec:
         - name: app
           image: busybox:1.36
           command: ["sh", "-c", "trap '' TERM; while true; do sleep 5; done"]
+---
+# A healthy workload and a Service that does not select it. Nothing here is in a bad
+# state: the Deployment is Available, the Pod is Ready, the Service has a ClusterIP,
+# and traffic to it gets a 503. The fault exists only in the join, which is why no
+# Pod-level source can see it.
+#
+# The selector is one character short of correct, because that is what the mistake
+# looks like in practice.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: noendpoints
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: noendpoints }
+  template:
+    metadata:
+      labels: { app: noendpoints }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: noendpoints
+  namespace: oncall-lab
+spec:
+  selector:
+    # Deliberate. The Pods above are labelled noendpoints, plural.
+    app: noendpoint
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+# Selects the notready Deployment above, whose Pod runs correctly and never passes its
+# readiness probe. The slice is populated and nothing in it is ready, which is the
+# other half of the endpoint story and a different fault from the Service above: the
+# pods are found, so the selector is right and the workload is wrong.
+#
+# The same incident the pod collector reports as ready=false, seen from the Service
+# end. Both rows exist, and joining them is the point.
+apiVersion: v1
+kind: Service
+metadata:
+  name: notready
+  namespace: oncall-lab
+spec:
+  selector:
+    app: notready
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
