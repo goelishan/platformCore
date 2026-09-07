@@ -32,8 +32,7 @@ helm-repos:
 
 # Reads one operator's toggle out of the bootstrap chart's values.yaml, so turning
 # a tier off is an edit to that file rather than a commented-out block in here.
-enabled = $(shell awk '$$0 == "$(1):" {f=1;next} /^[^ #]/{f=0} f&&/enabled:/{print $$2;exit}' $(BOOTSTRAP)/values.yaml)
-
+enabled = $(shell awk '$$0 == "$(1):" {f=1;next} /^[a-zA-Z]/{f=0} f&&/enabled:/{print $$2;exit}' $(BOOTSTRAP)/values.yaml)
 
 # Bring the full stack up.
 #

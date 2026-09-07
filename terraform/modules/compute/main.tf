@@ -224,7 +224,7 @@ resource "aws_cloudwatch_log_group" "app" {
 
 resource "aws_ecr_repository" "app" {
   name                 = "${var.project_name}-app"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
   force_delete         = true # allows destroy even when tagged images are present
 
   image_scanning_configuration {
@@ -280,7 +280,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
 
 
 locals {
-  app_image_tag = "v2"
+  app_image_tag = "613feadcbd99ab82a00efd8b88d13d68e131f596"
 
   user_data = <<-EOF
     #!/bin/bash
