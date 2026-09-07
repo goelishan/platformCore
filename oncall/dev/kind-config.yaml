@@ -1,0 +1,50 @@
+#--------------------------------------------------------------------------------------------------------
+# LAB CLUSTER — SHAPED LIKE THE EKS ONE
+#--------------------------------------------------------------------------------------------------------
+#
+#   - three nodes, so failures concentrated on one node can be told from failures spread
+#
+#   - worker labels match what EKS puts on a managed node group
+#
+#   - the control plane is deliberately left bare
+#
+# The point of this file is not that the cluster is like production. It is that every
+# branch the collectors take here is the branch they take on EKS. A branch that never
+# executes locally is where a confidently wrong row comes from.
+#
+#   make -C oncall lab-up
+#   make -C oncall lab-down
+#
+# Two workers because the EKS node group runs two, in us-east-1a and us-east-1b. The
+# zone and instance-type labels are the ones kubelet is permitted to set on itself
+# under the NodeRestriction admission plugin, and they are what k8s_nodes reads for
+# the "every failure is in one availability zone" question. Without them that payload
+# field is null locally and populated in production, which is exactly the kind of
+# difference that hides a bug until it matters.
+#
+# The control plane carries no zone and no instance type, on purpose. EKS has no
+# control-plane node at all, so nothing here corresponds to it, and leaving it bare
+# gives the collector one node whose placement fields are absent — the null path,
+# executed on every run rather than never. It also keeps its NoSchedule taint, which
+# is the only thing exercising the taint payload short of cordoning something.
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "topology.kubernetes.io/zone=us-east-1a,node.kubernetes.io/instance-type=t3.small"
+
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "topology.kubernetes.io/zone=us-east-1b,node.kubernetes.io/instance-type=t3.small"

@@ -36,6 +36,7 @@ kind: Deployment
 metadata:
   name: crashloop
   namespace: oncall-lab
+  labels: { stage: "1" }
 spec:
   replicas: 1
   selector:
@@ -57,6 +58,7 @@ kind: Deployment
 metadata:
   name: oomkill
   namespace: oncall-lab
+  labels: { stage: "1" }
 spec:
   replicas: 1
   selector:
@@ -81,6 +83,7 @@ kind: Deployment
 metadata:
   name: unschedulable
   namespace: oncall-lab
+  labels: { stage: "2" }
 spec:
   replicas: 1
   selector:
@@ -103,6 +106,7 @@ kind: Deployment
 metadata:
   name: badimage
   namespace: oncall-lab
+  labels: { stage: "1" }
 spec:
   replicas: 1
   selector:
@@ -123,6 +127,7 @@ kind: Deployment
 metadata:
   name: probefail
   namespace: oncall-lab
+  labels: { stage: "3" }
 spec:
   replicas: 1
   selector:
@@ -148,6 +153,7 @@ kind: Deployment
 metadata:
   name: configerror
   namespace: oncall-lab
+  labels: { stage: "1" }
 spec:
   replicas: 1
   selector:
@@ -179,6 +185,7 @@ kind: Deployment
 metadata:
   name: notready
   namespace: oncall-lab
+  labels: { stage: "3" }
 spec:
   replicas: 1
   selector:
@@ -209,6 +216,7 @@ kind: Job
 metadata:
   name: failingjob
   namespace: oncall-lab
+  labels: { stage: "4" }
 spec:
   backoffLimit: 2
   template:
@@ -231,6 +239,7 @@ kind: CronJob
 metadata:
   name: failingcronjob
   namespace: oncall-lab
+  labels: { stage: "4" }
 spec:
   schedule: "*/2 * * * *"
   concurrencyPolicy: Forbid
@@ -263,6 +272,7 @@ kind: Deployment
 metadata:
   name: stuckrollout
   namespace: oncall-lab
+  labels: { stage: "5" }
 spec:
   replicas: 2
   progressDeadlineSeconds: 60
@@ -294,6 +304,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: unbound
   namespace: oncall-lab
+  labels: { stage: "2" }
 spec:
   storageClassName: no-such-storage-class
   accessModes: ["ReadWriteOnce"]
@@ -306,6 +317,7 @@ kind: Deployment
 metadata:
   name: unboundpvc
   namespace: oncall-lab
+  labels: { stage: "2" }
 spec:
   replicas: 1
   selector:
@@ -339,6 +351,7 @@ kind: Deployment
 metadata:
   name: stuckterminating
   namespace: oncall-lab
+  labels: { stage: "5" }
 spec:
   replicas: 1
   selector:
@@ -365,6 +378,7 @@ kind: Deployment
 metadata:
   name: noendpoints
   namespace: oncall-lab
+  labels: { stage: "3" }
 spec:
   replicas: 1
   selector:
@@ -383,6 +397,7 @@ kind: Service
 metadata:
   name: noendpoints
   namespace: oncall-lab
+  labels: { stage: "3" }
 spec:
   selector:
     # Deliberate. The Pods above are labelled noendpoints, plural.
@@ -404,9 +419,30 @@ kind: Service
 metadata:
   name: notready
   namespace: oncall-lab
+  labels: { stage: "3" }
 spec:
   selector:
     app: notready
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+# The only Service here that works. Selects the noendpoints Deployment above, whose
+# Pod is Ready, so the slice is populated and something in it is serving.
+#
+# Present because a library made only of faults leaves the healthy branch of a
+# collector unexecuted, and an unexecuted branch is where a confident lie comes from.
+# Three Services, three reasons: HasEndpoints, NoEndpoints, NoReadyEndpoints.
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthy
+  namespace: oncall-lab
+  labels: { stage: "3" }
+spec:
+  selector:
+    app: noendpoints
   ports:
     - name: http
       port: 80
