@@ -74,6 +74,14 @@ def batch_v1() -> client.BatchV1Api:
     return client.BatchV1Api()
 
 
+def discovery_v1() -> client.DiscoveryV1Api:
+    """EndpointSlices. The v1 Endpoints object it replaced is deprecated and
+    truncates past 1000 addresses silently, which is the wrong failure mode for a
+    collector that reads an empty list as an outage."""
+    _ensure_auth()
+    return client.DiscoveryV1Api()
+
+
 # ---- scope -----------------------------------------------------------------
 # Exclusions win over the allowlist. The agent's own namespace is always excluded:
 # without it, the agent restarting emits a signal about itself, which triggers log

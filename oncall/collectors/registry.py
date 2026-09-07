@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 
 from oncall import config
-from oncall.collectors import k8s_events, k8s_logs, k8s_pods
+from oncall.collectors import k8s_events, k8s_logs, k8s_pods, k8s_services
 from oncall.collectors.runner import CollectFn, run_once
 from oncall.envelope import SignalSource, SourceStatus
 
@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 COLLECTORS: dict[SignalSource, CollectFn] = {
     SignalSource.K8S_EVENTS: k8s_events.collect,
     SignalSource.K8S_PODS: k8s_pods.collect,
+    SignalSource.K8S_SERVICES: k8s_services.collect,
     SignalSource.K8S_LOGS: k8s_logs.collect,
 }
 

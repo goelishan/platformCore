@@ -143,6 +143,10 @@ EXCLUDE_NAMESPACES = {"oncall", "kube-system"}
 
 POLL_INTERVALS = {
     "k8s_pods": 60,
+    # A snapshot like pod state, and just as re-readable. Same interval so a Service
+    # and the pods behind it are observed close enough together to be read as one
+    # moment when the assembler joins them.
+    "k8s_services": 60,
     "k8s_events": 30,
     # Slowest of the three, and last in the cycle. It reads what the other two wrote,
     # so it is always one cycle behind them — see LOG_LOOKBACK_SECONDS.
