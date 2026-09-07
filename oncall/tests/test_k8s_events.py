@@ -461,3 +461,88 @@ def test_long_message_is_truncated_and_says_so():
 
 def test_short_message_carries_no_truncation_flag():
     assert "message_truncated" not in sig(event(message="short")).payload
+
+
+# ---- who owns what ---------------------------------------------------------
+# Every kind outside LOOKUP_KINDS used to become its own owner. That is right for a
+# controller and wrong for everything else, and the wrongness was visible in a real
+# corpus: k8s_events said Node/x was owned by Node/x while k8s_nodes said Node/x had
+# no owner. Two sources contradicting each other about one object is worse than one
+# of them saying nothing.
+
+
+def test_a_controller_owns_itself():
+    """An event about a Deployment belongs to that Deployment. Naming it is what lets
+    GROUP BY owner_name gather a controller's own events alongside its pods'."""
+    signal = sig(event(obj=involved(kind="Deployment", name="api", uid="uid-dep")))
+
+    assert signal.owner is not None
+    assert (signal.owner.kind, signal.owner.name) == ("Deployment", "api")
+
+
+def test_a_node_owns_nothing():
+    """A Node is not a workload, and k8s_nodes reports it unowned. Self-ownership here
+    invented a hierarchy that does not exist and disagreed with the other source."""
+    signal = sig(event(obj=involved(kind="Node", name="node-1", uid="uid-node")))
+
+    assert signal.owner is None
+    # It still names the node, which is what joins it to everything running there.
+    assert signal.node == "node-1"
+
+
+def test_a_persistent_volume_claim_owns_nothing():
+    """The fallback has to be an allowlist, not an exception list, or every kind
+    Kubernetes adds next arrives owning itself."""
+    assert sig(event(obj=involved(kind="PersistentVolumeClaim", name="data", uid="u"))).owner is None
+
+
+# ---- identity across a kubelet's own rewording -----------------------------
+# One image pull failure emits three Failed events with three different messages. Keyed
+# on the message template that was three recurring problems, while k8s_pods reconciled
+# the same oscillation into one. Recurrence analysis believed the events.
+
+
+PULL_MESSAGES = (
+    'Error: ErrImagePull',
+    'Error: ImagePullBackOff',
+    'Failed to pull image "registry.invalid/x:v9": failed to pull and unpack image',
+)
+
+
+def test_one_pull_failure_is_one_fingerprint():
+    prints = {
+        sig(event(reason="Failed", message=m)).fingerprint for m in PULL_MESSAGES
+    }
+
+    assert len(prints) == 1
+
+
+def test_reasons_still_separate_problems():
+    """The merge is scoped to one reason on one container. It must not reach across
+    reasons, or a crashloop and a pull failure become one problem."""
+    failed = sig(event(reason="Failed", message=PULL_MESSAGES[0]))
+    backoff = sig(event(reason="BackOff", message="Back-off restarting failed container"))
+
+    assert failed.fingerprint != backoff.fingerprint
+
+
+def test_a_stable_reason_still_keys_on_its_message():
+    """Only the reasons the kubelet rewords lose their message from the key. Everything
+    else keeps it, because that is what stops one reason covering unrelated causes."""
+    a = sig(event(reason="Unhealthy", message="Liveness probe failed: connection refused"))
+    b = sig(event(reason="Unhealthy", message="Readiness probe failed: HTTP 503"))
+
+    assert a.fingerprint != b.fingerprint
+
+
+# ---- which scale the severity is on ----------------------------------------
+
+
+def test_severity_declares_that_it_was_transcribed():
+    """This source mirrors Kubernetes' two-value Normal/Warning; every other source
+    assesses on four. A Normal NodeNotReady lands as info while k8s_nodes calls the
+    same fact critical, and nothing in the row said so until this key existed."""
+    signal = sig(event(type_="Normal", reason="NodeNotReady", message="status is now: NodeNotReady"))
+
+    assert signal.severity == Severity.INFO
+    assert provenance_of(signal.payload)["severity_basis"] == "cluster"

@@ -113,7 +113,8 @@ lab-status:
 	@echo ""
 	@kubectl -n $(LAB_NS) get svc,endpointslice 2>/dev/null || true
 	@echo ""
-	@kubectl get nodes -o custom-columns='NODE:.metadata.name,READY:.status.conditions[-1].type,SCHEDULABLE:.spec.unschedulable'
+	@echo "nodes (READY is the Ready condition's status, not its type)"
+	@kubectl get nodes -o jsonpath='{range .items[*]}  {.metadata.name}{"\t"}{.status.conditions[?(@.type=="Ready")].status}{"\t"}{.spec.unschedulable}{"\n"}{end}'
 
 
 #--------------------------------------------------------------------------------------------------------

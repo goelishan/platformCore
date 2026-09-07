@@ -49,7 +49,7 @@ from oncall.envelope import (
 # arithmetic without it. Aggregation is client-side, so a kubelet restart abandons
 # one counter and starts another from one; diffing across that boundary invents a
 # drop that never happened. Grouping by uid first is what makes the delta real.
-PROVENANCE_KEYS = frozenset({"event_uid", "component"})
+PROVENANCE_KEYS = frozenset({"event_uid", "component", "severity_basis"})
 
 
 WARNING_TYPE = "Warning"
@@ -80,6 +80,31 @@ KEEP_NORMAL_REASONS = {
 # Deployment, StatefulSet, DaemonSet, Node, PVC, Ingress — is already the root and
 # is its own owner, which keeps the owner join uniform across sources.
 LOOKUP_KINDS = {"Pod"} | INTERMEDIATE_KINDS
+
+# Kinds that are their own workload root. An event about a Deployment belongs to that
+# Deployment, so naming it as its own owner is what lets GROUP BY owner_name gather a
+# controller's own events alongside its pods'.
+#
+# Everything else gets no owner rather than itself. A Node is not a workload, and
+# k8s_nodes reports it unowned; a Node owned by a Node is a hierarchy that does not
+# exist, and two sources disagreeing about the same object is worse than one of them
+# saying nothing. The same holds for PVCs, Namespaces and Services.
+SELF_OWNING_KINDS = {"Deployment", "StatefulSet", "DaemonSet", "CronJob"}
+
+# Reasons the kubelet re-emits with different wording for one underlying condition.
+# One image pull failure produces three Failed events — "Error: ErrImagePull", "Error:
+# ImagePullBackOff", and the pull error itself — so keying on the message template
+# mints a fresh identity per phase and reports one failure as three recurring problems.
+# k8s_pods reconciles the same oscillation through BACKOFF_ALIASES; this is the event
+# side of it, keyed on the reason rather than on the message, because a message-shaped
+# rule in an identity is the thing that cannot be defended.
+#
+# The cost is a real over-merge: two genuinely different Failed causes on one container
+# now share a fingerprint. Taken knowingly, on the reasoning k8s_pods already records —
+# an identity that flips with poll timing does not lose structure, it invents it — and
+# the message and its template still travel in the payload, so the distinction survives
+# at read time where it can be revised.
+UNSTABLE_MESSAGE_REASONS = {"Failed"}
 
 # Messages are free text with no server-side bound. Truncation happens here rather
 # than in the reasoner because an oversized row costs storage on every poll, while
@@ -181,7 +206,8 @@ def _resolve_subject(
 
     if kind not in LOOKUP_KINDS:
         node = ref.name if kind == "Node" else None
-        return Owner(kind=kind, name=ref.name), node, None
+        owner = Owner(kind=kind, name=ref.name) if kind in SELF_OWNING_KINDS else None
+        return owner, node, None
 
     if not ref.uid:
         return None, None, "no_subject_uid"
@@ -287,6 +313,15 @@ def signal_for_event(
         "event_uid": ev.metadata.uid,
         "api_first_timestamp": iso(ev.first_timestamp) if ev.first_timestamp else None,
         "component": _component_of(ev),
+        # Which scale the severity on this row is on. Every other source assesses;
+        # this one transcribes Kubernetes' two-value Normal/Warning, so a Normal
+        # NodeNotReady event lands as info while k8s_nodes calls the same fact
+        # critical. Both are correct and they are not comparable, and nothing in the
+        # row said so until this key existed.
+        #
+        # Provenance rather than evidence: the assembler must rank on it, and the
+        # reasoner must never be handed two scales under one name.
+        "severity_basis": "cluster",
         "owner_resolution": marker,
     }
 
@@ -308,7 +343,11 @@ def signal_for_event(
         # that belongs in the assembler, where it can be revised without a
         # re-collection that this source cannot support.
         severity=Severity.WARNING if ev.type == WARNING_TYPE else Severity.INFO,
-        dedupe_key=_dedupe_key(container, ev.reason, template.key),
+        dedupe_key=_dedupe_key(
+            container,
+            ev.reason,
+            "" if ev.reason in UNSTABLE_MESSAGE_REASONS else template.key,
+        ),
         redacted=message_redacted,
         payload=partition_payload(payload, PROVENANCE_KEYS),
     )

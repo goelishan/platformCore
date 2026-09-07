@@ -29,7 +29,17 @@ from oncall.envelope import PROVENANCE_KEY
 HEADLINE = (
     "reason", "phase", "exit_code", "container", "restart_count", "ready",
     "condition", "status", "endpoint_total", "endpoint_ready", "count",
+    # k8s_logs. Without these a log row printed its container name and nothing else,
+    # so five log signals were indistinguishable from five empty ones and the question
+    # "does this source carry any evidence" could not be answered from the output.
+    "stream", "log_status", "lines_seen", "lines_kept",
 )
+
+# Machinery the reasoner never sees and an auditor always needs. severity_basis says
+# which scale the severity column is on for this row; owner_resolution keeps three
+# different absences from reading alike, and collapsing them to "owner=-" hid the
+# distinction the collector works hardest to preserve.
+NOTES = ("severity_basis", "owner_resolution", "trigger_source", "previous_unavailable")
 
 
 def _fmt_time(value: str) -> str:
@@ -56,6 +66,8 @@ def main() -> int:
     now = datetime.now(UTC)
     lz.bootstrap()
 
+    started: dict[str, str] = {}
+
     with lz.connect() as conn:
         # Runs first, deliberately. Zero signals from a source that reported ok is a
         # quiet cluster; zero from one that reported unavailable is blindness, and the
@@ -65,6 +77,7 @@ def main() -> int:
             run = lz.last_run(conn, source)
             if run is None:
                 continue
+            started[source] = run["started_at"] or ""
             print(
                 f"  {source:<14} {run['status']:<12} {run['signal_count'] or 0:>4} signals"
                 f"   {_fmt_time(run['finished_at'] or run['started_at'])}"
@@ -84,6 +97,15 @@ def main() -> int:
 
     print(f"\n{len(rows)} signals in the last {args.hours:g}h")
 
+    # A row that stopped being re-collected looks identical to a current one. Its
+    # collected_at froze while everything else moved, which is how a resolved problem
+    # and an ongoing one become indistinguishable in a prompt.
+    #
+    # Measured against when the last run started, not against the newest row. Every
+    # signal in one batch stamps its own collected_at as it is constructed, so those
+    # differ by microseconds and a max-of-rows comparison flags an entire healthy
+    # batch as stale except its final row.
+
     by_source: dict[str, list] = {}
     for row in rows:
         by_source.setdefault(row["source"], []).append(row)
@@ -101,15 +123,18 @@ def main() -> int:
         for row in sorted(group, key=lambda r: (r["subject_name"] or "", r["event_time"])):
             payload = json.loads(row["payload"] or "{}")
             visible = {k: v for k, v in payload.items() if k != PROVENANCE_KEY}
+            provenance = payload.get(PROVENANCE_KEY) or {}
             owner = f"{row['owner_kind']}/{row['owner_name']}" if row["owner_name"] else "-"
 
             print(
                 f"\n  {row['severity'] or '-':<8} {row['subject_kind']}/{row['subject_name']}"
                 f"   owner={owner}   node={row['node_name'] or '-'}"
             )
+            stale = (row["collected_at"] or "") < started.get(source, "")
             print(
                 f"    fp={row['fingerprint'][:12]}  event={_fmt_time(row['event_time'])}"
                 f"  collected={_fmt_time(row['collected_at'])}"
+                f"{'  STALE' if stale else ''}"
                 f"{'  BLOB' if row['blob_id'] else ''}{'  REDACTED' if row['redacted'] else ''}"
             )
 
@@ -117,11 +142,22 @@ def main() -> int:
             if headline:
                 print(f"    {headline}")
 
+            notes = " ".join(
+                f"{k}={payload.get(k, provenance.get(k))}"
+                for k in NOTES
+                if payload.get(k, provenance.get(k)) is not None
+            )
+            if notes:
+                print(f"    [{notes}]")
+
             if args.full:
                 for key, value in sorted(payload.items()):
                     print(f"      {key}: {value}")
-            elif visible.get("message"):
-                print(f"    message: {str(visible['message'])[:110]}")
+            else:
+                for key in ("message", "excerpt", "error"):
+                    if visible.get(key):
+                        text = str(visible[key]).replace("\n", " | ")
+                        print(f"    {key}: {text[:110]}")
 
     return 0
 
