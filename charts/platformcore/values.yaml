@@ -69,7 +69,7 @@ fastapi:
   # different content. The commit is the pin.
   image:
     repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-app
-    tag: 613feadcbd99ab82a00efd8b88d13d68e131f596
+    tag: 6657019cb68cc8e87a72d8f05ba9a04cbed33dcc
   replicas: 1
 
   serviceAccount:
