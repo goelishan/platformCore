@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect env help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek env help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -46,6 +46,7 @@ help:
 	@echo "lab-status  what is running and what is broken"
 	@echo "venv        build $(VENV) with $(PY)"
 	@echo "collect     one collection cycle for every registered source"
+	@echo "peek        what is in the buffer   (ARGS=\"--source k8s_pods --full\")"
 	@echo "env         the environment this expects, ready to eval"
 
 
@@ -148,3 +149,11 @@ collect:
 	cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
 	  oncall/$(VENV)/bin/python oncall/dev/collect.py
+
+
+# Reads the buffer, never writes to it. ARGS passes through so the same target serves
+# the overview and the single-source detail without a second recipe.
+peek:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python oncall/dev/peek.py $(ARGS)
