@@ -49,7 +49,14 @@ from oncall.envelope import (
 # arithmetic without it. Aggregation is client-side, so a kubelet restart abandons
 # one counter and starts another from one; diffing across that boundary invents a
 # drop that never happened. Grouping by uid first is what makes the delta real.
-PROVENANCE_KEYS = frozenset({"event_uid", "component", "severity_basis"})
+# Bumped when this collector's rules change meaning. Ownership, identity and the
+# severity basis all moved in one commit, and rows written before it are still in the
+# buffer saying something else. See the note in k8s_logs.
+COLLECTOR_VERSION = 2
+
+PROVENANCE_KEYS = frozenset(
+    {"event_uid", "component", "severity_basis", "collector_version"}
+)
 
 
 WARNING_TYPE = "Warning"
@@ -322,6 +329,7 @@ def signal_for_event(
         # Provenance rather than evidence: the assembler must rank on it, and the
         # reasoner must never be handed two scales under one name.
         "severity_basis": "cluster",
+        "collector_version": COLLECTOR_VERSION,
         "owner_resolution": marker,
     }
 
