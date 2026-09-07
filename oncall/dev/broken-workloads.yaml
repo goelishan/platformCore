@@ -1,15 +1,25 @@
 # Deliberately broken workloads for local development.
 #
-# Every failure mode the pod collector has to map, in one namespace that can be
-# deleted in a second. Deployments rather than bare pods, so owner resolution has
-# a real ReplicaSet -> Deployment chain to walk.
+# Every failure mode the pod collector has to map, in one namespace. Mostly
+# Deployments, so owner resolution has a real ReplicaSet -> Deployment chain to walk,
+# plus a Job and a CronJob for the chains that have neither.
 #
 #   kubectl apply -f oncall/dev/broken-workloads.yaml
 #   kubectl delete namespace oncall-lab
 #
+# Two faults need an action rather than an apply, because the transition is the fault:
+#
+#   kubectl -n oncall-lab set image deployment/stuckrollout app=registry.invalid/app:v2
+#   kubectl -n oncall-lab delete pod -l app=stuckterminating
+#
 # Expect: crashloop and oomkill enter CrashLoopBackOff within a minute, badimage
-# reaches ImagePullBackOff after a couple of retries, unschedulable stays Pending
-# forever, probefail restarts on a fixed interval, configerror never starts.
+# reaches ImagePullBackOff after a couple of retries, unschedulable and unboundpvc
+# stay Pending forever for different reasons, probefail restarts on a fixed interval,
+# notready never restarts and never serves, configerror never starts, failingjob
+# exhausts its backoffLimit and stops, failingcronjob fails again every two minutes.
+#
+# Namespace deletion waits on stuckterminating's 120s grace period. Add
+# --force --grace-period=0 on those Pods if that is in the way.
 ---
 apiVersion: v1
 kind: Namespace
@@ -154,3 +164,189 @@ spec:
                 configMapKeyRef:
                   name: no-such-configmap
                   key: url
+---
+# Runs correctly and never becomes Ready. The mirror of probefail above: the same
+# probe machinery, readiness instead of liveness, so the kubelet withdraws the
+# endpoint and never touches the process. state.running with a startedAt,
+# ready=false, restartCount 0, and no waiting or terminated reason anywhere.
+#
+# The only fault here answerable from neither containerStatuses field. It lives in
+# .status.conditions[type=Ready] and in repeating Unhealthy events.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notready
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: notready }
+  template:
+    metadata:
+      labels: { app: notready }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          readinessProbe:
+            tcpSocket: { port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 2
+---
+# Fails every attempt until backoffLimit is spent. restartPolicy Never means each
+# attempt is a new Pod rather than a restart of one, so three Pods accumulate in
+# phase Failed — a terminal phase no Deployment-owned Pod ever reaches, and one
+# where nothing will change again no matter how long the collector waits.
+#
+# Owner chain is Pod -> Job. No ReplicaSet, which is the only chain owners.py has
+# ever had to walk.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: failingjob
+  namespace: oncall-lab
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'migration failed: relation app_version already exists'; exit 1"]
+---
+# The same failure on a schedule. Owner chain is Pod -> Job -> CronJob, three levels
+# where the middle one is created fresh each run, so the stable identity is the
+# CronJob and the Job name is noise that must not enter a fingerprint.
+#
+# Recurrence with a known period: every two minutes, exactly, indefinitely. Distinct
+# from crashloop's doubling backoff and probefail's fixed kill interval, and the only
+# fault here whose spacing is set by a schedule rather than by the kubelet.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: failingcronjob
+  namespace: oncall-lab
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: app
+              image: busybox:1.36
+              command: ["sh", "-c", "echo 'nightly export: connection refused'; exit 1"]
+---
+# Healthy on apply. Goes wrong only when moved, which is the point: see the usage
+# block at the top of this file for the command.
+#
+# maxUnavailable 0 keeps both old Pods Ready and serving while the new ReplicaSet
+# cannot pull, so after progressDeadlineSeconds the Deployment carries
+# ProgressDeadlineExceeded while every Pod-level signal from the old ReplicaSet says
+# healthy. Two live ReplicaSets under one Deployment, which owners.py resolves to the
+# same Deployment from Pods in opposite states.
+#
+# The fault is on the controller. A collector reading only Pods sees a partial
+# outage; the reason it is stuck is in .status.conditions on the Deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stuckrollout
+  namespace: oncall-lab
+spec:
+  replicas: 2
+  progressDeadlineSeconds: 60
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels: { app: stuckrollout }
+  template:
+    metadata:
+      labels: { app: stuckrollout }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+---
+# Pending on storage rather than on capacity. unschedulable above is refused by the
+# scheduler for want of CPU; this one is refused for want of a volume, and the
+# distinction is only in the FailedScheduling message. Same empty containerStatuses,
+# same absent timestamps, different cause and different remedy.
+#
+# The PVC never binds because no provisioner answers for that class, so a second
+# object is stuck alongside the Pod and the Pod alone does not explain why.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: unbound
+  namespace: oncall-lab
+spec:
+  storageClassName: no-such-storage-class
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unboundpvc
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: unboundpvc }
+  template:
+    metadata:
+      labels: { app: unboundpvc }
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: unbound
+---
+# Ignores SIGTERM and holds the grace period open. Deleting a Pod leaves it in phase
+# Running with a deletionTimestamp set for two minutes — the state kubectl prints as
+# Terminating, which is not a phase and appears in no status field.
+#
+# Every other fault here is a Pod failing to start or to stay started. This one is a
+# Pod failing to stop, and it is only reachable by deleting one: see the usage block.
+#
+# Cleanup note: the grace period applies to namespace deletion too.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stuckterminating
+  namespace: oncall-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stuckterminating }
+  template:
+    metadata:
+      labels: { app: stuckterminating }
+    spec:
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "trap '' TERM; while true; do sleep 5; done"]
