@@ -641,6 +641,9 @@ def _finding_from(rows: list[sqlite3.Row], window_start: datetime) -> Finding:
         # and the newest pointer is the one that still resolves.
         provenance=provenances[-1],
         signal_ids=[r["signal_id"] for r in rows],
+        # Content-addressed, so an unchanged log across polls is one id seen twice.
+        # dict.fromkeys keeps first-seen order while dropping the repeat.
+        blob_ids=list(dict.fromkeys(r["blob_id"] for r in rows if r["blob_id"])),
     )
     finding.observational = bool(_status_values(finding) & BLIND_STATUSES)
     finding.severity_basis = str(finding.provenance.get("severity_basis", BASIS_ASSESSED))
@@ -757,6 +760,93 @@ def history_for(fingerprints: list[str], since: datetime) -> tuple[dict[str, His
         return {}, [HISTORY_DROPPED]
 
 
+# ---- promotion -------------------------------------------------------------
+# The excerpt is what fits in a row; the blob is what the container actually wrote.
+# Promotion spends a fixed byte budget buying back that loss, and spends it where the
+# failure it explains ranks highest, because an excerpt is only as urgent as the thing
+# that caused it to be read.
+
+
+def _promotion_order(findings: list[Finding]) -> list[Finding]:
+    """Findings that carry a blob, ordered by the rank of what they explain.
+
+    A log excerpt's own severity describes the fetch, not the failure, so ranking
+    excerpts by it would spend the budget on whichever read went most smoothly. The
+    finding an excerpt explains is the one whose urgency it inherits. An excerpt whose
+    trigger is outside the bundle still has text worth reading; it goes last.
+    """
+    position = {f.fingerprint: i for i, f in enumerate(findings)}
+    unresolved = len(findings)
+    carrying = [f for f in findings if f.blob_ids]
+    return sorted(
+        carrying,
+        key=lambda f: position.get(f.explains, unresolved) if f.explains else unresolved,
+    )
+
+
+def promote(
+    conn: Connection, findings: list[Finding], budget: int | None = None
+) -> list[Promotion]:
+    """Unabridged text for the excerpts that matter most, until the budget runs out.
+
+    Whole blobs or nothing. Cutting a blob to fit would manufacture a second excerpt with
+    its own unstated edges, which is the loss this exists to buy back. A blob that does
+    not fit is recorded with its size, so the reader knows the full text existed and was
+    left on disk rather than never collected.
+
+    Only the newest blob per finding. Older ones cover earlier windows of the same
+    problem, and the newest is the one the excerpt in facts was cut from.
+
+    read_blob never raises, and neither does this. Every outcome is a Promotion, so a
+    blob retention removed and a blob that failed its digest are both on the record
+    rather than both silently absent.
+    """
+    remaining = config.BUNDLE_PROMOTE_BYTES if budget is None else budget
+    out: list[Promotion] = []
+
+    for finding in _promotion_order(findings):
+        blob_id = finding.blob_ids[-1]
+        blob = blobs.read_blob(conn, blob_id)
+
+        # read_blob returns data only with OK, so no bytes is every other outcome.
+        if blob.data is None:
+            out.append(
+                Promotion(
+                    fingerprint=finding.fingerprint,
+                    blob_id=blob_id,
+                    status=blob.status,
+                    reason=f"blob {blob.status}; the excerpt is all that remains",
+                )
+            )
+            continue
+
+        size = len(blob.data)
+        if size > remaining:
+            out.append(
+                Promotion(
+                    fingerprint=finding.fingerprint,
+                    blob_id=blob_id,
+                    status=blob.status,
+                    bytes=size,
+                    reason=f"over budget: {size} bytes, {remaining} left",
+                )
+            )
+            continue
+
+        remaining -= size
+        out.append(
+            Promotion(
+                fingerprint=finding.fingerprint,
+                blob_id=blob_id,
+                status=blob.status,
+                bytes=size,
+                text=blob.data.decode("utf-8", errors="replace"),
+                reason="promoted",
+            )
+        )
+    return out
+
+
 # ---- the window ------------------------------------------------------------
 
 
@@ -784,7 +874,9 @@ def derive_window(
     start = now - timedelta(seconds=config.BUNDLE_LOOKBACK_SECONDS)
     floor = now - timedelta(seconds=config.BUNDLE_MAX_LOOKBACK_SECONDS)
 
-    provisional = build(conn, cluster, start, end, subject_name=subject_name, history=False)
+    provisional = build(
+        conn, cluster, start, end, subject_name=subject_name, history=False, promotion=False
+    )
     if not provisional.findings:
         return start, end, WINDOW_FIXED
 
@@ -826,6 +918,7 @@ def build(
     window_basis: str = WINDOW_FIXED,
     history: bool = True,
     max_findings: int | None = None,
+    promotion: bool = True,
 ) -> Bundle:
     """Everything known about one subject over one window, collapsed, ranked and capped.
 
@@ -880,6 +973,7 @@ def build(
         window_basis=window_basis,
         scope=scope,
         findings=kept,
+        promoted=promote(conn, kept) if promotion else [],
         sources=_source_reports(conn, start, end),
         omitted=[
             Omission(
@@ -945,6 +1039,11 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
         "degraded": sorted(bundle.degraded),
         "sources": sorted(
             [[s.source, str(s.status), s.never_ran] for s in bundle.sources]
+        ),
+        # blob_id is a content hash, so it identifies the text without carrying it.
+        "promoted": sorted(
+            [[p.fingerprint, p.blob_id, p.status, p.bytes, p.text is not None]
+             for p in bundle.promoted]
         ),
         "omitted": sorted(
             [[o.fingerprint, o.source, o.occurrences, o.reason] for o in bundle.omitted]
@@ -1064,6 +1163,15 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         out.append(
             f"      {s.source:11} {s.status:12} {note}{'  ' + s.error if s.error else ''}"
         )
+
+    if bundle.promoted:
+        out += ["", f"promoted ({len(bundle.promoted)})"]
+        for p in bundle.promoted:
+            target = by_fingerprint.get(p.fingerprint)
+            named = label(target) if target else p.fingerprint
+            out.append(f"      {named}: {p.reason}")
+            if p.text:
+                out += [f"        | {line}" for line in p.text.splitlines()[-20:]]
 
     if bundle.omitted:
         out += ["", f"omitted ({len(bundle.omitted)})"]
