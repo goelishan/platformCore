@@ -90,6 +90,12 @@ TRIGGER_FINGERPRINT = "trigger_fingerprint"
 # Older than any row this system can hold, so a lower bound that excludes nothing.
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
+# Where a finding's severity came from. Every source but one judges severity on the
+# four-level scale. k8s_events copies Kubernetes' own Normal/Warning, and stamps
+# severity_basis="cluster" into its provenance to say so. Absent means assessed.
+BASIS_ASSESSED = "assessed"
+BASIS_CLUSTER = "cluster"
+
 WINDOW_FIXED = "fixed lookback"
 WINDOW_EXTENDED = "extended to the first occurrence of the leading finding"
 WINDOW_CAPPED = "extended to the lookback cap, which the leading finding predates"
@@ -229,7 +235,12 @@ class Finding(BaseModel):
     # on the subject, stated rather than left for the reader to infer from names.
     joined_by: str | None = None
 
-    # True when the finding's own status says it saw nothing. Such a row reports on
+    # Whether severity is this agent's judgement (assessed) or a copy of Kubernetes'
+    # Normal/Warning label (cluster). Same column, different meaning: a Normal
+    # NodeNotReady event reads info beside a k8s_nodes row calling the same node
+    # critical, and both are right. Carried so nothing downstream reads them as one scale.
+    severity_basis: str = BASIS_ASSESSED
+
     # True when the finding's own status says it saw nothing. Such a row reports on
     # this agent's visibility rather than on the cluster, and severity was inherited
     # from whatever triggered the read — so left alone it can outrank the failure it
@@ -632,6 +643,7 @@ def _finding_from(rows: list[sqlite3.Row], window_start: datetime) -> Finding:
         signal_ids=[r["signal_id"] for r in rows],
     )
     finding.observational = bool(_status_values(finding) & BLIND_STATUSES)
+    finding.severity_basis = str(finding.provenance.get("severity_basis", BASIS_ASSESSED))
     return finding
 
 
@@ -644,8 +656,14 @@ def _group_by_fingerprint(rows: list[sqlite3.Row]) -> list[list[sqlite3.Row]]:
     return list(groups.values())
 
 
-def _order(finding: Finding) -> tuple[int, datetime]:
-    return (finding.rank, finding.last_seen)
+def _order(finding: Finding) -> tuple[int, bool, datetime]:
+    """Rank first. At equal rank, a judgement leads a transcribed label.
+
+    A tie-break and not a demotion: a Kubernetes Warning still outranks an assessed
+    info. What it settles is two findings at the same level, where the one this agent
+    assessed says more than the one it copied.
+    """
+    return (finding.rank, finding.severity_basis == BASIS_ASSESSED, finding.last_seen)
 
 
 # ---- correlation -----------------------------------------------------------
@@ -937,6 +955,7 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
                 "source": str(f.source),
                 "kind": str(f.kind),
                 "severity": str(f.severity) if f.severity else None,
+                "severity_basis": f.severity_basis,
                 "subject": f.subject_name,
                 "owner": f.owner_name,
                 "node": f.node_name,
@@ -1004,6 +1023,8 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
             f"  {f.subject_name or ''}  via {f.joined_by}{seen_before}"
         )
 
+        if f.severity_basis == BASIS_CLUSTER:
+            out.append("      (severity is Kubernetes' own Normal/Warning label, not an assessment)")
         if f.observational:
             out.append("      (reports on what could be seen, not on the workload)")
         if f.explains:
