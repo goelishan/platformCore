@@ -52,6 +52,7 @@ from oncall.envelope import (
     provenance_of,
     visible,
 )
+from oncall.evidence.scope import JOIN_CLUSTER, Scope, resolve, select, strongest
 from oncall.landing_zone import blobs, reader
 
 
@@ -223,6 +224,12 @@ class Finding(BaseModel):
     # something to promote; the excerpt in facts is the trimmed form of the newest.
     blob_ids: list[str] = []
 
+    # The scope rule that admitted this finding: subject, owner, node, unscheduled,
+    # namespace, or cluster when no subject was named. How directly the finding bears
+    # on the subject, stated rather than left for the reader to infer from names.
+    joined_by: str | None = None
+
+    # True when the finding's own status says it saw nothing. Such a row reports on
     # True when the finding's own status says it saw nothing. Such a row reports on
     # this agent's visibility rather than on the cluster, and severity was inherited
     # from whatever triggered the read — so left alone it can outrank the failure it
@@ -313,6 +320,11 @@ class Bundle(BaseModel):
     window_start: datetime
     window_end: datetime
     window_basis: str = WINDOW_FIXED
+
+    # What the subject resolved to. None for a cluster-wide bundle, and found=False
+    # when the subject produced nothing in the window, which is not the same as a
+    # subject that is healthy.
+    scope: Scope | None = None
 
     findings: list[Finding]
     sources: list[SourceReport]
@@ -804,18 +816,30 @@ def build(
     findings dropped and none dropped are different inputs, and the reasoner has to be
     able to tell which one it was given.
     """
-    rows = reader.signals_in_window(
-        conn, cluster=cluster, start=start, end=end, subject_name=subject_name
-    )
+    rows = reader.signals_in_window(conn, cluster=cluster, start=start, end=end)
+
+    degraded: list[str] = []
+    scope: Scope | None = None
+    if subject_name is None:
+        joins = {r["signal_id"]: JOIN_CLUSTER for r in rows}
+    else:
+        scope = resolve(rows, subject_name)
+        rows, joins = select(rows, scope)
+        if not scope.found:
+            degraded.append(
+                f"{subject_name} produced no signal in this window, so nothing could "
+                "be scoped to it; an empty bundle here says nothing about its health"
+            )
 
     findings = [_finding_from(group, start) for group in _group_by_fingerprint(rows)]
+    for finding in findings:
+        finding.joined_by = strongest(joins[i] for i in finding.signal_ids)
     _link_triggers(findings)
     findings.sort(key=_order, reverse=True)
 
     cap = config.BUNDLE_MAX_FINDINGS if max_findings is None else max_findings
     kept, dropped = findings[:cap], findings[cap:]
 
-    degraded: list[str] = []
     if history:
         found, notes = history_for([f.fingerprint for f in kept], start)
         degraded.extend(notes)
@@ -836,6 +860,7 @@ def build(
         window_start=start,
         window_end=end,
         window_basis=window_basis,
+        scope=scope,
         findings=kept,
         sources=_source_reports(conn, start, end),
         omitted=[
@@ -848,6 +873,7 @@ def build(
             )
             for f in dropped
         ],
+        candidate_signal_ids=[r["signal_id"] for r in rows],
         degraded=degraded,
         normalizer_versions=versions,
     )
@@ -896,6 +922,7 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
         "cluster": bundle.cluster,
         "subject": bundle.subject,
         "window": [iso(bundle.window_start), iso(bundle.window_end), bundle.window_basis],
+        "scope": bundle.scope.model_dump(mode="json") if bundle.scope else None,
         "normalizer_versions": bundle.normalizer_versions,
         "degraded": sorted(bundle.degraded),
         "sources": sorted(
@@ -922,6 +949,7 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
                 "sample": f.sample,
                 "deltas": [d.model_dump(mode="json") for d in f.deltas],
                 "explains": f.explains,
+                "joined_by": f.joined_by,
                 "observational": f.observational,
                 "history": f.history.model_dump(mode="json") if f.history else None,
             }
@@ -973,7 +1001,7 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
             seen_before = "  NEW" if f.history.is_new else f"  since {f.history.first_seen_ever:%b %d}"
         out.append(
             f"[{str(f.severity or '-'):8}] {f.source:11} x{f.occurrences:<3} {span}"
-            f"  {f.owner_name or ''}{seen_before}"
+            f"  {f.subject_name or ''}  via {f.joined_by}{seen_before}"
         )
 
         if f.observational:
