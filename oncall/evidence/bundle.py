@@ -167,6 +167,11 @@ class Loss(BaseModel):
 
     reason: str
     rows_dropped: int
+
+    # Of those, how many never reached the store. Shipped rows are still answerable
+    # from history; these are gone, and a gap covering them is not a quiet stretch.
+    unshipped: int = 0
+
     window_start: str | None
     window_end: str | None
 
@@ -192,7 +197,14 @@ class History(BaseModel):
     """What the store knows that a two-day buffer cannot."""
 
     first_seen_ever: datetime | None = None
+
+    # None when the store began watching this cluster after the window started. Its
+    # "no earlier row" would then describe where its memory begins, not the problem.
     is_new: bool | None = None
+
+    # The store's horizon for this cluster, so a reader can see what "first seen" and
+    # "new" were measured against.
+    watching_since: datetime | None = None
 
     # How many clusters have ever reported this fingerprint. A store question, not a
     # buffer one: the buffer holds one cluster's recent rows and would answer "one"
@@ -701,6 +713,7 @@ def _source_reports(conn: Connection, start: datetime, end: datetime) -> list[So
     Left out, it reads to the reasoner as a source that simply had no findings.
     """
     seen = {r["source"]: r for r in reader.source_status_in_window(conn, start, end)}
+    counts = {r["source"]: r for r in reader.run_counts_in_window(conn, start, end)}
 
     reports: list[SourceReport] = []
     for source in EXPECTED_SOURCES:
@@ -711,6 +724,7 @@ def _source_reports(conn: Connection, start: datetime, end: datetime) -> list[So
             )
             continue
 
+        tally = counts[source]
         reports.append(
             SourceReport(
                 source=source,
@@ -718,10 +732,48 @@ def _source_reports(conn: Connection, start: datetime, end: datetime) -> list[So
                 last_started=parse(row["last_started"]),
                 signals=row["signal_count"],
                 error=row["error"],
+                attempts=tally["attempts"],
+                failed=tally["failed"],
             )
         )
 
     return reports
+
+
+def _log_coverage(reports: list[SourceReport]) -> str | None:
+    """Whether the log excerpts were chosen by sources that could see.
+
+    k8s_logs reads only pods an upstream source reported, and proceeds on one healthy
+    upstream by design. So a logs run reporting ok or empty while an upstream was blind
+    is a partial result, and the collector cannot say so: it cannot know what the blind
+    source would have reported. Only this layer holds every source's report at once.
+
+    Unavailable logs are left alone. That is already stated in the source block, and
+    there is no excerpt set to qualify. A source that never ran is reported unavailable
+    by _source_reports, so that case is covered by the same check and needs no
+    condition of its own.
+    """
+    by_source = {r.source: r for r in reports}
+    logs = by_source.get(str(SignalSource.K8S_LOGS))
+    if logs is None or logs.status == SourceStatus.UNAVAILABLE:
+        return None
+
+    blind = sorted(
+        s for s in config.LOG_UPSTREAM_SOURCES
+        if (r := by_source.get(s)) is None
+        or r.never_ran
+        or r.status == SourceStatus.UNAVAILABLE
+        or r.failed > 0
+    )
+    if not blind:
+        return None
+
+    return (
+        f"log excerpts were chosen from what {', '.join(blind)} reported, and "
+        f"{'that source' if len(blind) == 1 else 'those sources'} could not see for "
+        "the whole window; a failing pod only it would have named has no excerpt, so "
+        "a missing excerpt is not evidence the application was fine"
+    )
 
 
 # ---- history, and what its absence costs -----------------------------------
@@ -733,7 +785,29 @@ HISTORY_DROPPED = (
 )
 
 
-def history_for(fingerprints: list[str], since: datetime) -> tuple[dict[str, History], list[str]]:
+def _store_blind_note(cluster: str, watched: datetime | None, since: datetime) -> str | None:
+    """Why newness cannot be judged, or None when it can.
+
+    Strictly before: a store that began watching at the instant the window opened holds
+    no row from before it, and would call everything new for exactly that reason.
+    """
+    if watched is not None and watched < since:
+        return None
+    if watched is None:
+        return (
+            f"the store holds nothing from {cluster}, so no finding can be called new "
+            "or old"
+        )
+    return (
+        f"the store has held {cluster} only since {watched.astimezone(UTC):%Y-%m-%d %H:%M} "
+        "UTC, after this window began, so no finding can be called new: a problem older "
+        "than the watching cannot be told from one that started inside it"
+    )
+
+
+def history_for(
+    fingerprints: list[str], since: datetime, cluster: str
+) -> tuple[dict[str, History], list[str]]:
     """Ask the store what the buffer cannot answer, and report it if it cannot answer.
 
     Imported here rather than at module scope so this package stays importable without
@@ -750,12 +824,15 @@ def history_for(fingerprints: list[str], since: datetime) -> tuple[dict[str, His
 
         found: dict[str, History] = {}
         with store.connect() as conn:
+            watched = store.watching_since(conn, cluster)
+            blind = _store_blind_note(cluster, watched, since)
             for fingerprint in fingerprints:
                 found[fingerprint] = History(
                     first_seen_ever=store.first_seen_ever(conn, fingerprint),
-                    is_new=store.is_new(conn, fingerprint, since),
+                    is_new=None if blind else store.is_new(conn, fingerprint, since),
+                    watching_since=watched,
                 )
-        return found, []
+        return found, [blind] if blind else []
     except Exception:  # noqa: BLE001 - any failure to reach it costs the same claims
         return {}, [HISTORY_DROPPED]
 
@@ -952,7 +1029,7 @@ def build(
     kept, dropped = findings[:cap], findings[cap:]
 
     if history:
-        found, notes = history_for([f.fingerprint for f in kept], start)
+        found, notes = history_for([f.fingerprint for f in kept], start, cluster)
         degraded.extend(notes)
         for finding in kept:
             finding.history = found.get(finding.fingerprint)
@@ -965,6 +1042,22 @@ def build(
             "describe the keying rules as much as the cluster"
         )
 
+    sources = _source_reports(conn, start, end)
+    coverage = _log_coverage(sources)
+    if coverage:
+        degraded.append(coverage)
+
+    losses = [
+        Loss(
+            reason=r["reason"],
+            rows_dropped=r["rows_dropped"],
+            unshipped=r["unshipped"],
+            window_start=r["window_start"],
+            window_end=r["window_end"],
+        )
+        for r in reader.buffer_drops_in_window(conn, start, end)
+    ]
+
     return Bundle(
         cluster=cluster,
         subject=subject_name,
@@ -974,7 +1067,8 @@ def build(
         scope=scope,
         findings=kept,
         promoted=promote(conn, kept) if promotion else [],
-        sources=_source_reports(conn, start, end),
+        sources=sources,
+        losses=losses,
         omitted=[
             Omission(
                 fingerprint=f.fingerprint,
@@ -1033,13 +1127,18 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
     return {
         "cluster": bundle.cluster,
         "subject": bundle.subject,
-        "window": [iso(bundle.window_start), iso(bundle.window_end), bundle.window_basis],
+        # The basis and not the bounds. The bounds come off the clock, so hashing them
+        # gave two assemblies a minute apart over identical evidence different receipts
+        # (found live on 2026-09-29). The window is the question; what it admitted is
+        # already here as findings, omissions and source statuses.
+        "window_basis": bundle.window_basis,
         "scope": bundle.scope.model_dump(mode="json") if bundle.scope else None,
         "normalizer_versions": bundle.normalizer_versions,
         "degraded": sorted(bundle.degraded),
         "sources": sorted(
-            [[s.source, str(s.status), s.never_ran] for s in bundle.sources]
+            [[s.source, str(s.status), s.never_ran, s.failed > 0] for s in bundle.sources]
         ),
+
         # blob_id is a content hash, so it identifies the text without carrying it.
         "promoted": sorted(
             [[p.fingerprint, p.blob_id, p.status, p.bytes, p.text is not None]
@@ -1047,6 +1146,10 @@ def receipt_basis(bundle: Bundle) -> dict[str, Any]:
         ),
         "omitted": sorted(
             [[o.fingerprint, o.source, o.occurrences, o.reason] for o in bundle.omitted]
+        ),
+        "losses": sorted(
+            [[loss.reason, loss.rows_dropped, loss.unshipped, loss.window_start,
+              loss.window_end] for loss in bundle.losses]
         ),
         "findings": [
             {
@@ -1118,7 +1221,7 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         if f.history and f.history.is_new is not None:
             seen_before = "  NEW" if f.history.is_new else f"  since {f.history.first_seen_ever:%b %d}"
         out.append(
-            f"[{str(f.severity or '-'):8}] {f.source:11} x{f.occurrences:<3} {span}"
+            f"[{str(f.severity or '-'):8}] {f.source:12} x{f.occurrences:<3} {span}"
             f"  {f.subject_name or ''}  via {f.joined_by}{seen_before}"
         )
 
@@ -1160,8 +1263,11 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
     out.append("sources")
     for s in bundle.sources:
         note = "never ran" if s.never_ran else f"{s.signals} signals"
+        if s.failed:
+            note += f", {s.failed} of {s.attempts} attempts failed"
+
         out.append(
-            f"      {s.source:11} {s.status:12} {note}{'  ' + s.error if s.error else ''}"
+            f"      {s.source:12} {s.status:12} {note}{'  ' + s.error if s.error else ''}"
         )
 
     if bundle.promoted:
@@ -1176,7 +1282,16 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
     if bundle.omitted:
         out += ["", f"omitted ({len(bundle.omitted)})"]
         for o in bundle.omitted:
-            out.append(f"      {o.source:11} {str(o.severity):8} x{o.occurrences:<4} {o.reason}")
+            out.append(f"      {o.source:12} {str(o.severity):8} x{o.occurrences:<4} {o.reason}")
+
+    if bundle.losses:
+        out += ["", f"buffer losses ({len(bundle.losses)})"]
+        for loss in bundle.losses:
+            out.append(
+                f"      {loss.rows_dropped} rows dropped ({loss.reason}), "
+                f"{loss.unshipped} never shipped, "
+                f"{loss.window_start} to {loss.window_end}"
+            )
 
     if bundle.degraded:
         out += ["", "degraded"]

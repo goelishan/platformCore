@@ -157,6 +157,12 @@ POLL_INTERVALS = {
     "k8s_logs": 120,
 }
 
+# Sources whose signals choose which pods k8s_logs reads. Here rather than in the
+# collector because the assembler has to know it too, and importing a collector would
+# drag the kubernetes client into a layer that must never touch the cluster. One list,
+# so an upstream added for the collector cannot be missed by the coverage check.
+LOG_UPSTREAM_SOURCES = ("k8s_pods", "k8s_events")
+
 
 # ---- log collection --------------------------------------------------------
 # Signal-driven, not a sweep. Cost scales with the number of broken pods rather than

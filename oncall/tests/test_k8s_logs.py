@@ -508,21 +508,24 @@ def test_an_empty_log_is_empty_and_not_ok(client):
 def test_truncation_is_measured_on_the_bytes_the_server_sent(client, monkeypatch):
     """limit_bytes bounds bytes, so the cap has to be compared against bytes.
 
-    Eight undecodable bytes under a cap of twenty: the server sent well under the
-    limit and nothing was cut. Each one decodes to U+FFFD, which re-encodes to three
-    bytes, so measuring the decoded form finds twenty-four and claims a truncation
-    that never happened — a replacement character counted as though it were the bytes
-    it stands in for.
+    One prefixed line carrying eight undecodable bytes: 29 bytes on the wire under a
+    cap of forty, so nothing was cut. Each undecodable byte decodes to U+FFFD, which
+    re-encodes to three bytes, so measuring the decoded form finds forty-five and
+    claims a truncation that never happened. A replacement character counted as
+    though it were the bytes it stands in for.
 
     The cap and the payload are chosen so the two measurements disagree. An earlier
     version of this test used a cap of eight, where every candidate measurement
-    answers True and the case cannot tell them apart."""
-    monkeypatch.setattr(config, "LOG_LIMIT_BYTES", 20)
-    client(_Resp(b"\xff" * 8))
+    answers True and the case cannot tell them apart. The runtime prefix is present
+    because timestamps=True guarantees it, and a body without one is not a log."""
+    monkeypatch.setattr(config, "LOG_LIMIT_BYTES", 40)
+    body = b"2026-09-29T12:00:00Z " + b"\xff" * 8
+    client(_Resp(body))
 
     fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
 
-    assert len(fetch.raw) == 8
+    assert fetch.status == str(SourceStatus.OK)
+    assert len(fetch.raw) == 29
     assert fetch.truncated is False
 
 
@@ -627,16 +630,44 @@ def test_a_runtime_error_body_is_not_stored_as_a_log(client):
 
     assert fetch.status == str(SourceStatus.UNAVAILABLE)
     assert fetch.text == ""
+    assert fetch.error is not None
     assert "unable to retrieve" in fetch.error
 
-
 def test_a_log_line_that_merely_mentions_the_phrase_is_still_a_log(client):
-    """The match is anchored at the start for a reason: an application logging "unable
-    to retrieve container logs from upstream" is reporting its own problem, and
-    discarding it would delete the diagnosis."""
+    """An application logging "unable to retrieve container logs from upstream" is
+    reporting its own problem. The runtime prefixed the line, so it came from the
+    stream, and discarding it would delete the diagnosis."""
     client(_Resp(b"2026-09-07T18:19:20Z ERROR unable to retrieve container logs from upstream\n"))
 
     fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
 
     assert fetch.status == str(SourceStatus.OK)
     assert "upstream" in fetch.text
+
+def test_an_unfamiliar_runtime_complaint_is_still_not_a_log(client):
+    """The reason the check is structural. A wording no list anticipated, with no
+    runtime timestamp on any line, did not come from the log stream. A curated
+    pattern stores this as log_status=ok with content."""
+    client(_Resp(b"failed to open log file \"/var/log/pods/x/0.log\": no such file or directory"))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.UNAVAILABLE)
+    assert fetch.text == ""
+    assert fetch.error is not None
+    assert "failed to open log file" in fetch.error
+
+def test_unprefixed_continuation_lines_do_not_disqualify_a_real_stream(client):
+    """A stack trace: one prefixed line, then continuation lines with none of their
+    own. Requiring every line to carry the prefix would throw away the fetch most
+    worth having."""
+    client(_Resp(
+        b"2026-09-29T12:00:00Z panic: runtime error: nil map\n"
+        b"\tgoroutine 1 [running]:\n"
+        b"\tmain.main()\n"
+    ))
+
+    fetch = k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert fetch.status == str(SourceStatus.OK)
+    assert "goroutine" in fetch.text

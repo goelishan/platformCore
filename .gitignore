@@ -10,6 +10,12 @@ __pycache__/
 .venv/
 venv/
 
+# Tool caches. pytest and ruff run from the repo root, so their caches land here
+# rather than inside the subproject whose own .gitignore already covers them.
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 # Editor / OS cruft
 .DS_Store
 .idea/
@@ -36,3 +42,7 @@ terraform/tfplan*
 # are kept locally and not version controlled.
 PROGRESS.md
 docs/
+
+# Drafts and diffs handed over in working sessions. Scratch, not source: anything
+# worth keeping is typed into the tree where it belongs.
+Claude outputs/

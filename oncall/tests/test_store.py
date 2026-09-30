@@ -301,13 +301,19 @@ def test_a_partition_holding_incident_evidence_is_kept(store_db):
 
 def test_row_level_expiry_runs_inside_live_partitions(store_db):
     """A partition spans a month while a log excerpt lives a day. Without the row-level
-    sweep, January's log excerpts would survive until February."""
+    sweep, January's log excerpts would survive until February.
+
+    One clock throughout. event_time picks the partition and collected_at sets
+    expires_at, so pinning one to T0 and leaving the other on the wall clock made this
+    pass until the calendar carried the partition past the 30-day drop, and fail from
+    2026-09-30 onwards with nothing in the code having changed."""
     log = make_signal(name="log", kind=SignalKind.LOG_EXCERPT, key="app|log|1")
     pod = make_signal(name="pod")
+    log, pod = (s.model_copy(update={"collected_at": T0}) for s in (log, pod))
 
     with store_db.connect() as conn:
         store_db.upsert_signals(conn, [as_store_row(log), as_store_row(pod)])
-        store_db.sweep(conn, now=datetime.now(UTC) + timedelta(days=2))
+        store_db.sweep(conn, now=T0 + timedelta(days=2))
         kinds = [r["kind"] for r in store_db.fetch_all(conn, "SELECT kind FROM signals")]
 
     assert kinds == ["pod_state"]

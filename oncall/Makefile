@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek env help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle env help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -47,6 +47,7 @@ help:
 	@echo "venv        build $(VENV) with $(PY)"
 	@echo "collect     one collection cycle for every registered source"
 	@echo "peek        what is in the buffer   (ARGS=\"--source k8s_pods --full\")"
+	@echo "bundle      one bundle as the reasoner sees it   (SUBJECT=crashloop ARGS=\"--at ...\")"
 	@echo "env         the environment this expects, ready to eval"
 
 
@@ -158,3 +159,11 @@ peek:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  oncall/$(VENV)/bin/python oncall/dev/peek.py $(ARGS)
+
+
+# Reads the buffer, never writes to it, and opens no incident. SUBJECT is a pod,
+# workload or node name; omit it for a cluster-wide bundle.
+bundle:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python oncall/dev/bundle.py $(SUBJECT) $(ARGS)

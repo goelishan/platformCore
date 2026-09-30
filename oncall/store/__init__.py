@@ -22,6 +22,7 @@ from oncall.store.reader import (
     recurrence_history,
     signals_by_payload,
     signals_for_incident,
+    watching_since,
 )
 from oncall.store.retention import drop_expired_partitions, signal_partitions, sweep
 from oncall.store.writer import (
@@ -53,4 +54,5 @@ __all__ = [
     "upsert_diagnoses",
     "upsert_incidents",
     "upsert_signals",
+    "watching_since",
 ]

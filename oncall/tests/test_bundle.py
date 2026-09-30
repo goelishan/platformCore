@@ -79,6 +79,14 @@ def store(signals: list[Signal], source: SignalSource = SignalSource.K8S_PODS) -
         lz.finish_run(conn, run, SourceStatus.OK, len(signals))
 
 
+def record_run(source: SignalSource, status: SourceStatus = SourceStatus.OK) -> None:
+    """One finished run with no signals. Enough to put a source in a state."""
+    with lz.connect() as conn:
+        run = lz.start_run(conn, source, CLUSTER)
+        failed = status == SourceStatus.UNAVAILABLE
+        lz.finish_run(conn, run, status, 0, "down" if failed else None)
+
+
 def build(subject: str | None = POD, **kwargs) -> bundle.Bundle:
     """History is off unless a case asks for it, so the suite never depends on a
     reachable store to exercise anything that is not about history."""
@@ -306,6 +314,37 @@ def test_findings_are_ranked_by_severity_then_recency(buffer):
 
 # ---- what the sources managed ----------------------------------------------
 
+def test_a_source_that_failed_before_recovering_says_so(buffer):
+    """Status is the newest run alone. Four failures then a success reports ok, and a
+    bundle concluding anything from that source's quiet stretch needs the four."""
+    with lz.connect() as conn:
+        for _ in range(4):
+            run = lz.start_run(conn, SignalSource.K8S_EVENTS, CLUSTER)
+            lz.finish_run(conn, run, SourceStatus.UNAVAILABLE, 0, "connection refused")
+    store([], source=SignalSource.K8S_EVENTS)
+
+    events = next(s for s in build().sources if s.source == str(SignalSource.K8S_EVENTS))
+
+    assert events.status == SourceStatus.OK
+    assert events.attempts == 5
+    assert events.failed == 4
+
+
+def test_a_run_that_never_finished_is_not_read_as_ok(buffer):
+    """start_run stamps ok before the collector does anything. A collector that raised
+    or was killed leaves that row behind, and read at face value it vouches for a look
+    that never happened."""
+    with lz.connect() as conn:
+        lz.start_run(conn, SignalSource.K8S_EVENTS, CLUSTER)
+
+    events = next(s for s in build().sources if s.source == str(SignalSource.K8S_EVENTS))
+
+    assert events.never_ran is False
+    assert events.status == SourceStatus.UNAVAILABLE
+    assert events.error is not None
+    assert "never finished" in events.error
+    assert (events.attempts, events.failed) == (1, 1)
+
 
 def test_every_expected_source_is_reported_even_with_nothing_to_say(buffer):
     store([make_signal(when=NOW - timedelta(minutes=5))])
@@ -328,6 +367,77 @@ def test_a_source_that_never_ran_is_distinct_from_one_that_failed(buffer):
     assert silent.last_started is None
     assert ran.never_ran is False
     assert ran.status == SourceStatus.OK
+
+
+# ---- what the bundle could not see -----------------------------------------
+
+
+COVERAGE = "log excerpts were chosen from"
+
+
+def test_logs_read_while_an_upstream_was_blind_are_qualified(buffer):
+    """k8s_logs proceeds on one healthy upstream by design. A pod only events would have
+    named has no excerpt, and without this note that absence reads as a clean log."""
+    record_run(SignalSource.K8S_PODS)
+    record_run(SignalSource.K8S_EVENTS, SourceStatus.UNAVAILABLE)
+    record_run(SignalSource.K8S_LOGS)
+
+    notes = [d for d in build().degraded if d.startswith(COVERAGE)]
+
+    assert len(notes) == 1
+    assert "k8s_events" in notes[0]
+    assert "k8s_pods" not in notes[0]
+
+
+def test_an_upstream_that_never_ran_qualifies_the_logs_too(buffer):
+    record_run(SignalSource.K8S_PODS)
+    record_run(SignalSource.K8S_LOGS)
+
+    assert any(d.startswith(COVERAGE) for d in build().degraded)
+
+
+def test_an_upstream_that_recovered_still_qualifies_the_logs(buffer):
+    """Its newest run is ok, but the logs collector may have chosen targets during the
+    stretch it was down."""
+    record_run(SignalSource.K8S_PODS)
+    record_run(SignalSource.K8S_EVENTS, SourceStatus.UNAVAILABLE)
+    record_run(SignalSource.K8S_EVENTS)
+    record_run(SignalSource.K8S_LOGS)
+
+    assert any(d.startswith(COVERAGE) for d in build().degraded)
+
+
+def test_logs_with_every_upstream_seeing_carry_no_note(buffer):
+    record_run(SignalSource.K8S_PODS)
+    record_run(SignalSource.K8S_EVENTS)
+    record_run(SignalSource.K8S_LOGS)
+
+    assert not any(d.startswith(COVERAGE) for d in build().degraded)
+
+
+def test_logs_that_never_ran_are_not_qualified(buffer):
+    """Nothing to qualify. The source block already says logs never ran."""
+    record_run(SignalSource.K8S_EVENTS, SourceStatus.UNAVAILABLE)
+
+    assert not any(d.startswith(COVERAGE) for d in build().degraded)
+
+
+def test_a_buffer_loss_overlapping_the_window_is_reported(buffer):
+    """Without this a dropped stretch and a quiet one are the same shape."""
+    with lz.connect() as conn:
+        conn.execute(
+            "INSERT INTO buffer_drops "
+            "(dropped_at, reason, rows_dropped, unshipped, window_start, window_end) "
+            "VALUES (?, 'size', 40, 3, ?, ?)",
+            (iso(NOW), iso(NOW - timedelta(minutes=20)), iso(NOW - timedelta(minutes=10))),
+        )
+
+    result = build()
+
+    assert [(loss.reason, loss.rows_dropped, loss.unshipped) for loss in result.losses] == [
+        ("size", 40, 3)
+    ]
+    assert "3 never shipped" in bundle.render(result)
 
 
 # ---- the window ------------------------------------------------------------
@@ -626,7 +736,9 @@ def test_the_budget_keeps_the_highest_ranked(buffer):
 
 
 def test_an_unreachable_store_costs_the_history_claims_and_says_which(buffer, monkeypatch):
-    monkeypatch.setattr(bundle, "history_for", lambda fps, since: ({}, [bundle.HISTORY_DROPPED]))
+    monkeypatch.setattr(
+        bundle, "history_for", lambda fps, since, cluster: ({}, [bundle.HISTORY_DROPPED])
+    )
     store([make_signal(when=NOW - timedelta(minutes=5))])
 
     result = build(history=True)
@@ -641,7 +753,9 @@ def test_history_reaches_the_finding_when_the_store_answers(buffer, monkeypatch)
     seen before" for anything older, which is the most confident way to be wrong."""
     seen = bundle.History(first_seen_ever=NOW - timedelta(days=9), is_new=False)
     monkeypatch.setattr(
-        bundle, "history_for", lambda fingerprints, since: ({fp: seen for fp in fingerprints}, [])
+        bundle,
+        "history_for",
+        lambda fingerprints, since, cluster: ({fp: seen for fp in fingerprints}, []),
     )
     store([make_signal(when=NOW - timedelta(minutes=5))])
 
@@ -650,6 +764,32 @@ def test_history_reaches_the_finding_when_the_store_answers(buffer, monkeypatch)
     assert result.degraded == []
     assert result.findings[0].history is not None
     assert result.findings[0].history.is_new is False
+
+
+def test_a_store_that_began_watching_inside_the_window_cannot_call_anything_new():
+    """Found live: a pod on its 270th restart labelled NEW, because the store had only
+    been receiving the cluster for minutes and so held no earlier row."""
+    note = bundle._store_blind_note(CLUSTER, START + timedelta(minutes=5), START)
+
+    assert note is not None
+    assert "cannot be told" in note
+
+
+def test_a_store_that_began_watching_at_the_window_edge_is_still_blind():
+    """Strictly before. A store whose first row lands exactly as the window opens holds
+    nothing from before it."""
+    assert bundle._store_blind_note(CLUSTER, START, START) is not None
+
+
+def test_a_store_that_never_saw_the_cluster_says_so():
+    note = bundle._store_blind_note(CLUSTER, None, START)
+
+    assert note is not None
+    assert "holds nothing" in note
+
+
+def test_a_store_watching_before_the_window_can_judge_newness():
+    assert bundle._store_blind_note(CLUSTER, START - timedelta(days=3), START) is None
 
 
 def test_a_window_spanning_a_normalizer_change_says_so(buffer):
@@ -687,6 +827,45 @@ def test_the_evidence_receipt_ignores_how_the_findings_are_ordered(buffer):
     result.findings.reverse()
 
     assert bundle.evidence_receipt(result) == before
+
+def test_the_evidence_receipt_moves_when_a_source_failed_during_the_window(buffer):
+    """Its newest run is ok either way. What changed is whether it could see for the
+    whole incident, which is a fact about the evidence."""
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build()
+    before = bundle.evidence_receipt(result)
+    result.sources[0].failed = 1
+
+    assert bundle.evidence_receipt(result) != before
+
+def test_the_evidence_receipt_does_not_move_with_the_clock(buffer):
+    """The window is the question asked and the findings are what it admitted. Hashing
+    the bounds gave two assemblies a minute apart, over identical evidence, different
+    receipts: found live on 2026-09-29."""
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+    shift = timedelta(minutes=1)
+
+    with lz.connect() as conn:
+        early = bundle.build(conn, CLUSTER, START, END, subject_name=POD, history=False)
+        late = bundle.build(
+            conn, CLUSTER, START + shift, END + shift, subject_name=POD, history=False
+        )
+
+    assert early.findings
+    assert bundle.evidence_receipt(early) == bundle.evidence_receipt(late)
+
+
+def test_the_evidence_receipt_moves_when_the_buffer_lost_rows(buffer):
+    store([make_signal(when=NOW - timedelta(minutes=5))])
+
+    result = build()
+    before = bundle.evidence_receipt(result)
+    result.losses = [
+        bundle.Loss(reason="age", rows_dropped=5, window_start=None, window_end=None)
+    ]
+
+    assert bundle.evidence_receipt(result) != before
 
 
 def test_the_evidence_receipt_moves_when_a_source_goes_dark(buffer):

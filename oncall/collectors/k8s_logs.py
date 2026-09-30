@@ -99,19 +99,11 @@ NEVER_STARTED_REASONS = frozenset({
 # was known when everything was.
 LOG_STATUS_NO_CONTAINER = "no_container"
 
-# kubelet answers 200 with an error string in the body, rather than a status code, when
-# the runtime cannot hand over a log. Decoded naively that lands as log_status=ok with
-# one line of content: infrastructure noise wearing the label of evidence, which is a
-# worse outcome than any error.
-RUNTIME_ERROR_BODY = re.compile(
-    r"^(unable to retrieve container log|failed to try resolving symlinks)",
-    re.IGNORECASE,
-)
 
 # Sources that can put a Pod-subject signal in front of this collector. Named rather
 # than inferred, because the health check below has to know which runs to look for and
 # an unlisted source would silently stop counting as upstream.
-UPSTREAM = (SignalSource.K8S_PODS, SignalSource.K8S_EVENTS)
+UPSTREAM = tuple(SignalSource(s) for s in config.LOG_UPSTREAM_SOURCES)
 
 # Ranking used only to choose which trigger represents a target when several land in
 # one window. It never reaches a stored field — severity on the emitted signal is
@@ -286,6 +278,21 @@ def parse_lines(text: str) -> list[tuple[str | None, str]]:
         out.append((match.group(1), match.group(2)) if match else (None, line))
     return out
 
+
+def from_log_stream(text: str) -> bool:
+    """Whether a non-empty body came from the log stream at all.
+
+    timestamps=True was requested, so the runtime prefixes every line it returns. A
+    body in which not one line carries that prefix was not produced by the stream:
+    kubelet answers 200 with its own complaint as the body when the runtime cannot hand
+    a log over, and nothing raises. This is a check on the format that was asked for,
+    not a reading of content, so it needs no list of error strings and cannot be
+    fooled by an application that logs the word "unable".
+
+    Any, not all: continuation lines of a stack trace carry no prefix of their own and
+    are the most useful part of a fetch.
+    """
+    return any(ts is not None for ts, _ in parse_lines(text))
 
 def build_excerpt(
     text: str,
@@ -564,7 +571,7 @@ def _read_log(target: Target, stream: str) -> Fetch:
         text = raw.decode("utf-8", errors="replace")
         used = STREAM_PREVIOUS if previous else STREAM_CURRENT
 
-        if RUNTIME_ERROR_BODY.match(text.strip()):
+        if text.strip() and not from_log_stream(text):
             # The runtime's complaint, not the container's output. Moved to error and
             # out of the excerpt: stored as content it was a one-line log marked ok,
             # and the same fingerprint then held one row of infrastructure noise and

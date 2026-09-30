@@ -17,7 +17,7 @@ from datetime import datetime
 from sqlite3 import Connection
 from typing import Any
 
-from oncall.envelope import iso
+from oncall.envelope import iso,SourceStatus
 
 # ---- raw evidence ----------------------------------------------------------
 
@@ -188,22 +188,29 @@ def spread_of(
 def run_counts_in_window(
     conn: Connection, start: datetime, end: datetime
 ) -> list[sqlite3.Row]:
-    """Every attempt in the window, grouped by how it ended.
+    """Every attempt in the window per source, and how many of them failed to look.
 
     source_status_in_window answers with the newest run alone, which is the right shape
     for "is this source working now" and the wrong one for "was this source working
     while the incident was happening". A source that failed four times and then
     succeeded reports ok there and reports four failures here, and a bundle drawing
     conclusions from a quiet source needs the second answer.
+
+    A run with no finished_at counts as failed. start_run stamps ok before the
+    collector has done anything, so a collector that raised or was killed leaves a row
+    claiming success with nothing behind it.
     """
     return conn.execute(
         """
-        SELECT source, status, COUNT(*) AS attempts
+        SELECT source,
+               COUNT(*) AS attempts,
+               SUM(CASE WHEN finished_at IS NULL OR status = ? THEN 1 ELSE 0 END)
+                   AS failed
         FROM collection_runs
         WHERE started_at BETWEEN ? AND ?
-        GROUP BY source, status
+        GROUP BY source
         """,
-        (iso(start), iso(end)),
+        (str(SourceStatus.UNAVAILABLE), iso(start), iso(end)),
     ).fetchall()
 
 
@@ -249,6 +256,11 @@ def last_run(conn: Connection, source: str) -> sqlite3.Row | None:
     ).fetchone()
 
 
+UNFINISHED_RUN = (
+    "run started and never finished: still in progress, or the collector died"
+)
+
+
 def source_status_in_window(
     conn: Connection, start: datetime, end: datetime
 ) -> list[sqlite3.Row]:
@@ -258,17 +270,22 @@ def source_status_in_window(
     resolves those from the row producing the maximum, which is exactly what is wanted
     here. Standard SQL forbids it and Postgres rejects it, so this query needs a window
     function if the landing zone ever moves.
+
+    An unfinished newest run reads as unavailable. start_run stamps ok at insert, so a
+    collector that raised or was killed would otherwise vouch for evidence it never
+    gathered. Fixed here rather than in the runner because a SIGKILL never reaches an
+    except block, and the open row is then the only record there is.
     """
     return conn.execute(
         """
         SELECT source,
                MAX(started_at) AS last_started,
-               status,
-               error,
+               CASE WHEN finished_at IS NULL THEN ? ELSE status END AS status,
+               CASE WHEN finished_at IS NULL THEN ? ELSE error END AS error,
                signal_count
         FROM collection_runs
         WHERE started_at BETWEEN ? AND ?
         GROUP BY source
         """,
-        (iso(start), iso(end)),
+        (str(SourceStatus.UNAVAILABLE), UNFINISHED_RUN, iso(start), iso(end)),
     ).fetchall()

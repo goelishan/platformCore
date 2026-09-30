@@ -301,3 +301,18 @@ def test_expiry_is_stamped_per_kind_for_the_store(buffer):
     assert abs((rows["deploy"] - rows["log_excerpt"]) - timedelta(days=29)) < timedelta(
         seconds=1
     )
+
+
+def test_an_unfinished_run_reads_as_unavailable(buffer):
+    """k8s_logs decides whether it is blind from this query. An upstream collector that
+    died mid-run must not read as one that looked and found nothing."""
+    now = datetime.now(UTC)
+    with lz.connect() as conn:
+        lz.start_run(conn, SignalSource.K8S_PODS, CLUSTER)
+        rows = lz.source_status_in_window(
+            conn, now - timedelta(minutes=1), now + timedelta(minutes=1)
+        )
+
+    assert [(r["source"], r["status"]) for r in rows] == [
+        (str(SignalSource.K8S_PODS), str(SourceStatus.UNAVAILABLE))
+    ]

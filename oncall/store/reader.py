@@ -41,6 +41,27 @@ def first_seen_ever(conn: Connection, fingerprint: str) -> datetime | None:
     return row["first_seen"] if row else None
 
 
+def watching_since(conn: Connection, cluster: str) -> datetime | None:
+    """When the store began receiving this cluster's signals.
+
+    is_new asks whether an earlier row exists, and that answer is only about the
+    cluster if the store was already watching before the moment asked about. Otherwise
+    "no earlier row" describes where the store's memory begins, and a problem weeks old
+    reads as new: found live on 2026-09-29, a pod on its 270th restart labelled NEW.
+
+    collected_at rather than event_time. An event can carry a timestamp from long
+    before anyone was watching, and the horizon is when watching began.
+
+    Unindexed, so a scan across every partition. Asked once per bundle.
+    """
+    row = fetch_one(
+        conn,
+        "SELECT MIN(collected_at) AS since FROM signals WHERE cluster = %s",
+        (cluster,),
+    )
+    return row["since"] if row else None
+
+
 def is_new(conn: Connection, fingerprint: str, since: datetime) -> bool:
     """Whether a problem is genuinely new as of a moment, rather than merely newly
     noticed. Cheaper than first_seen_ever because it stops at the first row."""
