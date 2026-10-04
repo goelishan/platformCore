@@ -206,6 +206,45 @@ def test_freeze_refuses_a_fixture_a_redaction_rule_still_fires_on(root, monkeypa
     assert "REFUSED" in capsys.readouterr().out
 
 
+def test_text_redaction_already_cleaned_is_not_refused():
+    """The live leakylogger excerpt of 2026-10-04: already redacted, and refused when the
+    check read the JSON text, where the newline after <redacted> is the two characters
+    \\n and the placeholder no longer ends a line."""
+    excerpt = (
+        "using <aws-access-key> for uploads\n"
+        "2026-10-04T13:55:58.683621261Z Authorization: <redacted>\n"
+        "2026-10-04T13:55:58.683622344Z <private-key>\n"
+    )
+    dump = {"findings": [{"facts": {"excerpt": excerpt}}]}
+
+    assert freeze.rules_firing(dump) == []
+
+
+def test_freeze_writes_a_fixture_whose_redaction_was_already_done(root, monkeypatch):
+    """End to end, so the freeze itself is held to the per-string check and not only the
+    helper: the excerpt below was refused on the live lab by a scan of the JSON text."""
+    real = freeze.assembler.assemble
+
+    def redacted(*a, **k):
+        b = real(*a, **k)
+        if b.findings:
+            b.findings[0].facts["excerpt"] = (
+                "2026-10-04T13:55:58Z Authorization: <redacted>\n2026-10-04T13:55:59Z next"
+            )
+        return b
+
+    monkeypatch.setattr(freeze.assembler, "assemble", redacted)
+
+    assert freeze.main(["--cluster", tb.CLUSTER, "--root", str(root)]) == 0
+    assert "Authorization: <redacted>" in (root / "fixtures" / f"{tb.POD}.json").read_text()
+
+
+def test_a_secret_in_any_nested_string_is_found():
+    dump = {"findings": [{"trends": {"message": ["ok", "password=hunter2trombone"]}}]}
+
+    assert freeze.rules_firing(dump) == ["assignment"]
+
+
 def test_a_run_scores_reports_and_sets_a_baseline(root):
     client = tr.FakeBedrock(*[tr.answer(tr.diagnosis())] * 2)
 

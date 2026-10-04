@@ -7,6 +7,10 @@ Freeze one bundle per golden subject, so the evaluation runs on evidence that ca
     each one's evidence receipt. run.py refuses a fixture that no longer matches it.
   - Refuses to write a fixture in which any redaction rule still fires. These files are
     committed, and a fixture is the one place a secret could leave the laptop in git.
+    Each string value is scanned as itself, with its real line breaks. Scanning the JSON
+    text instead turns every newline into the two characters \\n, and a rule that knows
+    to skip its own "<redacted>" at the end of a line then fires on text it already
+    cleaned (found on leakylogger, 2026-10-04).
 
     make -C oncall lab-all
     (stage 5 actions, wait two minutes)
@@ -19,12 +23,33 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from oncall import config
 from oncall import landing_zone as lz
 from oncall.eval import cases
 from oncall.evidence import bundle as assembler
+
+
+def _strings(value: Any) -> Iterator[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from _strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _strings(v)
+
+
+def rules_firing(dump: dict[str, Any]) -> list[str]:
+    """Every redaction rule that still fires on any string in the bundle, once each."""
+    fired: set[str] = set()
+    for s in _strings(dump):
+        fired.update(assembler.redact_rules(s)[1])
+    return sorted(fired)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,8 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     for case in golden:
         with lz.connect() as conn:
             b = assembler.assemble(conn, args.cluster, subject_name=cases.subject_of(case.subject))
-        text = json.dumps(b.model_dump(mode="json"), indent=1, sort_keys=True)
-        _, fired = assembler.redact_rules(text)
+        dump = b.model_dump(mode="json")
+        text = json.dumps(dump, indent=1, sort_keys=True)
+        fired = rules_firing(dump)
         if fired:
             print(f"  REFUSED {case.subject:18} redaction rules fired: {', '.join(fired)}")
             problems += 1
