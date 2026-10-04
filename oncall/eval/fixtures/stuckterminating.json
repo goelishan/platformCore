@@ -1,0 +1,634 @@
+{
+ "candidate_signal_ids": [
+  "ec579123e96ce84d376298737c37e77c",
+  "b9a0c2558ffc866725dea9e903b639eb",
+  "043e8c61513e3a453db7135aa7764886",
+  "459fc413a46a8f93dce30210b18a7a6e",
+  "257754cb59827e277485cb944195d38e",
+  "760cba3d193e58fbedf6a12a20fb84e4",
+  "6a472ed7abdd56e29ffd8f780d5e62bc",
+  "cfaa14895a61b5f14f14284342be7686",
+  "c7c02105b32df7db76f7ea32946b89f4",
+  "80d1df2bc6d8dd8e249e2e90546f4810",
+  "6ed3c832388273a5c9610b8335656ad3"
+ ],
+ "cluster": "kind-oncall",
+ "degraded": [
+  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+ ],
+ "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.3.85",
+    "endpoint_ready": 0,
+    "endpoint_total": 0,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoEndpoints",
+    "selector": {
+     "app": "noendpoint"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "dfc7938bf337e7c3e2be1e595795887a",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "760cba3d193e58fbedf6a12a20fb84e4"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "noendpoints",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.125.142",
+    "endpoint_ready": 0,
+    "endpoint_total": 2,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoReadyEndpoints",
+    "selector": {
+     "app": "notready"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "733eb6067946085438e701be701120f6",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "6a472ed7abdd56e29ffd8f780d5e62bc"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "notready",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:41.000000Z",
+    "ready": true,
+    "reason": "Running",
+    "restart_count": 0
+   },
+   "fingerprint": "c272d926c3fcba9a1e193df68ae13ea6",
+   "first_seen": "2026-10-04T13:55:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248851Z",
+   "last_seen": "2026-10-04T13:55:41Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckterminating",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "6ed3c832388273a5c9610b8335656ad3"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckterminating-57766785dd-tg4m6",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.96.91",
+    "endpoint_ready": 1,
+    "endpoint_total": 1,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "HasEndpoints",
+    "selector": {
+     "app": "noendpoints"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267334Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "257754cb59827e277485cb944195d38e"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "healthy",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279179Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "459fc413a46a8f93dce30210b18a7a6e"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279136Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ec579123e96ce84d376298737c37e77c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "f1817db9a6d78b95fc792619fca8bca4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279149Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b9a0c2558ffc866725dea9e903b639eb"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "2bb035138f675636fbd9a624ed4258cd",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279165Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "043e8c61513e3a453db7135aa7764886"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:41.000000Z",
+    "count": 1,
+    "message_template": "Created pod: stuckterminating-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "356aad181b8f9fb90e1e1b58f9ee22c9",
+   "first_seen": "2026-10-04T13:55:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202109Z",
+   "last_seen": "2026-10-04T13:55:41Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckterminating",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "11161d54-ed26-476c-b547-8fa19f64cf29",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: stuckterminating-57766785dd-tg4m6",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "c7c02105b32df7db76f7ea32946b89f4"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckterminating-57766785dd",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:41.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/stuckterminating-<hex>-<rand> to oncall-worker",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "7a69939fe1a490ab7a2b8e3a326b7591",
+   "first_seen": "2026-10-04T13:55:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202086Z",
+   "last_seen": "2026-10-04T13:55:41Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckterminating",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "8e49080c-fba8-47b2-9c31-8bf3831e948f",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/stuckterminating-57766785dd-tg4m6 to oncall-worker",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "80d1df2bc6d8dd8e249e2e90546f4810"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckterminating-57766785dd-tg4m6",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T11:07:01.000000Z",
+    "ready": true,
+    "reason": "Running",
+    "restart_count": 0
+   },
+   "fingerprint": "3ea7f285b8cfd1ee0376f982898ece91",
+   "first_seen": "2026-10-04T11:07:02Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.984247Z",
+   "last_seen": "2026-10-04T11:07:02Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckterminating",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "cfaa14895a61b5f14f14284342be7686"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "stuckterminating-57766785dd-l2q8s",
+   "trends": {}
+  }
+ ],
+ "losses": [],
+ "normalizer_versions": [
+  "1"
+ ],
+ "omitted": [],
+ "promoted": [],
+ "render_bytes": 7462,
+ "scope": {
+  "found": true,
+  "namespace": "oncall-lab",
+  "nodes": [
+   "oncall-worker"
+  ],
+  "owner": "stuckterminating",
+  "subject": "stuckterminating",
+  "unscheduled": false
+ },
+ "sources": [
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.213591Z",
+   "never_ran": false,
+   "signals": 24,
+   "source": "k8s_pods",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.253834Z",
+   "never_ran": false,
+   "signals": 3,
+   "source": "k8s_services",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.270408Z",
+   "never_ran": false,
+   "signals": 12,
+   "source": "k8s_nodes",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.091870Z",
+   "never_ran": false,
+   "signals": 157,
+   "source": "k8s_events",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.282237Z",
+   "never_ran": false,
+   "signals": 30,
+   "source": "k8s_logs",
+   "status": "ok"
+  }
+ ],
+ "subject": "stuckterminating",
+ "window_basis": "fixed lookback",
+ "window_end": "2026-10-04T14:03:17.832884Z",
+ "window_start": "2026-10-04T13:03:17.832884Z"
+}

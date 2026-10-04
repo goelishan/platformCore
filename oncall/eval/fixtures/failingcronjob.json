@@ -1,0 +1,1856 @@
+{
+ "candidate_signal_ids": [
+  "ec579123e96ce84d376298737c37e77c",
+  "b9a0c2558ffc866725dea9e903b639eb",
+  "043e8c61513e3a453db7135aa7764886",
+  "f71b6bb2f236943fa570def670e2b73c",
+  "438ec9a064973d5b2136458cb003f034",
+  "24ede9b82b2f163782fae0a8cfdc1c1c",
+  "459fc413a46a8f93dce30210b18a7a6e",
+  "150fce04731163fb7f128f599a45ab3b",
+  "257754cb59827e277485cb944195d38e",
+  "760cba3d193e58fbedf6a12a20fb84e4",
+  "6a472ed7abdd56e29ffd8f780d5e62bc",
+  "cfc514760ddaddcd2b790db117e0f47d",
+  "86da3e9e845e63df628ea1ac04dd2b1f",
+  "9ec04aea80460630c74fbbb1fe3a2c36",
+  "4e236093bad96253542eb490543a11b1",
+  "2325488b475a1ad20cffdaf206702938",
+  "b57524c2c05de1b99a70708af3fc55a9",
+  "e5bc112bac99879f1c81661c0cc4fb92",
+  "173bfbe14255b6f0b9f8065f4df79d7f",
+  "51fa0b01c5a0818865760e7ef1e2d623",
+  "8b0e1b4aa3f55ef7ea4e870682fa1cb1",
+  "ecb667c4d435fd3326ad8fe178483c1d",
+  "8144983f907925ccd4b7839cbd1c2ef6",
+  "078507f75217e65987e4f60ff90ba132",
+  "ad5cae080e6b2d68f5848d3ce7e1c0a5",
+  "5c49e55cb3c8e10c28aea8acd41afaf9",
+  "8f9e5cd6166716fa09b3b9265838d3cd",
+  "2d9a658cd33b539df8fd362b3d8a360e",
+  "964b9ce166b7f4a75a8cf0bfcb014f09",
+  "29ad0bf73a150ac826cd4bdff9445438",
+  "986299ffd98a292d056992e69bd83850",
+  "72ef0519ef768259298bfa51e501b399",
+  "cd623092c9cb382ddf4caadd8f599396",
+  "96193ffb4411aaeee948b4023dbbb8f4"
+ ],
+ "cluster": "kind-oncall",
+ "degraded": [
+  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+ ],
+ "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:58:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "7a1071355565b4430e48ba1184ba9b6a",
+   "first_seen": "2026-10-04T13:58:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248572Z",
+   "last_seen": "2026-10-04T13:58:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "72ef0519ef768259298bfa51e501b399"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "failingcronjob-29852038-9kj6z",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:56:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "5771bc58e630806059819181684a492a",
+   "first_seen": "2026-10-04T13:56:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248563Z",
+   "last_seen": "2026-10-04T13:56:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "8f9e5cd6166716fa09b3b9265838d3cd"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "failingcronjob-29852036-5v2x4",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:54:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "4c83e4cba4e542bedd3dc74d2b72e308",
+   "first_seen": "2026-10-04T13:54:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248554Z",
+   "last_seen": "2026-10-04T13:54:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ecb667c4d435fd3326ad8fe178483c1d"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "failingcronjob-29852034-2lp9w",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.3.85",
+    "endpoint_ready": 0,
+    "endpoint_total": 0,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoEndpoints",
+    "selector": {
+     "app": "noendpoint"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "dfc7938bf337e7c3e2be1e595795887a",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "760cba3d193e58fbedf6a12a20fb84e4"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "noendpoints",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:34:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "c303284dcd788b86e4e77633410e7e53",
+   "first_seen": "2026-10-04T13:34:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.983958Z",
+   "last_seen": "2026-10-04T13:34:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b57524c2c05de1b99a70708af3fc55a9"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "failingcronjob-29852014-xlfvx",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:32:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "6e59f1d26ed49aa17596b247d2125a13",
+   "first_seen": "2026-10-04T13:32:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.983949Z",
+   "last_seen": "2026-10-04T13:32:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "9ec04aea80460630c74fbbb1fe3a2c36"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "failingcronjob-29852012-8zjh8",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-04T13:30:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "064bca9c5345980937a85562a4640691",
+   "first_seen": "2026-10-04T13:30:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.983939Z",
+   "last_seen": "2026-10-04T13:30:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "cfc514760ddaddcd2b790db117e0f47d"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "failingcronjob-29852010-mvqmd",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.125.142",
+    "endpoint_ready": 0,
+    "endpoint_total": 2,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoReadyEndpoints",
+    "selector": {
+     "app": "notready"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "733eb6067946085438e701be701120f6",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "6a472ed7abdd56e29ffd8f780d5e62bc"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "notready",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:58:03.000000Z",
+    "count": 1,
+    "message_template": "Job has reached the specified backoff limit",
+    "reason": "BackoffLimitExceeded",
+    "type": "Warning"
+   },
+   "fingerprint": "69cb6fbb4806acf5d5735d90c5e7cfbb",
+   "first_seen": "2026-10-04T13:58:03Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200776Z",
+   "last_seen": "2026-10-04T13:58:03Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "6e556b52-b826-46dc-ab39-ea24f122cbdd",
+    "severity_basis": "cluster"
+   },
+   "sample": "Job has reached the specified backoff limit",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "96193ffb4411aaeee948b4023dbbb8f4"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852038",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:56:03.000000Z",
+    "count": 1,
+    "message_template": "Job has reached the specified backoff limit",
+    "reason": "BackoffLimitExceeded",
+    "type": "Warning"
+   },
+   "fingerprint": "12070ece921e65d749ad863652e4ade0",
+   "first_seen": "2026-10-04T13:56:03Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200702Z",
+   "last_seen": "2026-10-04T13:56:03Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "6b78e499-acc0-4350-a978-0e61aa6bab02",
+    "severity_basis": "cluster"
+   },
+   "sample": "Job has reached the specified backoff limit",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "964b9ce166b7f4a75a8cf0bfcb014f09"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852036",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:54:03.000000Z",
+    "count": 1,
+    "message_template": "Job has reached the specified backoff limit",
+    "reason": "BackoffLimitExceeded",
+    "type": "Warning"
+   },
+   "fingerprint": "91c1a2f42e50e83361908c03b4bac8f0",
+   "first_seen": "2026-10-04T13:54:03Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200628Z",
+   "last_seen": "2026-10-04T13:54:03Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "71e3317d-35b2-4905-a00f-439dc162637d",
+    "severity_basis": "cluster"
+   },
+   "sample": "Job has reached the specified backoff limit",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "078507f75217e65987e4f60ff90ba132"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852034",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.96.91",
+    "endpoint_ready": 1,
+    "endpoint_total": 1,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "HasEndpoints",
+    "selector": {
+     "app": "noendpoints"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267334Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "257754cb59827e277485cb944195d38e"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "healthy",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279179Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "459fc413a46a8f93dce30210b18a7a6e"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "a67157da495e127e47603e2edd0e5a6e",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279235Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "150fce04731163fb7f128f599a45ab3b"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279136Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ec579123e96ce84d376298737c37e77c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "f1817db9a6d78b95fc792619fca8bca4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279149Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b9a0c2558ffc866725dea9e903b639eb"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "2bb035138f675636fbd9a624ed4258cd",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279165Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "043e8c61513e3a453db7135aa7764886"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1002a59db56d49e74570e1bce55520de",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279196Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f71b6bb2f236943fa570def670e2b73c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1ccb306d93a3689d474bf3f6e51495e4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279209Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "438ec9a064973d5b2136458cb003f034"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "f81903d9832efacbf7826998e85f5cba",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279222Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "24ede9b82b2f163782fae0a8cfdc1c1c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "0cc0286c4f6d0fa8744c8f08f5f784ec478cba02bea068a1c7c0c9787ae6e9aa"
+   ],
+   "deltas": [],
+   "explains": "7a1071355565b4430e48ba1184ba9b6a",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:58:00.549134387Z",
+    "excerpt": "2026-10-04T13:58:00.549134387Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "1d22b4ea8c20aaba5e0e852214524af0",
+   "first_seen": "2026-10-04T13:58:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.462543Z",
+   "last_seen": "2026-10-04T13:58:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "7a1071355565b4430e48ba1184ba9b6a",
+    "trigger_signal_id": "72ef0519ef768259298bfa51e501b399",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "cd623092c9cb382ddf4caadd8f599396"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852038-9kj6z",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "2f482fd9987b953338c2e1b1a2c11b4147285a4a8730a0f59e82da0e96bc93ee"
+   ],
+   "deltas": [],
+   "explains": "5771bc58e630806059819181684a492a",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:56:00.566458428Z",
+    "excerpt": "2026-10-04T13:56:00.566458428Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "c77a9928ef071c33c8a3a3273ae9d3ef",
+   "first_seen": "2026-10-04T13:56:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.462871Z",
+   "last_seen": "2026-10-04T13:56:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "5771bc58e630806059819181684a492a",
+    "trigger_signal_id": "8f9e5cd6166716fa09b3b9265838d3cd",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "2d9a658cd33b539df8fd362b3d8a360e"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852036-5v2x4",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "6faedfd9961464ab657ca3c26b1c29bd67edc451f53858edd60590d8d83271f5"
+   ],
+   "deltas": [],
+   "explains": "4c83e4cba4e542bedd3dc74d2b72e308",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:54:00.584020887Z",
+    "excerpt": "2026-10-04T13:54:00.584020887Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "7d6d2353a4424cacbfc9fe58e5096560",
+   "first_seen": "2026-10-04T13:54:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463268Z",
+   "last_seen": "2026-10-04T13:54:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "4c83e4cba4e542bedd3dc74d2b72e308",
+    "trigger_signal_id": "ecb667c4d435fd3326ad8fe178483c1d",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "8144983f907925ccd4b7839cbd1c2ef6"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852034-2lp9w",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "5cfacb936c14064188fa3396cb57675ccdf42a84458e37eddc41d80eea9c5b65"
+   ],
+   "deltas": [],
+   "explains": "c303284dcd788b86e4e77633410e7e53",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:34:00.606106720Z",
+    "excerpt": "2026-10-04T13:34:00.606106720Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "c186e756aed9987c3c08539ec8c042a0",
+   "first_seen": "2026-10-04T13:34:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.172777Z",
+   "last_seen": "2026-10-04T13:34:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "c303284dcd788b86e4e77633410e7e53",
+    "trigger_signal_id": "b57524c2c05de1b99a70708af3fc55a9",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "e5bc112bac99879f1c81661c0cc4fb92"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852014-xlfvx",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "d8ff5b6eda757bc00b392b9757bb700ef93c1a5685a0f92fc0c129327ce97f5d"
+   ],
+   "deltas": [],
+   "explains": "6e59f1d26ed49aa17596b247d2125a13",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:32:00.584475345Z",
+    "excerpt": "2026-10-04T13:32:00.584475345Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "afa5ac58283ff1ca14de64a84bc5af6f",
+   "first_seen": "2026-10-04T13:32:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.173239Z",
+   "last_seen": "2026-10-04T13:32:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "6e59f1d26ed49aa17596b247d2125a13",
+    "trigger_signal_id": "9ec04aea80460630c74fbbb1fe3a2c36",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "4e236093bad96253542eb490543a11b1"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852012-8zjh8",
+   "trends": {}
+  },
+  {
+   "blob_ids": [
+    "dc13221f57e21b32a87b16cad0b4780c02a3c287a719c1601dcbe2bd8c4f273e"
+   ],
+   "deltas": [],
+   "explains": "064bca9c5345980937a85562a4640691",
+   "facts": {
+    "container": "app",
+    "covered_through": "2026-10-04T13:30:00.592634762Z",
+    "excerpt": "2026-10-04T13:30:00.592634762Z nightly export: connection refused",
+    "lines_kept": 1,
+    "lines_seen": 1,
+    "log_status": "ok",
+    "previous_unavailable": true,
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "34040c3d3f8f99f771cd7cfac5e92112",
+   "first_seen": "2026-10-04T13:30:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.174548Z",
+   "last_seen": "2026-10-04T13:30:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "064bca9c5345980937a85562a4640691",
+    "trigger_signal_id": "cfc514760ddaddcd2b790db117e0f47d",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "86da3e9e845e63df628ea1ac04dd2b1f"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "failingcronjob-29852010-mvqmd",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:58:00.000000Z",
+    "count": 1,
+    "message_template": "Created pod: failingcronjob-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "ed163c6a4e7ff02f3178d43de8e88ac8",
+   "first_seen": "2026-10-04T13:58:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200754Z",
+   "last_seen": "2026-10-04T13:58:00Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "4fef421c-2c76-49a9-a315-75ec9aaf5aac",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: failingcronjob-29852038-9kj6z",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "29ad0bf73a150ac826cd4bdff9445438"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852038",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:58:00.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/failingcronjob-<hex>-<rand> to oncall-worker",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "88fa0faa0dca59399030802f9d422c5d",
+   "first_seen": "2026-10-04T13:58:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200732Z",
+   "last_seen": "2026-10-04T13:58:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "cbb0d893-2ce0-4e4a-a5c3-fb11a1ac8fa5",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/failingcronjob-29852038-9kj6z to oncall-worker",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "986299ffd98a292d056992e69bd83850"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852038-9kj6z",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:56:00.000000Z",
+    "count": 1,
+    "message_template": "Created pod: failingcronjob-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "e58d5c3b8820536910e6a029fefd266e",
+   "first_seen": "2026-10-04T13:56:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200681Z",
+   "last_seen": "2026-10-04T13:56:00Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "f4df3030-7c27-4c38-92ba-d2555737a133",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: failingcronjob-29852036-5v2x4",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "ad5cae080e6b2d68f5848d3ce7e1c0a5"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852036",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:56:00.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/failingcronjob-<hex>-<rand> to oncall-worker",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "81b3f80ccc0d9ad3f371e360194e7e70",
+   "first_seen": "2026-10-04T13:56:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200659Z",
+   "last_seen": "2026-10-04T13:56:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "d2b3a13b-3d2f-4eb1-98e5-c832fcde899f",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/failingcronjob-29852036-5v2x4 to oncall-worker",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "5c49e55cb3c8e10c28aea8acd41afaf9"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852036-5v2x4",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "diffed across 2 observations of one series",
+     "change": 10,
+     "first": 68,
+     "key": "count",
+     "last": 78,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T11:10:00.000000Z",
+    "message_template": "(combined from similar events): Created job failingcronjob-<hex>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "8592bec8c9a352bf45c83339a843cdf8",
+   "first_seen": "2026-10-04T13:34:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200802Z",
+   "last_seen": "2026-10-04T13:54:00Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "cronjob-controller",
+    "event_uid": "58247644-01e3-4e29-ac49-8b1a1166cdf8",
+    "severity_basis": "cluster"
+   },
+   "sample": "(combined from similar events): Created job failingcronjob-29852034",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "2325488b475a1ad20cffdaf206702938",
+    "51fa0b01c5a0818865760e7ef1e2d623"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob",
+   "trends": {
+    "count": [
+     68,
+     78
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:54:00.000000Z",
+    "count": 1,
+    "message_template": "Created pod: failingcronjob-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "03b1a6e3c6a2ad29720216b199933cfb",
+   "first_seen": "2026-10-04T13:54:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200604Z",
+   "last_seen": "2026-10-04T13:54:00Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "job-controller",
+    "event_uid": "8b18a87e-061f-4eb3-aeb8-3072aa4b7791",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: failingcronjob-29852034-2lp9w",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "173bfbe14255b6f0b9f8065f4df79d7f"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852034",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:54:00.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/failingcronjob-<hex>-<rand> to oncall-<rand>",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "8c0a071a6da7ed04712a4f196025b8e0",
+   "first_seen": "2026-10-04T13:54:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.200581Z",
+   "last_seen": "2026-10-04T13:54:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "d5c86079-d9b5-442d-ac82-e81cba53beff",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/failingcronjob-29852034-2lp9w to oncall-worker2",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "8b0e1b4aa3f55ef7ea4e870682fa1cb1"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "failingcronjob-29852034-2lp9w",
+   "trends": {}
+  }
+ ],
+ "losses": [],
+ "normalizer_versions": [
+  "1"
+ ],
+ "omitted": [],
+ "promoted": [
+  {
+   "blob_id": "0cc0286c4f6d0fa8744c8f08f5f784ec478cba02bea068a1c7c0c9787ae6e9aa",
+   "bytes": 66,
+   "fingerprint": "1d22b4ea8c20aaba5e0e852214524af0",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:58:00.549134387Z nightly export: connection refused\n"
+  },
+  {
+   "blob_id": "2f482fd9987b953338c2e1b1a2c11b4147285a4a8730a0f59e82da0e96bc93ee",
+   "bytes": 66,
+   "fingerprint": "c77a9928ef071c33c8a3a3273ae9d3ef",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:56:00.566458428Z nightly export: connection refused\n"
+  },
+  {
+   "blob_id": "6faedfd9961464ab657ca3c26b1c29bd67edc451f53858edd60590d8d83271f5",
+   "bytes": 66,
+   "fingerprint": "7d6d2353a4424cacbfc9fe58e5096560",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:54:00.584020887Z nightly export: connection refused\n"
+  },
+  {
+   "blob_id": "5cfacb936c14064188fa3396cb57675ccdf42a84458e37eddc41d80eea9c5b65",
+   "bytes": 66,
+   "fingerprint": "c186e756aed9987c3c08539ec8c042a0",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:34:00.606106720Z nightly export: connection refused\n"
+  },
+  {
+   "blob_id": "d8ff5b6eda757bc00b392b9757bb700ef93c1a5685a0f92fc0c129327ce97f5d",
+   "bytes": 66,
+   "fingerprint": "afa5ac58283ff1ca14de64a84bc5af6f",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:32:00.584475345Z nightly export: connection refused\n"
+  },
+  {
+   "blob_id": "dc13221f57e21b32a87b16cad0b4780c02a3c287a719c1601dcbe2bd8c4f273e",
+   "bytes": 66,
+   "fingerprint": "34040c3d3f8f99f771cd7cfac5e92112",
+   "reason": "promoted",
+   "redacted": false,
+   "status": "ok",
+   "text": "2026-10-04T13:30:00.592634762Z nightly export: connection refused\n"
+  }
+ ],
+ "render_bytes": 22755,
+ "scope": {
+  "found": true,
+  "namespace": "oncall-lab",
+  "nodes": [
+   "oncall-worker",
+   "oncall-worker2"
+  ],
+  "owner": "failingcronjob",
+  "subject": "failingcronjob",
+  "unscheduled": false
+ },
+ "sources": [
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.213591Z",
+   "never_ran": false,
+   "signals": 24,
+   "source": "k8s_pods",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.253834Z",
+   "never_ran": false,
+   "signals": 3,
+   "source": "k8s_services",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.270408Z",
+   "never_ran": false,
+   "signals": 12,
+   "source": "k8s_nodes",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.091870Z",
+   "never_ran": false,
+   "signals": 157,
+   "source": "k8s_events",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.282237Z",
+   "never_ran": false,
+   "signals": 30,
+   "source": "k8s_logs",
+   "status": "ok"
+  }
+ ],
+ "subject": "failingcronjob",
+ "window_basis": "fixed lookback",
+ "window_end": "2026-10-04T14:03:17.750296Z",
+ "window_start": "2026-10-04T13:03:17.750296Z"
+}

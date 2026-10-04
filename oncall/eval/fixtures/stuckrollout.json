@@ -1,0 +1,1800 @@
+{
+ "candidate_signal_ids": [
+  "ec579123e96ce84d376298737c37e77c",
+  "b9a0c2558ffc866725dea9e903b639eb",
+  "043e8c61513e3a453db7135aa7764886",
+  "f71b6bb2f236943fa570def670e2b73c",
+  "438ec9a064973d5b2136458cb003f034",
+  "24ede9b82b2f163782fae0a8cfdc1c1c",
+  "459fc413a46a8f93dce30210b18a7a6e",
+  "150fce04731163fb7f128f599a45ab3b",
+  "257754cb59827e277485cb944195d38e",
+  "760cba3d193e58fbedf6a12a20fb84e4",
+  "6a472ed7abdd56e29ffd8f780d5e62bc",
+  "b4b92b02f552894956bf2ae0aecb195e",
+  "0633ab5b63f9ea6a5d0325eeb23e068b",
+  "3d402a6039c3d8eb624b95003cf57c2c",
+  "eb9bba2075cff88789c31c0360bd6460",
+  "b688475297a622418ff57f9a1c8c729a",
+  "07486ba85114294900bf80f78251235a",
+  "b304a4886a206388ad70a9ff47d93985",
+  "754db50a9119dd9fcdbe22cb65d59889",
+  "46d2b7ce7a0e15ee6ee08cd4dc51a78a",
+  "604116ee3fd048236b3d25bda8d73739",
+  "edc08bf0859ed56045429a3ddaa5420d",
+  "5fab1d8111e082c74fb0bf540a67a219",
+  "064aaaadb37c5f173f0fb876dad6b694",
+  "535d60721ac2d4035f8f66cbf68e3d1b",
+  "3d39387a36e5e0a3e14dba6eccfc7bc1",
+  "3debeca164e68778731632a3097025c0",
+  "9d51746c9d06b77db07675ffbf09b6c7",
+  "a895be5aa16dd092fcccf8dd4514da32",
+  "d947bb0f17d3d620f2e398ce9bdf7421",
+  "0379a2e883765014122e07e98e09afb7",
+  "6d91df1096020ffbc57521c170157fc4",
+  "742319000cc776ce5e2a97cdbeb1bdd0",
+  "3f3978815f1328c57d616028b8e51d52",
+  "bc13ac0098e658ec7d48cd8490737924",
+  "2866a9d60a4e878342e94c0251b9028d",
+  "be311b36d6e059e87fb7c1863a0aa3e2",
+  "18d6240937b7dc09b97df45bce9225f8",
+  "ea38e20dd8d66bbdc5e740f4487dba11",
+  "f0dc2320feebdfa4a0d4d608f0af84d3",
+  "dafa1eb9f68209be0be417556f44f68c",
+  "b3621cf04356dbd939ae1bf5827703df",
+  "a45c4574fe132cfaf93be29763d80f2d",
+  "3bc637767d1921b4b731e54fbe61a9ea"
+ ],
+ "cluster": "kind-oncall",
+ "degraded": [
+  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+ ],
+ "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "registry.invalid/app:v2",
+    "message_template": "Back-off pulling image \"registry.invalid/app:v<n>\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v<n>\": failed to resolve reference \"registry.invalid/app:v<n>\": failed to do request: Head \"https://<host>/v<n>/app/manifests/v<n>\": dial tcp: lookup registry.invalid on <ip>: no such host",
+    "phase": "Pending",
+    "pod_start_time": "2026-10-04T13:55:31.000000Z",
+    "ready": false,
+    "reason": "ErrImagePull",
+    "restart_count": 0,
+    "waiting_reason": "ImagePullBackOff"
+   },
+   "fingerprint": "1ebd69bef0d82a667242927d56ceed86",
+   "first_seen": "2026-10-04T13:55:31Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248822Z",
+   "last_seen": "2026-10-04T13:55:31Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": "Back-off pulling image \"registry.invalid/app:v2\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v2\": failed to resolve reference \"registry.invalid/app:v2\": failed to do request: Head \"https://registry.invalid/v2/app/manifests/v2\": dial tcp: lookup registry.invalid on 192.168.65.254:53: no such host",
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "be311b36d6e059e87fb7c1863a0aa3e2"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.3.85",
+    "endpoint_ready": 0,
+    "endpoint_total": 0,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoEndpoints",
+    "selector": {
+     "app": "noendpoint"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "dfc7938bf337e7c3e2be1e595795887a",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "760cba3d193e58fbedf6a12a20fb84e4"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "noendpoints",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "registry.invalid/app:v2",
+    "message_template": "Back-off pulling image \"registry.invalid/app:v<n>\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v<n>\": failed to resolve reference \"registry.invalid/app:v<n>\": failed to do request: Head \"https://<host>/v<n>/app/manifests/v<n>\": dial tcp: lookup registry.invalid on <ip>: no such host",
+    "phase": "Pending",
+    "pod_start_time": "2026-10-04T11:07:18.000000Z",
+    "ready": false,
+    "reason": "ErrImagePull",
+    "restart_count": 0,
+    "waiting_reason": "ImagePullBackOff"
+   },
+   "fingerprint": "1d7ea4b1b02a3db236bb3e0240279e32",
+   "first_seen": "2026-10-04T11:07:18Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.984238Z",
+   "last_seen": "2026-10-04T11:07:18Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": "Back-off pulling image \"registry.invalid/app:v2\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v2\": failed to resolve reference \"registry.invalid/app:v2\": failed to do request: Head \"https://registry.invalid/v2/app/manifests/v2\": dial tcp: lookup registry.invalid on 192.168.65.254:53: no such host",
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b4b92b02f552894956bf2ae0aecb195e"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.125.142",
+    "endpoint_ready": 0,
+    "endpoint_total": 2,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoReadyEndpoints",
+    "selector": {
+     "app": "notready"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "733eb6067946085438e701be701120f6",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "6a472ed7abdd56e29ffd8f780d5e62bc"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "notready",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "summed across 2 counting series, later ones taken whole",
+     "change": 14,
+     "first": 4,
+     "key": "count",
+     "last": 13,
+     "series": 2
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:32.000000Z",
+    "container": "app",
+    "reason": "Failed",
+    "type": "Warning"
+   },
+   "fingerprint": "f0c9abcb0c9dead5987d5ed9cf2a6382",
+   "first_seen": "2026-10-04T13:57:08Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201603Z",
+   "last_seen": "2026-10-04T13:59:09Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 4,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "kubelet",
+    "event_uid": "750308bf-9590-49e2-bbf1-55934c078c01",
+    "severity_basis": "cluster"
+   },
+   "sample": "Error: ImagePullBackOff",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "ea38e20dd8d66bbdc5e740f4487dba11",
+    "f0dc2320feebdfa4a0d4d608f0af84d3",
+    "b3621cf04356dbd939ae1bf5827703df",
+    "a45c4574fe132cfaf93be29763d80f2d"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {
+    "count": [
+     4,
+     13
+    ],
+    "message_template": [
+     "Error: ErrImagePull",
+     "Error: ImagePullBackOff"
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T11:07:19.000000Z",
+    "container": "app",
+    "count": 600,
+    "message_template": "Error: ImagePullBackOff",
+    "reason": "Failed",
+    "type": "Warning"
+   },
+   "fingerprint": "02fc7451191450e71495570f0bb86d3b",
+   "first_seen": "2026-10-04T13:33:16Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:34:32.935269Z",
+   "last_seen": "2026-10-04T13:33:16Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "kubelet",
+    "event_uid": "7e8b1616-1986-46b4-8d70-e7b518ea499c",
+    "severity_basis": "cluster"
+   },
+   "sample": "Error: ImagePullBackOff",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "b304a4886a206388ad70a9ff47d93985"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 4247,
+    "exit_code": 0,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T11:07:01.000000Z",
+    "ready": true,
+    "reason": "Completed",
+    "restart_count": 2
+   },
+   "fingerprint": "63f4a1829e1b6c90578f05b58a48b82a",
+   "first_seen": "2026-10-04T13:17:50Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.984137Z",
+   "last_seen": "2026-10-04T13:17:50Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b688475297a622418ff57f9a1c8c729a"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "stuckrollout-75d4f4cf97-786zq",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 4247,
+    "exit_code": 0,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T11:07:01.000000Z",
+    "ready": true,
+    "reason": "Completed",
+    "restart_count": 2
+   },
+   "fingerprint": "91cd1845d29ee88765c9f6519a564012",
+   "first_seen": "2026-10-04T13:17:49Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:34:32.984145Z",
+   "last_seen": "2026-10-04T13:17:49Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "3d402a6039c3d8eb624b95003cf57c2c"
+   ],
+   "source": "k8s_pods",
+   "state": "stopped",
+   "subject_name": "stuckrollout-75d4f4cf97-nmv8p",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:20.000000Z",
+    "ready": true,
+    "reason": "Running",
+    "restart_count": 0
+   },
+   "fingerprint": "a431f429f1f8f48d961caca5d30bf49d",
+   "first_seen": "2026-10-04T13:55:21Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248843Z",
+   "last_seen": "2026-10-04T13:55:21Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "742319000cc776ce5e2a97cdbeb1bdd0"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckrollout-8565fb48dc-v9wgk",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:19.000000Z",
+    "ready": true,
+    "reason": "Running",
+    "restart_count": 0
+   },
+   "fingerprint": "3401ec1aeb9e9ad7bac642243e48e7bb",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248833Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "535d60721ac2d4035f8f66cbf68e3d1b"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckrollout-8565fb48dc-h2fwt",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.96.91",
+    "endpoint_ready": 1,
+    "endpoint_total": 1,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "HasEndpoints",
+    "selector": {
+     "app": "noendpoints"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267334Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "257754cb59827e277485cb944195d38e"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "healthy",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279179Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "459fc413a46a8f93dce30210b18a7a6e"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "a67157da495e127e47603e2edd0e5a6e",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279235Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "150fce04731163fb7f128f599a45ab3b"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279136Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ec579123e96ce84d376298737c37e77c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "f1817db9a6d78b95fc792619fca8bca4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279149Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b9a0c2558ffc866725dea9e903b639eb"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "2bb035138f675636fbd9a624ed4258cd",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279165Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "043e8c61513e3a453db7135aa7764886"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1002a59db56d49e74570e1bce55520de",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279196Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f71b6bb2f236943fa570def670e2b73c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1ccb306d93a3689d474bf3f6e51495e4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279209Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "438ec9a064973d5b2136458cb003f034"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "f81903d9832efacbf7826998e85f5cba",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "node",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279222Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "24ede9b82b2f163782fae0a8cfdc1c1c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "f0c9abcb0c9dead5987d5ed9cf2a6382",
+   "facts": {
+    "container": "app",
+    "log_status": "no_container",
+    "previous_unavailable": true,
+    "stream": "previous"
+   },
+   "fingerprint": "2b1670dfac1964f9dfbe208555364244",
+   "first_seen": "2026-10-04T13:58:12Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463350Z",
+   "last_seen": "2026-10-04T13:59:09Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "f0c9abcb0c9dead5987d5ed9cf2a6382",
+    "trigger_signal_id": "a45c4574fe132cfaf93be29763d80f2d",
+    "trigger_source": "k8s_events",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "dafa1eb9f68209be0be417556f44f68c",
+    "3bc637767d1921b4b731e54fbe61a9ea"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "1ebd69bef0d82a667242927d56ceed86",
+   "facts": {
+    "container": "app",
+    "log_status": "no_container",
+    "stream": "none"
+   },
+   "fingerprint": "987aba5ef208f99c0abf1a0a4db9b4d1",
+   "first_seen": "2026-10-04T13:55:31Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463154Z",
+   "last_seen": "2026-10-04T13:55:31Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "1ebd69bef0d82a667242927d56ceed86",
+    "trigger_signal_id": "be311b36d6e059e87fb7c1863a0aa3e2",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "18d6240937b7dc09b97df45bce9225f8"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "02fc7451191450e71495570f0bb86d3b",
+   "facts": {
+    "container": "app",
+    "log_status": "no_container",
+    "previous_unavailable": true,
+    "stream": "previous"
+   },
+   "fingerprint": "1b61ded7d2662cf3a11c884d1655632c",
+   "first_seen": "2026-10-04T13:33:16Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.174667Z",
+   "last_seen": "2026-10-04T13:33:16Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "02fc7451191450e71495570f0bb86d3b",
+    "trigger_signal_id": "b304a4886a206388ad70a9ff47d93985",
+    "trigger_source": "k8s_events",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "754db50a9119dd9fcdbe22cb65d59889"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "63f4a1829e1b6c90578f05b58a48b82a",
+   "facts": {
+    "container": "app",
+    "log_status": "empty",
+    "stream": "previous"
+   },
+   "fingerprint": "682d4daaf5c943f72ca6f8e1fd4c6f05",
+   "first_seen": "2026-10-04T13:17:50Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.174717Z",
+   "last_seen": "2026-10-04T13:17:50Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": true,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "63f4a1829e1b6c90578f05b58a48b82a",
+    "trigger_signal_id": "b688475297a622418ff57f9a1c8c729a",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "07486ba85114294900bf80f78251235a"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-75d4f4cf97-786zq",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "91cd1845d29ee88765c9f6519a564012",
+   "facts": {
+    "container": "app",
+    "log_status": "empty",
+    "stream": "previous"
+   },
+   "fingerprint": "71544e21b402149d2f5127408e8d7f9c",
+   "first_seen": "2026-10-04T13:17:49Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.174726Z",
+   "last_seen": "2026-10-04T13:17:49Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": true,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "91cd1845d29ee88765c9f6519a564012",
+    "trigger_signal_id": "3d402a6039c3d8eb624b95003cf57c2c",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "eb9bba2075cff88789c31c0360bd6460"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-75d4f4cf97-nmv8p",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "1d7ea4b1b02a3db236bb3e0240279e32",
+   "facts": {
+    "container": "app",
+    "log_status": "no_container",
+    "stream": "none"
+   },
+   "fingerprint": "9dfd989c79fd60d2e43498186287fe16",
+   "first_seen": "2026-10-04T11:07:18Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:34:33.174570Z",
+   "last_seen": "2026-10-04T11:07:18Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "1d7ea4b1b02a3db236bb3e0240279e32",
+    "trigger_signal_id": "b4b92b02f552894956bf2ae0aecb195e",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:34:33.023212Z",
+    "window_start": "2026-10-04T13:24:33.023212Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "0633ab5b63f9ea6a5d0325eeb23e068b"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "count": 1,
+    "message_template": "Scaled up replica set stuckrollout-<hex> from <n> to <n>",
+    "reason": "ScalingReplicaSet",
+    "type": "Normal"
+   },
+   "fingerprint": "cb1ae02c070de6c3586c9ca97b718563",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202040Z",
+   "last_seen": "2026-10-04T13:55:31Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 3,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "deployment-controller",
+    "event_uid": "56b7bb16-ee9f-48c0-8823-fda770a5b02a",
+    "severity_basis": "cluster"
+   },
+   "sample": "Scaled up replica set stuckrollout-557464b9d5 from 0 to 1",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "5fab1d8111e082c74fb0bf540a67a219",
+    "a895be5aa16dd092fcccf8dd4514da32",
+    "bc13ac0098e658ec7d48cd8490737924"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout",
+   "trends": {
+    "api_first_timestamp": [
+     "2026-10-04T13:55:19.000000Z",
+     "2026-10-04T13:55:31.000000Z"
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:31.000000Z",
+    "count": 1,
+    "message_template": "Created pod: stuckrollout-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "47f6a59bdb2a6b9d7fdd43e3f5500343",
+   "first_seen": "2026-10-04T13:55:31Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201626Z",
+   "last_seen": "2026-10-04T13:55:31Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "3ce4b869-f8c9-4c5a-9158-38dd39f7a7b0",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: stuckrollout-557464b9d5-gsgn5",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "3f3978815f1328c57d616028b8e51d52"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-557464b9d5",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:31.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/stuckrollout-<hex>-<rand> to oncall-worker",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "5b0bbd29152776bcb6ae43b3285efe15",
+   "first_seen": "2026-10-04T13:55:31Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201473Z",
+   "last_seen": "2026-10-04T13:55:31Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "d19401fb-a0e0-4356-a2ec-5989c587273a",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/stuckrollout-557464b9d5-gsgn5 to oncall-worker",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "2866a9d60a4e878342e94c0251b9028d"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "count": 1,
+    "message_template": "Scaled down replica set stuckrollout-<hex> from <n> to <n>",
+    "reason": "ScalingReplicaSet",
+    "type": "Normal"
+   },
+   "fingerprint": "8bd81e80be4e4f4095f60ee8329df01a",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202016Z",
+   "last_seen": "2026-10-04T13:55:21Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 3,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "deployment-controller",
+    "event_uid": "263c99cc-1e43-443d-8ae6-62447ad91d2b",
+    "severity_basis": "cluster"
+   },
+   "sample": "Scaled down replica set stuckrollout-75d4f4cf97 from 1 to 0",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "edc08bf0859ed56045429a3ddaa5420d",
+    "9d51746c9d06b77db07675ffbf09b6c7",
+    "6d91df1096020ffbc57521c170157fc4"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout",
+   "trends": {
+    "api_first_timestamp": [
+     "2026-10-04T13:55:19.000000Z",
+     "2026-10-04T13:55:21.000000Z"
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "count": 1,
+    "message_template": "Deleted pod: stuckrollout-<hex>-<rand>",
+    "reason": "SuccessfulDelete",
+    "type": "Normal"
+   },
+   "fingerprint": "a115a3adf6e7febf2a1eb4c4b1d245a2",
+   "first_seen": "2026-10-04T13:55:20Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201731Z",
+   "last_seen": "2026-10-04T13:55:21Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "7aa897c3-baaf-4e7c-80bb-2bbc1cdd3a2c",
+    "severity_basis": "cluster"
+   },
+   "sample": "Deleted pod: stuckrollout-75d4f4cf97-786zq",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "3d39387a36e5e0a3e14dba6eccfc7bc1",
+    "0379a2e883765014122e07e98e09afb7"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-75d4f4cf97",
+   "trends": {
+    "api_first_timestamp": [
+     "2026-10-04T13:55:20.000000Z",
+     "2026-10-04T13:55:21.000000Z"
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "count": 1,
+    "message_template": "Created pod: stuckrollout-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "6ed11cfb4dbed15320241dc3bf00f5ee",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201883Z",
+   "last_seen": "2026-10-04T13:55:20Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "20ad6b34-87fa-4fd9-9fa1-579bdfb08d18",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: stuckrollout-8565fb48dc-v9wgk",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "604116ee3fd048236b3d25bda8d73739",
+    "3debeca164e68778731632a3097025c0"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-8565fb48dc",
+   "trends": {
+    "api_first_timestamp": [
+     "2026-10-04T13:55:19.000000Z",
+     "2026-10-04T13:55:20.000000Z"
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:20.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/stuckrollout-<hex>-<rand> to oncall-<rand>",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "ede11177c04135a2433990a6d6a9f335",
+   "first_seen": "2026-10-04T13:55:20Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201834Z",
+   "last_seen": "2026-10-04T13:55:20Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "270403bf-5291-42d5-b954-c8b98a3a3880",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/stuckrollout-8565fb48dc-v9wgk to oncall-worker2",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "d947bb0f17d3d620f2e398ce9bdf7421"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-8565fb48dc-v9wgk",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
+    "count": 1,
+    "message_template": "Deleted pod: stuckrollout-<hex>-<rand>",
+    "reason": "SuccessfulDelete",
+    "type": "Normal"
+   },
+   "fingerprint": "5633fbe64bbc4621b97d71f3ca34bab4",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201773Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "35d23563-e951-4a92-a627-6969212c957f",
+    "severity_basis": "cluster"
+   },
+   "sample": "Deleted pod: stuckrollout-78f8fc8b7-8k2wf",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "46d2b7ce7a0e15ee6ee08cd4dc51a78a"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-78f8fc8b7",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
+    "count": 1,
+    "message_template": "Successfully assigned oncall-lab/stuckrollout-<hex>-<rand> to oncall-worker",
+    "reason": "Scheduled",
+    "type": "Normal"
+   },
+   "fingerprint": "0ca8667dacad6874c52a1eafdfdc5bf1",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.201804Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "113bd8c6-bd03-4f8e-9a0d-50b14c72b884",
+    "severity_basis": "cluster"
+   },
+   "sample": "Successfully assigned oncall-lab/stuckrollout-8565fb48dc-h2fwt to oncall-worker",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "064aaaadb37c5f173f0fb876dad6b694"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "stuckrollout-8565fb48dc-h2fwt",
+   "trends": {}
+  }
+ ],
+ "losses": [],
+ "normalizer_versions": [
+  "1"
+ ],
+ "omitted": [],
+ "promoted": [],
+ "render_bytes": 22232,
+ "scope": {
+  "found": true,
+  "namespace": "oncall-lab",
+  "nodes": [
+   "oncall-worker",
+   "oncall-worker2"
+  ],
+  "owner": "stuckrollout",
+  "subject": "stuckrollout",
+  "unscheduled": false
+ },
+ "sources": [
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.213591Z",
+   "never_ran": false,
+   "signals": 24,
+   "source": "k8s_pods",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.253834Z",
+   "never_ran": false,
+   "signals": 3,
+   "source": "k8s_services",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.270408Z",
+   "never_ran": false,
+   "signals": 12,
+   "source": "k8s_nodes",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.091870Z",
+   "never_ran": false,
+   "signals": 157,
+   "source": "k8s_events",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.282237Z",
+   "never_ran": false,
+   "signals": 30,
+   "source": "k8s_logs",
+   "status": "ok"
+  }
+ ],
+ "subject": "stuckrollout",
+ "window_basis": "fixed lookback",
+ "window_end": "2026-10-04T14:03:17.795340Z",
+ "window_start": "2026-10-04T13:03:17.795340Z"
+}

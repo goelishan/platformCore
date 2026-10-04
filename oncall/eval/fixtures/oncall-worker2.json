@@ -1,0 +1,405 @@
+{
+ "candidate_signal_ids": [
+  "ce1f6d1dd727796de03ca98a7f7dcf7a",
+  "f71b6bb2f236943fa570def670e2b73c",
+  "438ec9a064973d5b2136458cb003f034",
+  "24ede9b82b2f163782fae0a8cfdc1c1c",
+  "1df014b9440c3fc75eb7c67f38dd1671",
+  "150fce04731163fb7f128f599a45ab3b"
+ ],
+ "cluster": "kind-oncall",
+ "degraded": [
+  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+ ],
+ "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "a67157da495e127e47603e2edd0e5a6e",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279235Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "150fce04731163fb7f128f599a45ab3b"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1002a59db56d49e74570e1bce55520de",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279196Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f71b6bb2f236943fa570def670e2b73c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1ccb306d93a3689d474bf3f6e51495e4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279209Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "438ec9a064973d5b2136458cb003f034"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "f81903d9832efacbf7826998e85f5cba",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279222Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "24ede9b82b2f163782fae0a8cfdc1c1c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T10:39:05.000000Z",
+    "count": 1,
+    "message_template": "Node oncall-<rand> status is now: NodeReady",
+    "reason": "NodeReady",
+    "type": "Normal"
+   },
+   "fingerprint": "63341035cda19e7294a4923cda548eec",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T11:10:17.033112Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "kubelet",
+    "event_uid": "35e2b2df-967c-43b3-ad60-4ad04f496092",
+    "severity_basis": "cluster"
+   },
+   "sample": "Node oncall-worker2 status is now: NodeReady",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "1df014b9440c3fc75eb7c67f38dd1671"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 2,
+     "first": 2,
+     "key": "count",
+     "last": 2,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T10:38:52.000000Z",
+    "count": 2,
+    "message_template": "Node oncall-<rand> status is now: NodeHasSufficientMemory",
+    "reason": "NodeHasSufficientMemory",
+    "type": "Normal"
+   },
+   "fingerprint": "358782bb5b6975aa5008d5e2e75e48f6",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T11:10:17.033087Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "kubelet",
+    "event_uid": "78ac7fda-52f3-4bd7-bdf9-08a0e7933cc2",
+    "severity_basis": "cluster"
+   },
+   "sample": "Node oncall-worker2 status is now: NodeHasSufficientMemory",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "ce1f6d1dd727796de03ca98a7f7dcf7a"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  }
+ ],
+ "losses": [],
+ "normalizer_versions": [
+  "1"
+ ],
+ "omitted": [],
+ "promoted": [],
+ "render_bytes": 5521,
+ "scope": {
+  "found": true,
+  "namespace": null,
+  "nodes": [
+   "oncall-worker2"
+  ],
+  "owner": null,
+  "subject": "oncall-worker2",
+  "unscheduled": false
+ },
+ "sources": [
+  {
+   "attempts": 9,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.213591Z",
+   "never_ran": false,
+   "signals": 24,
+   "source": "k8s_pods",
+   "status": "ok"
+  },
+  {
+   "attempts": 9,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.253834Z",
+   "never_ran": false,
+   "signals": 3,
+   "source": "k8s_services",
+   "status": "ok"
+  },
+  {
+   "attempts": 9,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.270408Z",
+   "never_ran": false,
+   "signals": 12,
+   "source": "k8s_nodes",
+   "status": "ok"
+  },
+  {
+   "attempts": 9,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.091870Z",
+   "never_ran": false,
+   "signals": 157,
+   "source": "k8s_events",
+   "status": "ok"
+  },
+  {
+   "attempts": 9,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.282237Z",
+   "never_ran": false,
+   "signals": 30,
+   "source": "k8s_logs",
+   "status": "ok"
+  }
+ ],
+ "subject": "oncall-worker2",
+ "window_basis": "extended to the lookback cap, which the leading finding predates",
+ "window_end": "2026-10-04T14:03:17.822203Z",
+ "window_start": "2026-10-04T08:03:17.822203Z"
+}

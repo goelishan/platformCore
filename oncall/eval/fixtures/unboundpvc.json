@@ -1,0 +1,1340 @@
+{
+ "candidate_signal_ids": [
+  "e4395d64784abbc155590d0844e589f7",
+  "14c99fc0329f1a2d245844a95e88c93e",
+  "7eac0e64a5a34b2a360a03df2bac7181",
+  "ec579123e96ce84d376298737c37e77c",
+  "b9a0c2558ffc866725dea9e903b639eb",
+  "043e8c61513e3a453db7135aa7764886",
+  "f71b6bb2f236943fa570def670e2b73c",
+  "438ec9a064973d5b2136458cb003f034",
+  "24ede9b82b2f163782fae0a8cfdc1c1c",
+  "4459a6656744774cf0b81bd239a42db4",
+  "459fc413a46a8f93dce30210b18a7a6e",
+  "150fce04731163fb7f128f599a45ab3b",
+  "145cb4f92203df9836c8db30060bb375",
+  "257754cb59827e277485cb944195d38e",
+  "760cba3d193e58fbedf6a12a20fb84e4",
+  "6a472ed7abdd56e29ffd8f780d5e62bc",
+  "b0dedc50db27e6698e90c20b5043630c",
+  "95659aae589cd7c55c9e1502bc7a0439",
+  "f932f46586199bf5dc849cd47fe8fbe9",
+  "5cdd10268e908efe94c15311bfaee364",
+  "dc17fa776987f43b5e960e1bc65d7365",
+  "60ce16378f8af18ceacf28c5b5b81fb6",
+  "f12297591618ff515b1329fb9551de5a",
+  "b20a426beafdf47bf363430a48806f13",
+  "147e76dd9a739134ff4674772652351e",
+  "69593a1c771c40b648ad8c5608a8e40b",
+  "3a49abf642c7558a29b57b2caf79b753"
+ ],
+ "cluster": "kind-oncall",
+ "degraded": [
+  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+ ],
+ "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "message_template": "<n>/<n> nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: <n>/<n> nodes are available: <n> Preemption is not helpful for scheduling.",
+    "phase": "Pending",
+    "reason": "Unschedulable"
+   },
+   "fingerprint": "7ae482a62f4a07352749d20a33179ec7",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.248940Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "keyed_on_message": true
+   },
+   "sample": "0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.",
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "60ce16378f8af18ceacf28c5b5b81fb6"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "unboundpvc-578bb48945-7z5qb",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "message_template": "<n>/<n> nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: <n>/<n> nodes are available: <n> Preemption is not helpful for scheduling.",
+    "phase": "Pending",
+    "reason": "Unschedulable"
+   },
+   "fingerprint": "12156625aee4d01902ec7d60bbe3aaa7",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "pod_state",
+   "last_observed": "2026-10-04T13:59:14.249025Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "keyed_on_message": true
+   },
+   "sample": "0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.",
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "145cb4f92203df9836c8db30060bb375"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "unboundpvc-7c66994c4c-8z5n2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.3.85",
+    "endpoint_ready": 0,
+    "endpoint_total": 0,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoEndpoints",
+    "selector": {
+     "app": "noendpoint"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "dfc7938bf337e7c3e2be1e595795887a",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "760cba3d193e58fbedf6a12a20fb84e4"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "noendpoints",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.125.142",
+    "endpoint_ready": 0,
+    "endpoint_total": 2,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "NoReadyEndpoints",
+    "selector": {
+     "app": "notready"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "733eb6067946085438e701be701120f6",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "6a472ed7abdd56e29ffd8f780d5e62bc"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "notready",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "diffed across 2 observations of one series",
+     "change": 5,
+     "first": 31,
+     "key": "count",
+     "last": 36,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T10:39:15.000000Z",
+    "message_template": "<n>/<n> nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: <n>/<n> nodes are available: <n> Preemption is not helpful for scheduling.",
+    "reason": "FailedScheduling",
+    "type": "Warning"
+   },
+   "fingerprint": "7dc0238b868c7d51056bedbe5c950433",
+   "first_seen": "2026-10-04T13:32:40Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202271Z",
+   "last_seen": "2026-10-04T13:55:48Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "60e1e8b9-fa2c-44f9-b57d-49ba3785703e",
+    "severity_basis": "cluster"
+   },
+   "sample": "0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "95659aae589cd7c55c9e1502bc7a0439",
+    "147e76dd9a739134ff4674772652351e"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "unboundpvc-7c66994c4c-8z5n2",
+   "trends": {
+    "count": [
+     31,
+     36
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 2,
+     "first": 2,
+     "key": "count",
+     "last": 2,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
+    "count": 2,
+    "message_template": "<n>/<n> nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: <n>/<n> nodes are available: <n> Preemption is not helpful for scheduling.",
+    "reason": "FailedScheduling",
+    "type": "Warning"
+   },
+   "fingerprint": "9cf75e02bdf873e1346b63ea11f28721",
+   "first_seen": "2026-10-04T13:55:48Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202198Z",
+   "last_seen": "2026-10-04T13:55:48Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "default-scheduler",
+    "event_uid": "5aef634d-4c90-4f5f-b3a7-63c444fe8d70",
+    "severity_basis": "cluster"
+   },
+   "sample": "0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "b20a426beafdf47bf363430a48806f13"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "unboundpvc-578bb48945-7z5qb",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "cluster_ip": "10.96.96.91",
+    "endpoint_ready": 1,
+    "endpoint_total": 1,
+    "ports": [
+     {
+      "name": "http",
+      "port": 80,
+      "protocol": "TCP"
+     }
+    ],
+    "reason": "HasEndpoints",
+    "selector": {
+     "app": "noendpoints"
+    },
+    "service_type": "ClusterIP"
+   },
+   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "namespace",
+   "kind": "service_state",
+   "last_observed": "2026-10-04T13:59:14.267334Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "endpoint_slices": 1
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "257754cb59827e277485cb944195d38e"
+   ],
+   "source": "k8s_services",
+   "state": "ongoing",
+   "subject_name": "healthy",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279179Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "459fc413a46a8f93dce30210b18a7a6e"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "a67157da495e127e47603e2edd0e5a6e",
+   "first_seen": "2026-10-04T10:39:05Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279235Z",
+   "last_seen": "2026-10-04T10:39:05Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "150fce04731163fb7f128f599a45ab3b"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet is posting ready status",
+    "reason": "KubeletReady",
+    "status": "True",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule"
+    ]
+   },
+   "fingerprint": "8089a6cd38f034cc9f6421c4a7f13f01",
+   "first_seen": "2026-10-04T10:39:02Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279119Z",
+   "last_seen": "2026-10-04T10:39:02Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "4459a6656744774cf0b81bd239a42db4"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279136Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ec579123e96ce84d376298737c37e77c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "f1817db9a6d78b95fc792619fca8bca4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279149Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b9a0c2558ffc866725dea9e903b639eb"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "zone": "us-east-1a"
+   },
+   "fingerprint": "2bb035138f675636fbd9a624ed4258cd",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279165Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "043e8c61513e3a453db7135aa7764886"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1002a59db56d49e74570e1bce55520de",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279196Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f71b6bb2f236943fa570def670e2b73c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "1ccb306d93a3689d474bf3f6e51495e4",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279209Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "438ec9a064973d5b2136458cb003f034"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "instance_type": "t3.small",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "taints": [
+     "node.kubernetes.io/unschedulable:NoSchedule"
+    ],
+    "unschedulable": true,
+    "zone": "us-east-1b"
+   },
+   "fingerprint": "f81903d9832efacbf7826998e85f5cba",
+   "first_seen": "2026-10-04T10:38:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279222Z",
+   "last_seen": "2026-10-04T10:38:52Z",
+   "namespace": null,
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "24ede9b82b2f163782fae0a8cfdc1c1c"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-worker2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient memory available",
+    "reason": "KubeletHasSufficientMemory",
+    "status": "False",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule"
+    ]
+   },
+   "fingerprint": "1b5f0fad147a976ba738c15cae69e398",
+   "first_seen": "2026-10-04T10:38:42Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279073Z",
+   "last_seen": "2026-10-04T10:38:42Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "e4395d64784abbc155590d0844e589f7"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has no disk pressure",
+    "reason": "KubeletHasNoDiskPressure",
+    "status": "False",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule"
+    ]
+   },
+   "fingerprint": "8f6d1b22f12d3633fd04bf99ce1b3e1c",
+   "first_seen": "2026-10-04T10:38:42Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279091Z",
+   "last_seen": "2026-10-04T10:38:42Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "14c99fc0329f1a2d245844a95e88c93e"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "kubelet has sufficient PID available",
+    "reason": "KubeletHasSufficientPID",
+    "status": "False",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule"
+    ]
+   },
+   "fingerprint": "b97f207f7ac662258c50699b73190543",
+   "first_seen": "2026-10-04T10:38:42Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "unscheduled",
+   "kind": "node_state",
+   "last_observed": "2026-10-04T13:59:14.279106Z",
+   "last_seen": "2026-10-04T10:38:42Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "7eac0e64a5a34b2a360a03df2bac7181"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "7dc0238b868c7d51056bedbe5c950433",
+   "facts": {
+    "log_status": "empty",
+    "stream": "previous"
+   },
+   "fingerprint": "0c3ce60a2a4a82588502ff6d41955f2f",
+   "first_seen": "2026-10-04T13:32:40Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463497Z",
+   "last_seen": "2026-10-04T13:55:48Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": true,
+   "occurrences": 2,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "7dc0238b868c7d51056bedbe5c950433",
+    "trigger_signal_id": "147e76dd9a739134ff4674772652351e",
+    "trigger_source": "k8s_events",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f932f46586199bf5dc849cd47fe8fbe9",
+    "3a49abf642c7558a29b57b2caf79b753"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "unboundpvc-7c66994c4c-8z5n2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "9cf75e02bdf873e1346b63ea11f28721",
+   "facts": {
+    "log_status": "empty",
+    "stream": "previous"
+   },
+   "fingerprint": "0c842fb7ed5a9e8cd14f426deaef1581",
+   "first_seen": "2026-10-04T13:55:48Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463486Z",
+   "last_seen": "2026-10-04T13:55:48Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": true,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "9cf75e02bdf873e1346b63ea11f28721",
+    "trigger_signal_id": "b20a426beafdf47bf363430a48806f13",
+    "trigger_source": "k8s_events",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "69593a1c771c40b648ad8c5608a8e40b"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "unboundpvc-578bb48945-7z5qb",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "7ae482a62f4a07352749d20a33179ec7",
+   "facts": {
+    "log_status": "empty",
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "bf5f51052ab2e1be763cc6a22c6304fb",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463167Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": true,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "7ae482a62f4a07352749d20a33179ec7",
+    "trigger_signal_id": "60ce16378f8af18ceacf28c5b5b81fb6",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "f12297591618ff515b1329fb9551de5a"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "unboundpvc-578bb48945-7z5qb",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": "12156625aee4d01902ec7d60bbe3aaa7",
+   "facts": {
+    "log_status": "empty",
+    "since_seconds": 600,
+    "stream": "current"
+   },
+   "fingerprint": "1dccff8e7f7dd791dc74ecfd2d1a1f37",
+   "first_seen": "2026-10-04T10:39:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "log_excerpt",
+   "last_observed": "2026-10-04T13:59:14.463311Z",
+   "last_seen": "2026-10-04T10:39:15Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": true,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "trigger_fingerprint": "12156625aee4d01902ec7d60bbe3aaa7",
+    "trigger_signal_id": "145cb4f92203df9836c8db30060bb375",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-04T13:59:14.283599Z",
+    "window_start": "2026-10-04T13:49:14.283599Z"
+   },
+   "sample": null,
+   "severity": "info",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "b0dedc50db27e6698e90c20b5043630c"
+   ],
+   "source": "k8s_logs",
+   "state": null,
+   "subject_name": "unboundpvc-7c66994c4c-8z5n2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
+    "count": 1,
+    "message_template": "Created pod: unboundpvc-<hex>-<rand>",
+    "reason": "SuccessfulCreate",
+    "type": "Normal"
+   },
+   "fingerprint": "c438d2739919b5cb8c56d2eb8299cae7",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "owner",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202222Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "replicaset-controller",
+    "event_uid": "cbed797c-e6a7-449a-9094-532069721f2a",
+    "severity_basis": "cluster"
+   },
+   "sample": "Created pod: unboundpvc-578bb48945-7z5qb",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "5cdd10268e908efe94c15311bfaee364"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "unboundpvc-578bb48945",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "one observation of a series that began inside the window",
+     "change": 1,
+     "first": 1,
+     "key": "count",
+     "last": 1,
+     "series": 1
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
+    "count": 1,
+    "message_template": "Scaled up replica set unboundpvc-<hex> from <n> to <n>",
+    "reason": "ScalingReplicaSet",
+    "type": "Normal"
+   },
+   "fingerprint": "6c9323236099264cf1f8458e01ead22c",
+   "first_seen": "2026-10-04T13:55:19Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "subject",
+   "kind": "event",
+   "last_observed": "2026-10-04T13:59:14.202295Z",
+   "last_seen": "2026-10-04T13:55:19Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "unboundpvc",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "deployment-controller",
+    "event_uid": "94d58f21-dfc9-49c1-87e3-08fbd6dbb031",
+    "severity_basis": "cluster"
+   },
+   "sample": "Scaled up replica set unboundpvc-578bb48945 from 0 to 1",
+   "severity": "info",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "dc17fa776987f43b5e960e1bc65d7365"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "unboundpvc",
+   "trends": {}
+  }
+ ],
+ "losses": [],
+ "normalizer_versions": [
+  "1"
+ ],
+ "omitted": [],
+ "promoted": [],
+ "render_bytes": 17205,
+ "scope": {
+  "found": true,
+  "namespace": "oncall-lab",
+  "nodes": [],
+  "owner": "unboundpvc",
+  "subject": "unboundpvc",
+  "unscheduled": true
+ },
+ "sources": [
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.213591Z",
+   "never_ran": false,
+   "signals": 24,
+   "source": "k8s_pods",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.253834Z",
+   "never_ran": false,
+   "signals": 3,
+   "source": "k8s_services",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.270408Z",
+   "never_ran": false,
+   "signals": 12,
+   "source": "k8s_nodes",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.091870Z",
+   "never_ran": false,
+   "signals": 157,
+   "source": "k8s_events",
+   "status": "ok"
+  },
+  {
+   "attempts": 3,
+   "error": null,
+   "failed": 0,
+   "last_started": "2026-10-04T13:59:14.282237Z",
+   "never_ran": false,
+   "signals": 30,
+   "source": "k8s_logs",
+   "status": "ok"
+  }
+ ],
+ "subject": "unboundpvc",
+ "window_basis": "fixed lookback",
+ "window_end": "2026-10-04T14:03:17.647476Z",
+ "window_start": "2026-10-04T13:03:17.647476Z"
+}
