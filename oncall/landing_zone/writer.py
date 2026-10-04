@@ -235,6 +235,38 @@ def attach_signals(
     return len(affected)
 
 
+# SQLite's bound-parameter limit is 999 on builds older than 3.32. One incident can
+# hold thousands of candidates, so ids go in chunks well under it.
+_ID_CHUNK = 500
+
+
+def attach_signal_ids(conn: Connection, incident_id: str, signal_ids: list[str]) -> int:
+    """Attach exactly the signals a bundle selected, by id.
+
+    attach_signals selects by window, namespace and owner, which is a different set from
+    what a scoped bundle holds: the scope also admits a subject's node and its namespace's
+    Services, and leaves out unrelated rows that share a namespace. The incident should
+    consist of the evidence that was actually diagnosed.
+
+    The same IS NULL guard as attach_signals: a signal already attached to an earlier,
+    overlapping incident stays with it.
+    """
+    affected: list[str] = []
+    for i in range(0, len(signal_ids), _ID_CHUNK):
+        chunk = signal_ids[i : i + _ID_CHUNK]
+        marks = ",".join("?" * len(chunk))
+        predicate = f"WHERE incident_id IS NULL AND signal_id IN ({marks})"
+        affected += [
+            r["signal_id"]
+            for r in conn.execute(f"SELECT signal_id FROM signals {predicate}", chunk)
+        ]
+        conn.execute(f"UPDATE signals SET incident_id = ? {predicate}", [incident_id, *chunk])
+
+    if affected:
+        outbox.enqueue(conn, outbox.SIGNAL, affected)
+    return len(affected)
+
+
 def close_incident(conn: Connection, incident_id: str, state: str = "resolved") -> None:
     conn.execute(
         "UPDATE incidents SET state = ?, closed_at = ? WHERE incident_id = ?",

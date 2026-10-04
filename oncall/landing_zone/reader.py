@@ -64,6 +64,22 @@ def signals_in_window(
     return conn.execute(" ".join(clauses), params).fetchall()
 
 
+def unresolved_incident(conn: Connection, cluster: str, title: str | None) -> str | None:
+    """The most recent incident for this subject that nobody has resolved.
+
+    Reused by a repeated diagnose, so iterating on one problem builds one incident with
+    several journalled attempts rather than a new incident per keystroke. title holds the
+    subject name; None (a cluster-wide bundle) matches only another cluster-wide one.
+    """
+    row = conn.execute(
+        "SELECT incident_id FROM incidents "
+        "WHERE cluster = ? AND title IS ? AND state != 'resolved' "
+        "ORDER BY opened_at DESC LIMIT 1",
+        (cluster, title),
+    ).fetchone()
+    return row["incident_id"] if row else None
+
+
 def signals_for_incident(conn: Connection, incident_id: str) -> list[sqlite3.Row]:
     return conn.execute(
         "SELECT * FROM signals WHERE incident_id = ? ORDER BY event_time",

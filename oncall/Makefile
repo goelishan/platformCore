@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle dryrun env help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval dryrun env help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -50,6 +50,9 @@ help:
 	@echo "bundle      one bundle as the reasoner sees it   (SUBJECT=crashloop ARGS=\"--at ...\")"
 	@echo "dryrun      collect twice and check every lab bundle against the standards"
 	@echo "env         the environment this expects, ready to eval"
+	@echo "diagnose    assemble, ask Bedrock, journal   (SUBJECT=crashloop ARGS=\"--dry-run | --replay ID\")"
+	@echo "eval-freeze freeze one bundle per golden subject into eval/fixtures"
+	@echo "eval        run the frozen fixtures through Bedrock and write a report   (ARGS=\"--repeat 3\")"
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -169,6 +172,25 @@ bundle:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  oncall/$(VENV)/bin/python oncall/dev/bundle.py $(SUBJECT) $(ARGS)
+
+# Opens or reuses an incident and journals every attempt. Needs AWS credentials from the
+# default chain and ONCALL_BEDROCK_* in oncall/.env; --dry-run needs neither.
+diagnose:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python oncall/dev/diagnose.py $(SUBJECT) $(ARGS)
+
+
+# Freeze reads the buffer only; collect first, from a lab with every fault applied. eval
+# makes live Bedrock calls and is never run in CI.
+eval-freeze:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python oncall/eval/freeze.py $(ARGS)
+
+eval:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python oncall/eval/run.py $(ARGS)
 
 
 # Collects against the lab, so it needs the context like collect does. Exits non-zero

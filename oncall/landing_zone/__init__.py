@@ -32,9 +32,11 @@ from oncall.landing_zone.reader import (
     signals_in_window,
     source_status_in_window,
     spread_of,
+    unresolved_incident,
 )
 from oncall.landing_zone.retention import reclaim, sweep_blobs, sweep_buffer
 from oncall.landing_zone.writer import (
+    attach_signal_ids,
     attach_signals,
     close_incident,
     finish_run,
@@ -49,6 +51,7 @@ from oncall.landing_zone.writer import (
 
 __all__ = [
     "Blob",
+    "attach_signal_ids",
     "attach_signals",
     "bootstrap",
     "buffer_drops_in_window",
@@ -81,6 +84,7 @@ __all__ = [
     "start_shipping_run",
     "sweep_blobs",
     "sweep_buffer",
+    "unresolved_incident",
     "unshipped_signal_ids",
     "write_signals",
 ]
