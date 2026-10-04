@@ -260,6 +260,17 @@ def record_diagnosis(
     input_tokens: int | None = None,
     output_tokens: int | None = None,
     latency_ms: int | None = None,
+    *,
+    diagnosis_id: str | None = None,
+    created_at: datetime | None = None,
+    prompt_version: str | None = None,
+    outcome: str | None = None,
+    attempts: int | None = None,
+    stop_reason: str | None = None,
+    cost_usd: float | None = None,
+    summary: str | None = None,
+    errors: list[str] | None = None,
+    insufficient_evidence: bool | None = None,
 ) -> str:
     """Two receipts, because one hash cannot carry two promises.
 
@@ -273,17 +284,24 @@ def record_diagnosis(
     prompt_sha256 is optional so a caller that has not rendered anything yet can still
     journal a diagnosis. A null there means nobody hashed the prompt, which is a
     different and more honest thing than a hash of something that was never sent.
+
+    Failed attempts are journalled too, with outcome saying how they failed. Only a
+    diagnosis that succeeded moves the incident to 'diagnosed': an incident whose every
+    attempt failed is still undiagnosed, and marking it otherwise would hide it from the
+    one query that should find it. outcome None is a row from before outcomes existed,
+    when success was the only thing ever written.
     """
-    diagnosis_id = uuid.uuid4().hex
+    diagnosis_id = diagnosis_id or uuid.uuid4().hex
     conn.execute(
         "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at, model, "
         "bundle_sha256, prompt_sha256, hypotheses, commands, input_tokens, "
-        "output_tokens, latency_ms) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "output_tokens, latency_ms, prompt_version, outcome, attempts, stop_reason, "
+        "cost_usd, summary, errors, insufficient_evidence) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             diagnosis_id,
             incident_id,
-            _now(),
+            iso(created_at) if created_at else _now(),
             model,
             bundle_sha256,
             prompt_sha256,
@@ -292,18 +310,26 @@ def record_diagnosis(
             input_tokens,
             output_tokens,
             latency_ms,
+            prompt_version,
+            outcome,
+            attempts,
+            stop_reason,
+            cost_usd,
+            summary,
+            json.dumps(errors) if errors is not None else None,
+            None if insufficient_evidence is None else int(insufficient_evidence),
         ),
     )
-    conn.execute(
-        "UPDATE incidents SET state = 'diagnosed' WHERE incident_id = ?",
-        (incident_id,),
-    )
-
-    # Both rows changed. The incident is enqueued too because its state moved, and a
-    # store holding a diagnosis against an incident still marked 'open' is a store
-    # that contradicts itself.
     outbox.enqueue(conn, outbox.DIAGNOSIS, [diagnosis_id])
-    outbox.enqueue(conn, outbox.INCIDENT, [incident_id])
+
+    if outcome in (None, "ok"):
+        conn.execute(
+            "UPDATE incidents SET state = 'diagnosed' WHERE incident_id = ?",
+            (incident_id,),
+        )
+        # The incident's state moved, so it ships again. A store holding a diagnosis
+        # against an incident still marked 'open' is a store that contradicts itself.
+        outbox.enqueue(conn, outbox.INCIDENT, [incident_id])
     return diagnosis_id
 
 

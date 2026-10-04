@@ -133,7 +133,16 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     commands      TEXT,                  -- JSON
     input_tokens  INTEGER,
     output_tokens INTEGER,
-    latency_ms    INTEGER
+    latency_ms    INTEGER,
+    -- Every attempt is journalled, failures included; outcome says which kind it was.
+    prompt_version        TEXT,
+    outcome               TEXT,          -- ok | invalid_output | guard_rejected | model_error
+    attempts              INTEGER,
+    stop_reason           TEXT,
+    cost_usd              REAL,          -- NULL when no price was configured
+    summary               TEXT,
+    errors                TEXT,          -- JSON
+    insufficient_evidence INTEGER        -- 0/1, NULL when there is no diagnosis
 );
 
 

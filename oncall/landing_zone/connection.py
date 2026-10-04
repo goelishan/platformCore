@@ -91,7 +91,17 @@ def bootstrap(db_path: Path | None = None) -> None:
 # constraint — is a rebuild, and should be an explicit one rather than something this
 # function attempts quietly.
 _ADDED_COLUMNS: dict[str, dict[str, str]] = {
-    "diagnoses": {"prompt_sha256": "TEXT"},
+    "diagnoses": {
+        "prompt_sha256": "TEXT",
+        "prompt_version": "TEXT",
+        "outcome": "TEXT",
+        "attempts": "INTEGER",
+        "stop_reason": "TEXT",
+        "cost_usd": "REAL",
+        "summary": "TEXT",
+        "errors": "TEXT",
+        "insufficient_evidence": "INTEGER",
+    },
 }
 
 

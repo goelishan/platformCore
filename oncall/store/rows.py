@@ -76,6 +76,14 @@ DIAGNOSIS_COLUMNS = (
     "input_tokens",
     "output_tokens",
     "latency_ms",
+    "prompt_version",
+    "outcome",
+    "attempts",
+    "stop_reason",
+    "cost_usd",
+    "summary",
+    "errors",
+    "insufficient_evidence",
 )
 
 
@@ -116,4 +124,8 @@ def diagnosis_from_buffer(row: Any) -> dict[str, Any]:
     out["created_at"] = _ts(out["created_at"])
     out["hypotheses"] = _json(out["hypotheses"])
     out["commands"] = _json(out["commands"])
+    out["errors"] = _json(out["errors"])
+    # SQLite has no boolean; NULL stays NULL, because a failed attempt made no claim.
+    if out["insufficient_evidence"] is not None:
+        out["insufficient_evidence"] = bool(out["insufficient_evidence"])
     return out
