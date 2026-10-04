@@ -35,18 +35,38 @@ def buffer(tmp_path, monkeypatch):
 
 @pytest.fixture(scope="session")
 def store_available() -> bool:
-    from oncall import store
+    """Reachable, and repointed at <dbname>_test for the rest of the session.
 
+    store_db truncates before every case. Pointed at the dev database it erased the
+    history every bundle's is_new and watching_since claims are read from, on every test
+    run (found 2026-10-04), so live bundles kept reporting that the store had only just
+    started watching. The test database is created on first use and migrated by store_db
+    like any other.
+    """
     try:
-        with store.connect() as conn:
-            conn.execute("SELECT 1")
-        return True
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        from oncall.store import connection
+    except ImportError:
+        return False
+
+    dev_dsn = config.STORE_DSN
+    test_db = f"{conninfo_to_dict(dev_dsn).get('dbname', 'oncall')}_test"
+    try:
+        with psycopg.connect(dev_dsn, autocommit=True, **connection._pool_kwargs()) as conn:
+            exists = conn.execute(
+                "SELECT 1 FROM pg_database WHERE datname = %s", (test_db,)
+            ).fetchone()
+            if not exists:
+                conn.execute(f'CREATE DATABASE "{test_db}"')
     except Exception:  # noqa: BLE001 - any failure to reach it means the same thing
         return False
     finally:
-        from oncall.store import connection
-
         connection.close()
+
+    config.STORE_DSN = make_conninfo(dev_dsn, dbname=test_db)
+    return True
 
 
 @pytest.fixture()

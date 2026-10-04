@@ -13,6 +13,7 @@ Effects against a real cluster, where the unit suite can only assert on function
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 
 import pytest
@@ -81,6 +82,16 @@ def test_a_real_log_read_is_decoded_and_timestamped(crashloop_pod):
     )
 
     fetch = k8s_logs._read_log(target, k8s_logs.STREAM_PREVIOUS)
+    # The kubelet keeps one dead container per pod. A read that lands while a crashlooping
+    # pod restarts can ask for the container that was just replaced, and containerd
+    # answers that it has no logs for it (seen live on 2026-10-04, restart 22). The
+    # collector is right to report that as unavailable; the test asks again once, after
+    # the restart has settled, because it is about decoding a log, not about the race.
+    if fetch.status != str(SourceStatus.OK) and "unable to retrieve container logs" in (
+        fetch.error or ""
+    ):
+        time.sleep(5)
+        fetch = k8s_logs._read_log(target, k8s_logs.STREAM_PREVIOUS)
     excerpt = k8s_logs.build_excerpt(fetch.text)
 
     assert fetch.status == str(SourceStatus.OK), fetch.error

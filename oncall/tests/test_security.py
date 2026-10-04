@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -46,7 +47,56 @@ def _source_files() -> list[Path]:
     ]
 
 
+# Vendor tokens in the exact shapes GitHub push protection blocks. Checked in every text
+# file, tests included: on 2026-10-04 a GitLab-shaped fixture in test_redact.py was a
+# literal, the scan above skipped tests, and the push was refused. Fixtures build these
+# shapes at runtime ("glpat-" + "xY7z" * 5) so the source never holds one whole.
+VENDOR_TOKENS = {
+    "github token": re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36}\b"),
+    "gitlab token": re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}"),
+    "slack token": re.compile(r"\bxox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24}\b"),
+    "google api key": re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
+}
+
+_TEXT_SUFFIXES = {".py", ".yaml", ".yml", ".sql", ".md", ".json", ".example", ".toml", ".txt"}
+
+
+def _every_text_file() -> list[Path]:
+    skip = {".venv", "data", "scratch", "__pycache__"}
+    return [
+        p for p in PACKAGE.rglob("*")
+        if p.is_file() and p.suffix in _TEXT_SUFFIXES and not skip & set(p.parts)
+    ]
+
+
 # ---- nothing secret in code --------------------------------------------------
+
+
+@pytest.mark.parametrize("name", sorted(VENDOR_TOKENS))
+def test_no_file_carries_a_whole_vendor_token(name):
+    pattern = VENDOR_TOKENS[name]
+    hits = [
+        f"{p.relative_to(PACKAGE)}:{n}"
+        for p in _every_text_file()
+        for n, line in enumerate(p.read_text(errors="replace").splitlines(), 1)
+        if pattern.search(line)
+    ]
+
+    assert hits == [], f"{name} found in {hits}"
+
+
+def test_the_vendor_token_scan_sees_a_literal_fixture(tmp_path, monkeypatch):
+    """The scan is only worth something if it would have caught the fixture that was
+    refused, so it is run once against that exact line."""
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_x.py").write_text(
+        '("gitlab_token", "token glpat-' + "xY7zq1W2e3R4t5Y6u7I8" + '", "")\n'
+    )
+    monkeypatch.setattr(sys.modules[__name__], "PACKAGE", tmp_path)
+
+    with pytest.raises(AssertionError, match="gitlab token found in"):
+        test_no_file_carries_a_whole_vendor_token("gitlab token")
 
 
 @pytest.mark.parametrize("name", sorted(FORBIDDEN))
