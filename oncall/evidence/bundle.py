@@ -1332,9 +1332,22 @@ def _utc(moment: datetime | None) -> str:
 
 
 def _neutralise(text: str) -> str:
-    """Nothing the cluster wrote may open or close a fence. Case-insensitive, because a
-    reader matching tags would be."""
-    return re.sub(r"(?i)<(/?)untrusted", r"&lt;\1untrusted", text)
+    """Nothing the cluster wrote may open or close a fence, nor the <evidence> wrapper
+    the reasoner puts around this text. Case-insensitive, because a reader matching
+    tags would be."""
+    return re.sub(r"(?i)<(/?)(untrusted|evidence)", r"&lt;\1\2", text)
+
+
+def finding_labels(bundle: Bundle) -> dict[str, str]:
+    """F1, F2 ... in rank order, keyed by fingerprint.
+
+    What the reasoner cites. A 32-character fingerprint copied by a model fails now and
+    then on transcription alone, which would make a citation failure ambiguous between
+    a typo and invented evidence. Labels are short enough that a bad one means the
+    second. They depend on rank order, so nothing durable stores them: the reasoner
+    maps them back to fingerprints before guards and the journal.
+    """
+    return {f.fingerprint: f"F{i}" for i, f in enumerate(bundle.findings, start=1)}
 
 
 def _fence(label: str, text: Any, indent: str = "      ") -> list[str]:
@@ -1387,6 +1400,7 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
     says which rule, never what it matched.
     """
     by_fingerprint = {f.fingerprint: f for f in bundle.findings}
+    ids = finding_labels(bundle)
     reports = {s.source: s for s in bundle.sources}
 
     def clip(value: Any) -> str:
@@ -1411,7 +1425,8 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
             f"{'  (a pod of it is unscheduled)' if sc.unscheduled else ''}"
         )
     header += [
-        f"{len(bundle.findings)} findings from {bundle.signals_read} stored rows. "
+        f"{len(bundle.findings)} findings from {bundle.signals_read} stored rows, "
+        "numbered F1, F2 ... in rank order. "
         "'seen in N polls' counts collection runs, not occurrences.",
         UNTRUSTED_NOTE,
         "",
@@ -1426,7 +1441,8 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
                 else f"  known since {_utc(f.history.first_seen_ever)}"
             )
         out.append(
-            f"[{str(f.severity or '-'):8}] {f.source:12} {f.subject_name or ''}"
+            f"{ids[f.fingerprint]:<4}[{str(f.severity or '-'):8}] {f.source:12} "
+            f"{f.subject_name or ''}"
             f"  via {f.joined_by}{seen_before}"
         )
         polls = "1 poll" if f.occurrences == 1 else f"{f.occurrences} polls"
@@ -1447,7 +1463,7 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         if f.explains:
             trigger = by_fingerprint.get(f.explains)
             out.append(
-                f"      explains: {label(trigger)}" if trigger
+                f"      explains: {ids[trigger.fingerprint]}, {label(trigger)}" if trigger
                 else "      explains: a trigger outside this window"
             )
 
@@ -1504,7 +1520,7 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         out += ["", f"promoted log text ({len(bundle.promoted)})"]
         for p in bundle.promoted:
             target = by_fingerprint.get(p.fingerprint)
-            named = label(target) if target else p.fingerprint
+            named = f"{ids[target.fingerprint]}, {label(target)}" if target else p.fingerprint
             if p.text is None:
                 out.append(f"      {named}: {p.reason}")
                 continue
