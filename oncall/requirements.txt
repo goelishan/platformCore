@@ -9,3 +9,9 @@ kubernetes>=31.0
 # pool below, and dict rows without a separate extras import.
 psycopg[binary]>=3.2
 psycopg-pool>=3.2
+
+# AWS: RDS IAM auth tokens now, the Bedrock runtime client in M5. Credentials come
+# from the default chain (IRSA in the cluster, SSO or a profile locally), never from
+# configuration this package reads.
+boto3>=1.35
+botocore>=1.35

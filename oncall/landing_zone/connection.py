@@ -12,6 +12,7 @@ Connection lifecycle for the landing zone.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -20,6 +21,18 @@ from pathlib import Path
 from oncall import config
 
 SCHEMA_PATH=Path(__file__).resolve().parent / "schema.sql"
+
+# Owner-only for everything the agent keeps on disk. The buffer holds redacted rows but
+# the blob directory holds raw container output, and a default umask leaves both
+# readable by any other user on the host.
+DIR_MODE = 0o700
+FILE_MODE = 0o600
+
+
+def _private_dir(path: Path) -> None:
+    path.mkdir(mode=DIR_MODE, parents=True, exist_ok=True)
+    # mkdir's mode applies only on creation; an existing directory keeps what it had.
+    os.chmod(path, DIR_MODE)
 
 
 @contextmanager
@@ -46,8 +59,8 @@ def connect(db_path: Path | None = None) -> Iterator[sqlite3.Connection]:
 def bootstrap(db_path: Path | None = None) -> None:
 
     path = db_path or config.BUFFER_DB_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
-    config.BLOB_DIR.mkdir(parents=True, exist_ok=True)
+    _private_dir(path.parent)
+    _private_dir(config.BLOB_DIR)
 
     conn=sqlite3.connect(path)
     try:
@@ -57,6 +70,9 @@ def bootstrap(db_path: Path | None = None) -> None:
         _ensure_incremental_vacuum(conn)
     finally:
         conn.close()
+    # SQLite creates the file with the process umask, and the -wal and -shm sidecars
+    # copy the database file's mode, so setting it here covers all three.
+    os.chmod(path, FILE_MODE)
 
 
 # Columns added to schema.sql after a buffer may already exist on disk.

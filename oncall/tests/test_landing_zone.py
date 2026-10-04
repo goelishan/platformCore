@@ -303,6 +303,27 @@ def test_expiry_is_stamped_per_kind_for_the_store(buffer):
     )
 
 
+def test_the_buffer_and_blob_directory_are_owner_only(buffer):
+    """Blobs are raw container output, unredacted by design. A default umask left the
+    directory and the database file readable by every other user on the host."""
+    import stat
+
+    from oncall import config
+    from oncall.landing_zone.blobs import absolute_path
+
+    with lz.connect() as conn:
+        blob_id = lz.put_blob(conn, b"raw line\n")
+        path = conn.execute("SELECT path FROM blobs WHERE blob_id = ?", (blob_id,)).fetchone()
+
+    def mode(p) -> int:
+        return stat.S_IMODE(p.stat().st_mode)
+
+    assert mode(config.BUFFER_DB_PATH) == 0o600
+    assert mode(config.BUFFER_DB_PATH.parent) == 0o700
+    assert mode(config.BLOB_DIR) == 0o700
+    assert mode(absolute_path(path["path"])) == 0o600
+
+
 def test_an_unfinished_run_reads_as_unavailable(buffer):
     """k8s_logs decides whether it is blind from this query. An upstream collector that
     died mid-run must not read as one that looked and found nothing."""

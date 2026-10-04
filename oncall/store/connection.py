@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import Any
 
 from psycopg import Connection
@@ -27,6 +28,48 @@ from oncall import config
 log = logging.getLogger(__name__)
 
 _pool: ConnectionPool | None = None
+
+
+@lru_cache(maxsize=1)
+def _rds_client() -> Any:
+    """One client per process. botocore refreshes the underlying credentials itself,
+    including a projected IRSA token that rotates; a client per connection only added
+    latency to every checkout."""
+    import boto3
+
+    return boto3.client("rds", region_name=config.AWS_REGION)
+
+
+def _iam_token() -> str:
+    """A fresh RDS auth token. Valid fifteen minutes, which is why it is generated per
+    connection: a pool that captured one at startup authenticated for a quarter of an
+    hour and then failed for the rest of the process's life."""
+    return _rds_client().generate_db_auth_token(
+        DBHostname=config.STORE_HOST,
+        Port=config.STORE_PORT,
+        DBUsername=config.STORE_USER,
+        Region=config.AWS_REGION,
+    )
+
+
+class _IamAuthConnection(Connection):  # type: ignore[type-arg]
+    """A connection that authenticates with a token generated at the moment it opens."""
+
+    @classmethod
+    def connect(cls, conninfo: str = "", **kwargs: Any) -> Any:  # type: ignore[override]
+        kwargs["password"] = _iam_token()
+        return super().connect(conninfo, **kwargs)
+
+
+def _pool_kwargs() -> dict[str, Any]:
+    kwargs: dict[str, Any] = {
+        "row_factory": dict_row,
+        "connect_timeout": config.STORE_CONNECT_TIMEOUT,
+    }
+    # Passed beside the DSN, never inside it, so no DSN string carries a credential.
+    if config.STORE_PASSWORD and not config.STORE_IAM_AUTH:
+        kwargs["password"] = config.STORE_PASSWORD
+    return kwargs
 
 
 def pool() -> ConnectionPool:
@@ -42,10 +85,8 @@ def pool() -> ConnectionPool:
             conninfo=config.STORE_DSN,
             min_size=config.STORE_POOL_MIN,
             max_size=config.STORE_POOL_MAX,
-            kwargs={
-                "row_factory": dict_row,
-                "connect_timeout": config.STORE_CONNECT_TIMEOUT,
-            },
+            kwargs=_pool_kwargs(),
+            connection_class=_IamAuthConnection if config.STORE_IAM_AUTH else Connection,
             open=False,
         )
         _pool.open()

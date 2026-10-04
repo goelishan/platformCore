@@ -126,6 +126,23 @@ def test_the_full_text_is_promoted_when_it_fits(buffer):
     assert p.bytes == len(text)
 
 
+def test_promoted_text_is_redacted_while_the_blob_stays_raw(buffer):
+    """The blob is what the container wrote, so its hash is the hash of that. What
+    leaves for the prompt is redacted; until 2026-09-30 it was handed over unchanged."""
+    crash = failure("CrashLoopBackOff", Severity.ERROR)
+    raw = b"connecting with password=hunter2trombone\nFATAL: auth failed\n"
+    blob_id = put(raw)
+    store(crash, excerpt(crash, blob_id, "log"))
+
+    (p,) = build().promoted
+
+    assert "hunter2trombone" not in (p.text or "")
+    assert "FATAL: auth failed" in (p.text or "")
+    assert p.redacted is True
+    with lz.connect() as conn:
+        assert blobs.read_blob(conn, blob_id).data == raw
+
+
 def test_only_the_newest_blob_of_a_finding_is_promoted(buffer):
     # Two polls of the same excerpt, each with its own text. The older blob covers
     # an earlier window; the newer one is what the excerpt in facts was cut from.
@@ -236,4 +253,8 @@ def test_the_rendered_view_shows_the_promoted_text(buffer):
     crash = failure("OOMKilled", Severity.ERROR)
     store(crash, excerpt(crash, put(b"java.lang.OutOfMemoryError\n"), "log"))
 
-    assert "| java.lang.OutOfMemoryError" in bundle.render(build())
+    rendered = bundle.render(build())
+
+    assert "full text, 1 line" in rendered
+    assert '<untrusted field="promoted log">' in rendered
+    assert "  java.lang.OutOfMemoryError" in rendered

@@ -23,9 +23,22 @@ from datetime import UTC, datetime
 from sqlite3 import Connection
 from typing import Any
 
-from oncall.envelope import Signal, SignalSource, SourceStatus, iso
+from oncall.envelope import Signal, SignalSource, SourceStatus, iso, redact
 from oncall.landing_zone import outbox
 from oncall.landing_zone.rows import COLLECTOR_COLUMNS, LANDING_ZONE_COLUMNS, to_row
+
+
+# Error text is written by exceptions, and exceptions quote what they were handed: a
+# DSN, a URL with credentials, a header. Every error stored in a run row is redacted
+# and bounded first; the row is read by the bundle and rendered to the model.
+ERROR_MAX_CHARS = 500
+
+
+def _safe_error(error: str | None) -> str | None:
+    if not error:
+        return error
+    cleaned, _ = redact(error)
+    return cleaned[:ERROR_MAX_CHARS]
 
 
 def _now() -> str:
@@ -66,7 +79,7 @@ def finish_run(
         "UPDATE collection_runs "
         "SET finished_at = ?, status = ?, signal_count = ?, error = ? "
         "WHERE run_id = ?",
-        (_now(), str(status), signal_count, error, run_id),
+        (_now(), str(status), signal_count, _safe_error(error), run_id),
     )
 
 
@@ -94,7 +107,7 @@ def finish_shipping_run(
     conn.execute(
         "UPDATE shipping_runs "
         "SET finished_at = ?, status = ?, shipped = ?, error = ? WHERE run_id = ?",
-        (_now(), str(status), shipped, error, run_id),
+        (_now(), str(status), shipped, _safe_error(error), run_id),
     )
 
 

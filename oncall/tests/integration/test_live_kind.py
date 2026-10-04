@@ -45,6 +45,9 @@ def crashloop_pod():
     if context != LAB_CONTEXT:
         pytest.skip(f"active kube context is {context!r}, not {LAB_CONTEXT!r}")
 
+    # The client refuses to guess a context; name the lab explicitly.
+    config.KUBE_CONTEXT = LAB_CONTEXT
+
     try:
         pods = k8s.core_v1().list_namespaced_pod(
             LAB_NS, label_selector="app=crashloop", _request_timeout=5

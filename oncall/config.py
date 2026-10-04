@@ -19,32 +19,84 @@ from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 
+
+# ---- environment file ------------------------------------------------------
+# oncall/.env is where dev credentials live, and the only place they live: nothing in
+# code carries a working password. Read before anything below so its values act as
+# overrides of the defaults. Three limits keep it safe to leave enabled everywhere:
+# only ONCALL_* keys are read, so AWS credentials can never arrive through a file; the
+# real environment always wins; and a missing file is simply nothing to read.
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.is_file():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key.startswith("ONCALL_"):
+            os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+
+_load_env_file(Path(os.getenv("ONCALL_ENV_FILE", str(PACKAGE_ROOT / ".env"))))
+
+# dev or prod. prod refuses to start with anything that would work in dev and be
+# unsafe in production: see _production_problems at the end of this module.
+ENV = os.getenv("ONCALL_ENV", "dev")
+
 DATA_DIR = Path(os.getenv("ONCALL_DATA_DIR", PACKAGE_ROOT / "data"))
 BUFFER_DB_PATH = DATA_DIR / "buffer.db"
 BLOB_DIR = DATA_DIR / "blobs"
 
 CLUSTER_NAME = os.getenv("ONCALL_CLUSTER", "platformcore")
 
+# The kubeconfig context to read, when not running inside the cluster. Required: a
+# collector that silently used whatever context kubectl last switched to could read a
+# production cluster from a laptop. In the cluster the service account is used and
+# this is ignored.
+KUBE_CONTEXT = os.getenv("ONCALL_KUBE_CONTEXT") or None
+
+# Region for every AWS call the agent makes: RDS IAM tokens and Bedrock.
+AWS_REGION = (
+    os.getenv("ONCALL_AWS_REGION") or os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
+)
+
 
 # ---- the store -------------------------------------------------------------
-# Assembled from parts rather than taking a single DSN string, because the parts are
-# what changes between environments: dev points at the compose container, production
-# points at RDS with an IAM-issued token in place of a password. Moving to RDS is then
-# a change of environment variables, not of code.
+# Assembled from parts, because the parts are what change between environments: dev
+# points at the compose container, production at RDS with an IAM token per connection.
 #
-# A whole DSN can still be supplied directly, which is what a Kubernetes Secret or an
-# operator-provisioned database will hand over.
+# The password is never part of the DSN. It is passed to the pool separately, or, with
+# IAM auth, generated fresh for every connection, so no DSN string anywhere carries a
+# credential that a log line or a repr could expose. There is no default password and
+# the default sslmode is verify-full: code fails closed, and dev loosens it in .env.
+#
+# A whole DSN can still be supplied, which is what an operator-provisioned database
+# hands over. It is used as given.
 
+STORE_HOST = os.getenv("ONCALL_STORE_HOST", "localhost")
+STORE_PORT = int(os.getenv("ONCALL_STORE_PORT", "5432"))
+STORE_DB = os.getenv("ONCALL_STORE_DB", "oncall")
+STORE_USER = os.getenv("ONCALL_STORE_USER", "oncall")
+STORE_PASSWORD = os.getenv("ONCALL_STORE_PASSWORD") or None
+STORE_SSLMODE = os.getenv("ONCALL_STORE_SSLMODE", "verify-full")
+STORE_SSLROOTCERT = os.getenv("ONCALL_STORE_SSLROOTCERT") or None
+STORE_IAM_AUTH = os.getenv("ONCALL_STORE_IAM_AUTH", "false").lower() in {"1", "true", "yes"}
 
-STORE_DSN = os.getenv("ONCALL_STORE_DSN") or (
-    "host={host} port={port} dbname={db} user={user} password={pw} sslmode={ssl}".format(
-        host=os.getenv("ONCALL_STORE_HOST", "localhost"),
-        port=os.getenv("ONCALL_STORE_PORT", "5433"),
-        db=os.getenv("ONCALL_STORE_DB", "oncall"),
-        user=os.getenv("ONCALL_STORE_USER", "oncall"),
-        pw=os.getenv("ONCALL_STORE_PASSWORD", "oncall"),
-        ssl=os.getenv("ONCALL_STORE_SSLMODE", "prefer"),
+STORE_DSN = os.getenv("ONCALL_STORE_DSN") or " ".join(
+    f"{key}={value}"
+    for key, value in (
+        ("host", STORE_HOST),
+        ("port", STORE_PORT),
+        ("dbname", STORE_DB),
+        ("user", STORE_USER),
+        ("sslmode", STORE_SSLMODE),
+        ("sslrootcert", STORE_SSLROOTCERT),
     )
+    if value
 )
 
 # Small on purpose. One shipper, one UI, one background collector — a large pool would
@@ -239,6 +291,70 @@ BUNDLE_MAX_FINDINGS = int(os.getenv("ONCALL_BUNDLE_MAX_FINDINGS", "40"))
 # and it is a prompt budget, not a storage one: the bytes are already on disk.
 BUNDLE_PROMOTE_BYTES = int(os.getenv("ONCALL_BUNDLE_PROMOTE_BYTES", str(16 * 1024)))
 
-# Below this many occurrences there is no spacing to speak of: two timestamps make one
-# gap, and one gap has no shape.
-BUNDLE_MIN_SPACING_SAMPLES = int(os.getenv("ONCALL_BUNDLE_MIN_SPACING_SAMPLES", "3"))
+# Hard ceiling on the rendered bundle, in bytes. A model's context is what actually
+# limits the prompt, so findings are dropped lowest rank first until the render fits,
+# and each one dropped is listed in omitted. Roughly 30k tokens at the default, well
+# inside any current Bedrock Claude model and leaving room for instructions and answer.
+PROMPT_MAX_BYTES = int(os.getenv("ONCALL_PROMPT_MAX_BYTES", str(120 * 1024)))
+
+
+# ---- the model: Amazon Bedrock ---------------------------------------------
+# No key, token or secret variable exists here, and none should be added. Credentials
+# come from the default AWS chain: the service account's IRSA role in the cluster, an
+# SSO session or named profile on a laptop. The role needs bedrock:InvokeModel on this
+# one model or inference profile ARN and nothing else.
+
+BEDROCK_REGION = os.getenv("ONCALL_BEDROCK_REGION") or AWS_REGION
+
+# An inference profile ID or ARN, not a bare model ID: current Claude models on Bedrock
+# are invoked through inference profiles. Unset until M5 needs it, and required then.
+BEDROCK_MODEL_ID = os.getenv("ONCALL_BEDROCK_MODEL_ID") or None
+
+# A Bedrock guardrail, optional. A second layer of PII and secret filtering on top of
+# this agent's own redaction, never a replacement for it.
+BEDROCK_GUARDRAIL_ID = os.getenv("ONCALL_BEDROCK_GUARDRAIL_ID") or None
+BEDROCK_GUARDRAIL_VERSION = os.getenv("ONCALL_BEDROCK_GUARDRAIL_VERSION") or None
+
+# Bounded so a slow model surfaces as a failed diagnosis inside the incident, not as a
+# UI that hangs while someone waits at 3am.
+BEDROCK_CONNECT_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_CONNECT_TIMEOUT", "5"))
+BEDROCK_READ_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_READ_TIMEOUT", "90"))
+BEDROCK_MAX_ATTEMPTS = int(os.getenv("ONCALL_BEDROCK_MAX_ATTEMPTS", "3"))
+BEDROCK_MAX_TOKENS = int(os.getenv("ONCALL_BEDROCK_MAX_TOKENS", "2000"))
+
+
+# ---- production guard ------------------------------------------------------
+# Every setting above has a value that is fine on a laptop and unsafe in production.
+# In prod the module refuses to import with any of them, so the failure is a crash at
+# startup with the reason, not a quiet downgrade discovered after an incident.
+
+
+def _production_problems() -> list[str]:
+    problems: list[str] = []
+    dsn_given = bool(os.getenv("ONCALL_STORE_DSN"))
+
+    if dsn_given:
+        if "sslmode=verify-full" not in STORE_DSN:
+            problems.append("ONCALL_STORE_DSN must carry sslmode=verify-full")
+    else:
+        if not os.getenv("ONCALL_STORE_HOST"):
+            problems.append("ONCALL_STORE_HOST must be set explicitly")
+        if STORE_SSLMODE != "verify-full":
+            problems.append(f"ONCALL_STORE_SSLMODE is {STORE_SSLMODE}, must be verify-full")
+        if not STORE_SSLROOTCERT:
+            problems.append("ONCALL_STORE_SSLROOTCERT must point at the RDS CA bundle")
+        if not STORE_IAM_AUTH:
+            problems.append("ONCALL_STORE_IAM_AUTH must be true; no static password in prod")
+        if STORE_PASSWORD:
+            problems.append("ONCALL_STORE_PASSWORD must not be set in prod")
+    if not AWS_REGION:
+        problems.append("ONCALL_AWS_REGION (or AWS_REGION) must be set")
+    return problems
+
+
+if ENV == "prod":
+    _problems = _production_problems()
+    if _problems:
+        raise RuntimeError("refusing to start in prod: " + "; ".join(_problems))
+elif ENV != "dev":
+    raise RuntimeError(f"ONCALL_ENV must be dev or prod, not {ENV!r}")

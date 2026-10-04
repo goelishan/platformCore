@@ -14,6 +14,10 @@ Secrets removed before anything is stored.
     removes the token.
   - The signal records that redaction happened, never what was removed. A payload
     field naming the matched rule is the most a row may carry; the value is gone.
+  - Pass whole blocks, never one line at a time. A private key spans lines, and the
+    rule that recognises it needs BEGIN and END in one string: applied per line it can
+    never fire, and the key body passes through as ordinary base64. That was the
+    behaviour of the log excerpt until 2026-09-30.
 """
 
 from __future__ import annotations
@@ -24,6 +28,9 @@ from oncall.envelope.masking import Rule, apply, rule
 # recognised as one rather than being partly consumed by the generic high-entropy
 # rule, which would leave the key name attached to a fragment of its own value.
 
+# Every rule is idempotent: it never matches its own placeholder. The finished bundle
+# is redacted a second time as a last defence, and a rule that fired on "<redacted>"
+# would report a leak in every bundle that had ever caught one.
 RULES: tuple[Rule, ...] = (
     # PEM blocks are matched whole. Line by line, the body is indistinguishable from
     # any other base64 and the guard lines would survive to say a key was here.
@@ -31,6 +38,14 @@ RULES: tuple[Rule, ...] = (
         "private_key",
         r"(?s)-----BEGIN[^-]{0,40}PRIVATE KEY-----.*?"
         r"-----END[^-]{0,40}PRIVATE KEY-----",
+        "<private-key>",
+    ),
+    # A key whose END was cut off, by a byte cap or a crash mid-print. Everything from
+    # BEGIN onward is treated as key material. Over-redaction is the right direction to
+    # be wrong in here, for the reason given at the top of this module.
+    rule(
+        "private_key_unterminated",
+        r"(?s)-----BEGIN[^-]{0,40}PRIVATE KEY-----.*\Z",
         "<private-key>",
     ),
     rule(
@@ -45,13 +60,31 @@ RULES: tuple[Rule, ...] = (
     rule(
         "assignment",
         r"(?i)\b([a-z_.-]*(?:pass(?:word|wd)?|secret|token|api[_-]?key|"
-        r"access[_-]?key|credential)[a-z_.-]*)\s*[=:]\s*\"?[^\s\"',;]+\"?",
+        r"access[_-]?key|credential)[a-z_.-]*)\s*[=:]\s*(?!<redacted>)\"?[^\s\"',;]+\"?",
         r"\1=<redacted>",
     ),
+    # The same names quoted as JSON keys. Structured loggers write "password": "x", and
+    # the assignment rule above needs the key and the separator to touch.
+    rule(
+        "json_assignment",
+        r'(?i)("[a-z_.-]*(?:pass(?:word|wd)?|secret|token|api[_-]?key|'
+        r'access[_-]?key|credential)[a-z_.-]*"\s*:\s*)"(?!<redacted>")[^"]*"',
+        r'\1"<redacted>"',
+    ),
     rule("aws_access_key", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b", "<aws-key>"),
+    # Vendor tokens with fixed, documented prefixes. Prefix-anchored, so an ordinary
+    # identifier cannot match by accident.
+    rule(
+        "github_token",
+        r"\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,})",
+        "<github-token>",
+    ),
+    rule("gitlab_token", r"\bglpat-[A-Za-z0-9_-]{20,}", "<gitlab-token>"),
+    rule("slack_token", r"\bxox[abprs]-[A-Za-z0-9-]{10,}", "<slack-token>"),
+    rule("google_api_key", r"\bAIza[0-9A-Za-z_-]{35}\b", "<google-api-key>"),
     rule(
         "authorization_header",
-        r"(?im)^(.*?\b(?:authorization|x-api-key|set-cookie|cookie))\s*:\s*\S.*$",
+        r"(?im)^(.*?\b(?:authorization|x-api-key|set-cookie|cookie))\s*:\s*(?!<redacted>$)\S.*$",
         r"\1: <redacted>",
     ),
 )

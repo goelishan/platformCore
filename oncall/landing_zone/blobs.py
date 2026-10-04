@@ -124,8 +124,10 @@ def _write_atomic(path: Path, data: bytes) -> None:
     skips when the file looks present. The temp file must share a directory with the
     destination because replace is only atomic within one filesystem.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
+    # Owner-only. Blobs are raw container output, unredacted by design.
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
+    # mkstemp creates the file 0600, which is the mode the blob keeps after replace.
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
     try:
         with os.fdopen(fd, "wb") as handle:

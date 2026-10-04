@@ -32,7 +32,28 @@ SECRETS = [
         "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA\n-----END RSA PRIVATE KEY-----",
         "MIIEowIBAAKCAQEA",
     ),
+    # END cut off by a byte cap: everything after BEGIN is key material.
+    (
+        "private_key_unterminated",
+        "boot\n-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIBkg4LVWM9nuwNSk\nMore",
+        "MHcCAQEEIBkg4LVWM9nuwNSk",
+    ),
+    ("json_assignment", '{"level":"info","db_password": "hunter2trombone"}', "hunter2trombone"),
+    ("json_assignment", '{"apiKey":"q9Zr7-not-real","x":1}', "q9Zr7-not-real"),
+    ("github_token", "cloning with ghp_" + "a1B2" * 9, "ghp_" + "a1B2" * 9),
+    ("gitlab_token", "token glpat-" + "xY7z" * 5, "glpat-" + "xY7z" * 5),
+    ("slack_token", "posting via xoxb-1111-2222-abcdefghij", "xoxb-1111-2222-abcdefghij"),
+    ("google_api_key", "maps key AIza" + "Sy" * 17 + "Q", "AIza" + "Sy" * 17 + "Q"),
 ]
+
+
+@pytest.mark.parametrize(("name", "line", "secret"), SECRETS)
+def test_redaction_is_idempotent(name, line, secret):
+    """The finished bundle is redacted again as a last defence. A rule matching its own
+    placeholder would report a leak in every bundle that had ever caught one."""
+    once, _ = redact(line)
+
+    assert rules_fired(once) == ()
 
 
 @pytest.mark.parametrize(("name", "line", "secret"), SECRETS)

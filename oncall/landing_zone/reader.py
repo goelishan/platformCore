@@ -17,7 +17,7 @@ from datetime import datetime
 from sqlite3 import Connection
 from typing import Any
 
-from oncall.envelope import iso,SourceStatus
+from oncall.envelope import SourceStatus, iso
 
 # ---- raw evidence ----------------------------------------------------------
 
@@ -31,9 +31,24 @@ def signals_in_window(
     subject_name: str | None = None,
     owner_name: str | None = None,
 ) -> list[sqlite3.Row]:
-    """Ordered by event_time because the assembler builds a timeline, not a set."""
-    clauses = ["SELECT * FROM signals WHERE cluster = ? AND event_time BETWEEN ? AND ?"]
-    params: list[Any] = [cluster, iso(start), iso(end)]
+    """Every row that happened in the window or was still being observed in it.
+
+    Ordered by event_time because the assembler builds a timeline, not a set.
+
+    Membership is event_time OR collected_at. A snapshot source re-writes the same row
+    on every poll while the state holds, moving collected_at forward and leaving
+    event_time where the state began: a pod stuck in ImagePullBackOff keeps the Ready
+    transition from the day it broke, a node condition its last_transition_time, a
+    Service its creation time. Filtering on event_time alone dropped every one of them
+    once the state was older than the window, so the longest-running faults were the
+    ones a bundle could not see (found 2026-09-30: badimage, configerror and a critical
+    control-plane node, all broken for three weeks, absent from every bundle).
+    """
+    clauses = [
+        "SELECT * FROM signals WHERE cluster = ? "
+        "AND (event_time BETWEEN ? AND ? OR collected_at BETWEEN ? AND ?)"
+    ]
+    params: list[Any] = [cluster, iso(start), iso(end), iso(start), iso(end)]
 
     if namespace is not None:
         clauses.append("AND namespace = ?")
@@ -141,15 +156,20 @@ def log_targets(
     itself a reason to go and read that pod's logs, and without the exclusion every
     cycle would re-trigger on its own output — the same self-feeding loop the agent's
     own namespace is excluded to prevent, arriving by a different route.
+
+    Same membership rule as signals_in_window, and for the same reason: a pod stuck in
+    one state keeps an old event_time while being re-observed every poll, and reading
+    only event_time meant the logs of exactly those pods were never fetched.
     """
     placeholders = ", ".join("?" for _ in severities)
     return conn.execute(
         f"SELECT * FROM signals "
-        f"WHERE cluster = ? AND event_time BETWEEN ? AND ? "
+        f"WHERE cluster = ? "
+        f"  AND (event_time BETWEEN ? AND ? OR collected_at BETWEEN ? AND ?) "
         f"  AND subject_kind = 'Pod' AND severity IN ({placeholders}) "
         f"  AND source != 'k8s_logs' "
         f"ORDER BY event_time DESC",
-        [cluster, iso(start), iso(end), *severities],
+        [cluster, iso(start), iso(end), iso(start), iso(end), *severities],
     ).fetchall()
 
 

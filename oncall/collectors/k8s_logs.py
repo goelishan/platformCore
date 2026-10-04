@@ -9,10 +9,15 @@ Log excerpt collector.
     is a claim about what this collector could see, so it consults collection_runs
     before it is allowed to say 'empty': no targets because the cluster is healthy and
     no targets because pod state was unavailable are the same input and opposite facts.
-  - The window is chosen by time and bounded by bytes. since_seconds gives an interval
-    with known edges, which is what lets an excerpt join to the event that explains it;
-    tail_lines returns a span of unknown duration and cannot participate in that join.
-    The byte cap is the backstop, because since_seconds bounds time and not volume.
+  - The window is chosen by time and bounded by bytes, for the running container only.
+    since_seconds gives an interval with known edges, which is what lets an excerpt
+    join to the event that explains it; tail_lines returns a span of unknown duration
+    and cannot participate in that join. The byte cap is the backstop, because
+    since_seconds bounds time and not volume.
+  - A previous container is read without since_seconds. It is dead, so its log is
+    finite and its edges are the runtime timestamps on its first and last line. Bounded
+    by time, a container that died fifteen minutes ago came back empty and was recorded
+    as having printed nothing (found 2026-09-30).
   - Nothing is parsed out of the log text. event_time and severity come from the signal
     that triggered the fetch; only covered_through comes from the stream, and from the
     runtime's own per-line timestamp rather than from anything the application wrote.
@@ -315,45 +320,70 @@ def build_excerpt(
     lines = max_lines if max_lines is not None else config.LOG_EXCERPT_LINES
     budget = max_bytes if max_bytes is not None else config.LOG_EXCERPT_BYTES
 
-    parsed = parse_lines(text)
+    # Timestamps are read off the text as fetched: they are not secrets, and a key
+    # redacted to the end of the stream must not also erase where the stream ended.
+    raw_lines = parse_lines(text)
     covered_through = next(
-        (ts for ts, _ in reversed(parsed) if ts is not None), None
+        (ts for ts, _ in reversed(raw_lines) if ts is not None), None
     )
 
-    kept: list[list[Any]] = []
-    seen: dict[str, int] = {}
-    any_redacted = False
+    # Redacted as one block, before any splitting. A private key spans lines and its
+    # rule needs BEGIN and END in one string; line by line it never fired.
+    cleaned, any_redacted = redact(text)
+    parsed = parse_lines(cleaned)
+
+    # One entry per template, placed where it last occurred. A line that repeats all
+    # the way to the failure belongs at the failure: kept at its first occurrence, the
+    # fatal line that looped for an hour read as something that happened an hour ago.
+    groups: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
     collapsed = False
 
-    for ts, body in parsed:
-        clean, was_redacted = redact(body)
-        any_redacted = any_redacted or was_redacted
-
-        key = template_of(clean).key
-        if key and key in seen:
-            kept[seen[key]][2] += 1
-            collapsed = True
+    for index, (ts, clean) in enumerate(parsed):
+        key = template_of(clean).key or f"\0{index}"
+        group = groups.get(key)
+        if group is None:
+            groups[key] = {"first": ts, "last": ts, "body": clean, "count": 1}
+            order.append(key)
             continue
+        collapsed = True
+        group["count"] += 1
+        group["last"] = ts or group["last"]
+        group["body"] = clean
+        order.remove(key)
+        order.append(key)
 
-        seen[key] = len(kept)
-        kept.append([ts, clean, 1])
+    def line(g: dict[str, Any]) -> str:
+        text = f"{g['last'] + ' ' if g['last'] else ''}{g['body']}"
+        if g["count"] > 1:
+            first = f", first {g['first']}" if g["first"] and g["first"] != g["last"] else ""
+            text += f"  (x{g['count']}{first})"
+        return text
 
-    tail = kept[-lines:]
-    rendered = "\n".join(
-        f"{ts + ' ' if ts else ''}{body}" + (f"  (x{count})" if count > 1 else "")
-        for ts, body, count in tail
-    )
+    rendered_lines = [line(groups[k]) for k in order]
+    shown = rendered_lines[-lines:]
 
     # Trimmed from the front for the same reason the tail is kept: the end of the
-    # window is the end nearest the failure.
-    encoded = rendered.encode()
-    if len(encoded) > budget:
-        rendered = encoded[-budget:].decode(errors="ignore")
+    # window is the end nearest the failure. Whole lines only, and the cut is stated:
+    # a half line at the top reads as a message the application never wrote.
+    while len(shown) > 1 and len("\n".join(shown).encode()) > budget:
+        shown.pop(0)
+    if shown and len(shown[0].encode()) > budget:
+        shown[0] = "…" + shown[0].encode()[-(budget - 3):].decode(errors="ignore")
+
+    dropped = len(rendered_lines) - len(shown)
+    if dropped:
+        shown.insert(0, f"[… {dropped} earlier lines not shown]")
+        while len(shown) > 2 and len("\n".join(shown).encode()) > budget:
+            shown.pop(1)
+            dropped += 1
+            shown[0] = f"[… {dropped} earlier lines not shown]"
+    rendered = "\n".join(shown)
 
     return Excerpt(
         text=rendered,
-        lines_seen=len(parsed),
-        lines_kept=len(tail),
+        lines_seen=len(raw_lines),
+        lines_kept=len(shown) - (1 if dropped else 0),
         collapsed=collapsed,
         redacted=any_redacted,
         covered_through=covered_through,
@@ -429,6 +459,12 @@ def build_signal(
         # known — and a reasoner cannot tell them apart from an absent excerpt.
         "log_status": fetch.status,
         "error": fetch.error,
+        # The age bound the read was made under, when there was one. Only the running
+        # stream carries it, and without it an empty current stream reads as a
+        # container that never printed rather than one quiet for that long.
+        "since_seconds": (
+            config.LOG_SINCE_SECONDS if fetch.stream == STREAM_CURRENT else None
+        ),
         "collector_version": COLLECTOR_VERSION,
         # The interval that was asked for, and the last moment actually covered by a
         # line. Without covered_through a truncated fetch tells the reasoner that
@@ -534,7 +570,10 @@ def _read_log(target: Target, stream: str) -> Fetch:
                 namespace=target.namespace,
                 container=target.container,
                 previous=previous,
-                since_seconds=config.LOG_SINCE_SECONDS,
+                # A dead container's log is finite; bounding it by age turned "died
+                # a while ago" into "printed nothing". The running stream keeps the
+                # bound, and build_signal records it so "empty" can say so.
+                **({} if previous else {"since_seconds": config.LOG_SINCE_SECONDS}),
                 limit_bytes=config.LOG_LIMIT_BYTES,
                 timestamps=True,
                 _request_timeout=k8s.REQUEST_TIMEOUT,

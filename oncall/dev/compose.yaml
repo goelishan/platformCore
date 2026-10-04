@@ -5,9 +5,13 @@
 # Port 5433, not 5432. PlatformCore's own Phase 1 compose stack publishes 5432, and two
 # databases fighting over one port is a confusing first ten minutes.
 #
-#   docker compose -f oncall/dev/compose.yaml up -d
-#   docker compose -f oncall/dev/compose.yaml down          # keeps the volume
-#   docker compose -f oncall/dev/compose.yaml down -v       # discards it
+#   docker compose --env-file oncall/.env -f oncall/dev/compose.yaml up -d
+#   docker compose --env-file oncall/.env -f oncall/dev/compose.yaml down      # keeps the volume
+#   docker compose --env-file oncall/.env -f oncall/dev/compose.yaml down -v   # discards it
+#
+# The password comes from oncall/.env, the one place a dev credential lives. It is
+# applied only when the volume is first initialised: an existing volume keeps the
+# password it was created with, so .env must match that.
 #
 # Production is RDS. Nothing here is imported by application code — the agent reaches
 # the store entirely through ONCALL_STORE_* environment variables, so moving to RDS is
@@ -22,12 +26,14 @@ services:
     environment:
       POSTGRES_DB: oncall
       POSTGRES_USER: oncall
-      POSTGRES_PASSWORD: oncall
+      POSTGRES_PASSWORD: ${ONCALL_STORE_PASSWORD:?set ONCALL_STORE_PASSWORD in oncall/.env and pass --env-file oncall/.env}
       # Marginally faster startup and smaller images; the dev store holds nothing
       # anyone would miss.
       POSTGRES_INITDB_ARGS: "--data-checksums"
+    # Loopback only. Published as 5433:5432 the dev database, with its dev password,
+    # was reachable from anything on the same network as the laptop.
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - store-data:/var/lib/postgresql/data
     healthcheck:

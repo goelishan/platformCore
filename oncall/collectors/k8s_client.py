@@ -16,12 +16,25 @@ MAX_PAGES = 200           # refuse to loop forever rather than truncate quietly
 
 
 def load_auth() -> str:
+    """In the cluster, the service account. Outside it, one named kubeconfig context.
+
+    Never whatever context kubectl was last switched to. That was the behaviour until
+    2026-09-30, and it meant a collector run from a laptop could read a production
+    cluster because someone had been looking at it earlier. ONCALL_KUBE_CONTEXT names
+    the context explicitly, and without it this refuses rather than guesses.
+    """
     try:
         kube_config.load_incluster_config()
-        mode="in-cluster"
+        mode = "in-cluster"
     except ConfigException:
-        kube_config.load_kube_config()
-        mode="kubeconfig"
+        context = oncall_config.KUBE_CONTEXT
+        if not context:
+            raise ConfigException(
+                "ONCALL_KUBE_CONTEXT is not set: refusing to read whichever kubeconfig "
+                "context happens to be active. Name the cluster to collect from."
+            ) from None
+        kube_config.load_kube_config(context=context)
+        mode = f"kubeconfig context {context}"
 
     log.info("Kubernetes auth load via %s", mode)
     return mode

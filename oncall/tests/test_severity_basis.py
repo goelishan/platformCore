@@ -73,6 +73,10 @@ def store(*signals: Signal) -> None:
     with lz.connect() as conn:
         for source, batch in by_source.items():
             run = lz.start_run(conn, source, CLUSTER)
+            # Stamped after the run starts, as every real collector's signals are:
+            # the bundle reads collected_at against started_at to judge state.
+            now = datetime.now(UTC)
+            batch = [s.model_copy(update={"collected_at": now}) for s in batch]
             lz.write_signals(conn, run, batch)
             lz.finish_run(conn, run, SourceStatus.OK, len(batch))
 

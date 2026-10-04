@@ -170,6 +170,25 @@ def test_warning_is_a_trigger(buffer):
     assert len(rows) == 1
 
 
+def test_a_pod_stuck_for_days_is_still_a_trigger(buffer):
+    """Its event_time froze when it broke, and it is re-observed on every poll. Reading
+    event_time alone meant the pods stuck longest were the ones never read."""
+    _row(_trigger(event_time=NOW - timedelta(days=21)).model_copy(
+        update={"collected_at": NOW}
+    ))
+
+    with lz.connect() as conn:
+        rows = lz.log_targets(
+            conn,
+            "oncall-dev",
+            NOW - timedelta(minutes=10),
+            NOW + timedelta(minutes=1),
+            tuple(config.LOG_TRIGGER_SEVERITIES),
+        )
+
+    assert len(rows) == 1
+
+
 def test_info_signals_are_not_triggers(buffer):
     _row(_trigger(severity=Severity.INFO))
 
@@ -187,6 +206,38 @@ def test_info_signals_are_not_triggers(buffer):
 
 # ---- the excerpt -----------------------------------------------------------
 
+
+PEM_STREAM = (
+    "2026-09-30T10:00:00Z starting\n"
+    "2026-09-30T10:00:01Z -----BEGIN RSA PRIVATE KEY-----\n"
+    "2026-09-30T10:00:01Z MIIEowIBAAKCAQEAu1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6\n"
+    "2026-09-30T10:00:01Z -----END RSA PRIVATE KEY-----\n"
+    "2026-09-30T10:00:02Z FATAL: could not load key\n"
+)
+
+
+def test_a_private_key_across_lines_never_reaches_the_excerpt():
+    """Redacted per line, the PEM rule could never see BEGIN and END together, so the
+    key body passed through as ordinary base64 (found 2026-09-30)."""
+    excerpt = k8s_logs.build_excerpt(PEM_STREAM)
+
+    assert "MIIEowIBAAKCAQEA" not in excerpt.text
+    assert "BEGIN RSA PRIVATE KEY" not in excerpt.text
+    assert excerpt.redacted is True
+    assert "FATAL: could not load key" in excerpt.text
+
+
+def test_redaction_does_not_erase_where_the_stream_ended():
+    """covered_through and lines_seen describe the fetch, and are read before the text
+    is redacted: an unterminated key swallows to the end of the text."""
+    stream = PEM_STREAM.replace("2026-09-30T10:00:01Z -----END RSA PRIVATE KEY-----\n", "")
+
+    excerpt = k8s_logs.build_excerpt(stream)
+
+    assert excerpt.covered_through == "2026-09-30T10:00:02Z"
+    assert excerpt.lines_seen == 4
+    assert "MIIEowIBAAKCAQEA" not in excerpt.text
+
 STREAM = (
     "2026-08-14T03:14:01.100000Z starting server on 10.244.0.7:8080\n"
     "2026-08-14T03:14:02.100000Z GET /healthz from 10.244.0.9\n"
@@ -203,9 +254,51 @@ def test_repeated_lines_collapse_by_template():
     hundred identical lines eat the whole excerpt budget and push out the panic."""
     excerpt = k8s_logs.build_excerpt(STREAM)
 
-    assert "(x3)" in excerpt.text
+    assert "(x3, first 2026-08-14T03:14:02.100000Z)" in excerpt.text
     assert excerpt.collapsed is True
     assert "panic: runtime error" in excerpt.text
+
+
+def test_a_repeated_line_sits_where_it_last_occurred():
+    """Kept at its first occurrence with a count, a fatal line that looped until the
+    crash read as something that happened long before it (found 2026-09-30)."""
+    stream = (
+        "2026-09-30T10:00:00Z FATAL: DATABASE_URL not set\n"
+        "2026-09-30T10:00:01Z retrying in 5s\n"
+        "2026-09-30T10:05:00Z FATAL: DATABASE_URL not set\n"
+    )
+
+    lines = k8s_logs.build_excerpt(stream).text.splitlines()
+
+    assert lines[-1].startswith("2026-09-30T10:05:00Z FATAL: DATABASE_URL not set")
+    assert "(x2, first 2026-09-30T10:00:00Z)" in lines[-1]
+    assert lines[0].startswith("2026-09-30T10:00:01Z retrying")
+
+
+def test_the_byte_trim_cuts_whole_lines_and_says_so():
+    """A cut through the middle of a line leaves a message the application never
+    wrote, and a silent cut leaves a reader thinking it saw the whole window."""
+    # Distinct words, not numbers: numbers are masked by the template, and sixty lines
+    # differing only by a number collapse into one.
+    words = [f"{a}{b}" for a in "abcdefgh" for b in "ijklmnop"][:60]
+    stream = "".join(
+        f"2026-08-14T03:14:{i:02d}.100000Z stage {w} complete\n" for i, w in enumerate(words)
+    )
+
+    excerpt = k8s_logs.build_excerpt(stream, max_bytes=300)
+    lines = excerpt.text.splitlines()
+
+    assert len(excerpt.text.encode()) <= 300
+    assert lines[0].startswith("[… ") and lines[0].endswith(" earlier lines not shown]")
+    assert all(line.startswith("2026-08-14T03:14:") for line in lines[1:])
+    assert lines[-1].endswith(f"stage {words[-1]} complete")
+
+
+def test_the_line_cap_is_stated_too():
+    excerpt = k8s_logs.build_excerpt(STREAM, max_lines=2)
+
+    assert excerpt.text.splitlines()[0] == "[… 2 earlier lines not shown]"
+    assert excerpt.lines_kept == 2
 
 
 def test_continuation_lines_are_kept():
@@ -243,6 +336,59 @@ def test_the_byte_budget_is_enforced():
         f"2026-08-14T03:14:{i:02d}.100000Z line number {i} of many\n" for i in range(60)
     )
     assert len(k8s_logs.build_excerpt(stream, max_bytes=200).text.encode()) <= 200
+
+
+# ---- the age bound -----------------------------------------------------------
+
+
+def test_a_previous_container_is_read_without_an_age_bound(client):
+    """Bounded by age, a container that died fifteen minutes ago came back empty and
+    was recorded as having printed nothing."""
+    stub = client(_Resp(STREAM.encode()))
+    calls: list[dict] = []
+    original = stub.read_namespaced_pod_log
+
+    def spy(**kwargs):
+        calls.append(kwargs)
+        return original(**kwargs)
+
+    stub.read_namespaced_pod_log = spy
+
+    k8s_logs._read_log(_target(), k8s_logs.STREAM_PREVIOUS)
+
+    assert calls[0]["previous"] is True
+    assert "since_seconds" not in calls[0]
+
+
+def test_the_running_container_keeps_its_age_bound(client):
+    stub = client(_Resp(STREAM.encode()))
+    calls: list[dict] = []
+    original = stub.read_namespaced_pod_log
+
+    def spy(**kwargs):
+        calls.append(kwargs)
+        return original(**kwargs)
+
+    stub.read_namespaced_pod_log = spy
+
+    k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
+
+    assert calls[0]["since_seconds"] == config.LOG_SINCE_SECONDS
+
+
+def test_the_age_bound_is_recorded_only_where_it_applied():
+    current = k8s_logs.build_signal(
+        _target(), _fetch(stream=k8s_logs.STREAM_CURRENT), None, None, "oncall-dev",
+        NOW, NOW,
+    )
+    previous = k8s_logs.build_signal(
+        _target(), _fetch(stream=k8s_logs.STREAM_PREVIOUS), None, None, "oncall-dev",
+        NOW, NOW,
+    )
+
+    assert current.payload["since_seconds"] == config.LOG_SINCE_SECONDS
+    # Unset keys are dropped from the stored payload, so absent is the assertion.
+    assert "since_seconds" not in previous.payload
 
 
 # ---- status ----------------------------------------------------------------
