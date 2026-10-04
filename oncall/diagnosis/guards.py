@@ -40,9 +40,11 @@ FORBIDDEN_FLAGS = (
     "--certificate-authority", "--insecure-skip-tls-verify",
 )
 
-# Read-only by verb, and still not something a triage suggestion should print to a
-# terminal: Secret data is readable through get -o yaml.
-FORBIDDEN_RESOURCES = frozenset({"secret", "secrets"})
+# Secrets may be listed and described: both show names, types and key sizes, never
+# values. Any output format that can print a field can print a Secret's data into a
+# terminal's scrollback, so with a Secret in the command only these formats pass.
+SECRET_RESOURCES = frozenset({"secret", "secrets"})
+SAFE_SECRET_OUTPUTS = frozenset({"name", "wide"})
 
 # Global flags that may sit between kubectl and the verb, and take a separate value.
 _VALUE_FLAGS_BEFORE_VERB = frozenset({"-n", "--namespace", "--context"})
@@ -51,6 +53,31 @@ _VALUE_FLAGS_BEFORE_VERB = frozenset({"-n", "--namespace", "--context"})
 def allowed_command_text() -> str:
     """The allowlist as the system prompt states it."""
     return ", ".join(" ".join(c) for c in ALLOWED_COMMANDS)
+
+
+def secret_rule_text() -> str:
+    """The Secret rule as the system prompt states it."""
+    outputs = " or ".join(f"-o {o}" for o in sorted(SAFE_SECRET_OUTPUTS))
+    return (
+        "Secrets may be listed or described, but never printed: with a Secret in the "
+        f"command, no output format other than {outputs}, and no --template"
+    )
+
+
+def _output_formats(tokens: list[str]) -> list[str]:
+    """Every output format the command asks for, in any spelling kubectl accepts:
+    -o yaml, -oyaml, -o=yaml, --output yaml, --output=yaml, and --template."""
+    found = []
+    for i, token in enumerate(tokens):
+        flag, _, inline = token.partition("=")
+        if flag in ("-o", "--output"):
+            value = inline or (tokens[i + 1] if i + 1 < len(tokens) else "")
+            found.append(value.split("=", 1)[0])
+        elif token.startswith("-o") and not token.startswith("--") and len(token) > 2:
+            found.append(token[2:].lstrip("=").split("=", 1)[0])
+        elif flag == "--template":
+            found.append("template")
+    return found
 
 
 def _verb_and_rest(tokens: list[str]) -> list[str] | None:
@@ -75,13 +102,19 @@ def check_command(command: str) -> str | None:
     if not tokens or tokens[0] != "kubectl":
         return "only kubectl commands are allowed"
 
+    names_secret = False
     for token in tokens:
         flag = token.split("=", 1)[0]
         if flag in FORBIDDEN_FLAGS:
             return f"flag {flag} is not allowed"
         # pods,secrets and secret/name both name a Secret.
-        if FORBIDDEN_RESOURCES & set(re.split(r"[,/]", token.lower())):
-            return "reading Secrets is not allowed"
+        if SECRET_RESOURCES & set(re.split(r"[,/]", token.lower())):
+            names_secret = True
+
+    if names_secret:
+        printed = [o for o in _output_formats(tokens) if o not in SAFE_SECRET_OUTPUTS]
+        if printed:
+            return f"printing Secret values (output {printed[0]}) is not allowed"
 
     rest = _verb_and_rest(tokens)
     if rest is None:

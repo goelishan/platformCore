@@ -20,11 +20,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from oncall import config
-from oncall.diagnosis.guards import allowed_command_text
+from oncall.diagnosis.guards import allowed_command_text, secret_rule_text
 from oncall.diagnosis.schema import tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "2"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
@@ -32,8 +32,11 @@ TOOL_DESCRIPTION = (
 )
 
 # Bytes per token for this kind of text, used only for the estimate printed on a dry run.
-# Bedrock's own usage figure is the number that is journalled.
-_BYTES_PER_TOKEN = 4
+# Measured on 2026-10-04: a 27-finding bundle of 20,633 bytes plus a 2,185-byte tool schema
+# came back as 8,420 input tokens, about 2.7. Timestamps, hashes and tags tokenise far
+# more finely than prose; the common 4 underestimated by 39%. Bedrock's usage figure is
+# the number that is journalled.
+_BYTES_PER_TOKEN = 2.7
 
 SYSTEM_PROMPT = f"""\
 You are the triage assistant for a Kubernetes on-call engineer. You receive one evidence \
@@ -74,8 +77,9 @@ findings that argue against the hypothesis. Cite only IDs that appear in the evi
 when the evidence states the cause directly.
 - verify gives one to three commands the engineer can run to confirm the hypothesis. \
 Each must be a single kubectl command using only: {allowed_command_text()}. No pipes, \
-redirects, command substitution, credential or server flags, Secrets, or changes to the \
-cluster of any kind. A command outside this list rejects the whole diagnosis.
+redirects, command substitution, credential or server flags, or changes to the cluster \
+of any kind. {secret_rule_text()}. A command outside these rules rejects the whole \
+diagnosis.
 - If the evidence cannot support any cause, set insufficient_evidence to true, give no \
 hypotheses, and list in unknowns what is missing. Do not guess.
 """
@@ -97,7 +101,8 @@ class Prompt:
 
     @property
     def estimated_tokens(self) -> int:
-        return self.size_bytes // _BYTES_PER_TOKEN
+        tool_bytes = len(json.dumps(self.tool).encode())
+        return int((self.size_bytes + tool_bytes) / _BYTES_PER_TOKEN)
 
 
 class PromptTooLarge(ValueError):

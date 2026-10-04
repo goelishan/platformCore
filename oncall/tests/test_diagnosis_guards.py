@@ -32,6 +32,12 @@ from oncall.diagnosis.schema import Diagnosis
         "kubectl top pod -n oncall-lab",
         "kubectl auth can-i list pods",
         "kubectl rollout status deployment/stuckrollout",
+        # From the live crashloop diagnosis of 2026-10-04, which the first Secret rule
+        # rejected: listing shows names and types, never values.
+        "kubectl get secret -n oncall-lab",
+        "kubectl describe secret/db -n prod",
+        "kubectl get pods,secrets -n prod -o wide",
+        "kubectl get secrets -o name",
     ],
 )
 def test_read_only_commands_are_allowed(command):
@@ -56,9 +62,13 @@ def test_read_only_commands_are_allowed(command):
         ("kubectl get pods --kubeconfig=/tmp/admin", "flag --kubeconfig"),
         ("kubectl get pods --as=system:admin", "flag --as"),
         ("kubectl get pods --token abc", "flag --token"),
-        ("kubectl get secret db -o yaml", "Secrets"),
-        ("kubectl get pods,secrets -n prod", "Secrets"),
-        ("kubectl describe secret/db", "Secrets"),
+        ("kubectl get secret db -o yaml", "printing Secret values"),
+        ("kubectl get pods,secrets -n prod -o json", "printing Secret values"),
+        ("kubectl get secret/db -ojsonpath={.data.password}", "printing Secret values"),
+        ("kubectl get secret db --output=go-template={{.data}}", "printing Secret values"),
+        ("kubectl get secret db -o=custom-columns=P:.data.password", "printing Secret values"),
+        ("kubectl get secret db --output yaml", "printing Secret values"),
+        ("kubectl get secret db --template={{.data}}", "printing Secret values"),
         ("helm list", "only kubectl"),
         ("kubectl", "no kubectl verb"),
         ("kubectl get 'pods", "cannot be parsed"),
@@ -72,6 +82,7 @@ def test_the_prompt_states_the_allowlist_the_guard_enforces():
     """One list, two readers. If the prompt named a verb the guard rejects, a model that
     followed its instructions would have its diagnosis thrown away."""
     assert guards.allowed_command_text() in prompt.SYSTEM_PROMPT
+    assert guards.secret_rule_text() in prompt.SYSTEM_PROMPT
     for allowed in guards.ALLOWED_COMMANDS:
         assert guards.check_command("kubectl " + " ".join(allowed) + " x") is None
 
