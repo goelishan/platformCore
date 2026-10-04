@@ -306,8 +306,9 @@ PROMPT_MAX_BYTES = int(os.getenv("ONCALL_PROMPT_MAX_BYTES", str(120 * 1024)))
 
 BEDROCK_REGION = os.getenv("ONCALL_BEDROCK_REGION") or AWS_REGION
 
-# An inference profile ID or ARN, not a bare model ID: current Claude models on Bedrock
-# are invoked through inference profiles. Unset until M5 needs it, and required then.
+# A same-region geo inference profile, not a bare model ID: current Claude models have
+# no single-region on-demand capacity. us.* called from us-east-1 keeps prompts on the
+# VPC endpoint beside the cluster, and its fixed US routing set lets IAM name every ARN.
 BEDROCK_MODEL_ID = os.getenv("ONCALL_BEDROCK_MODEL_ID") or None
 
 # A Bedrock guardrail, optional. A second layer of PII and secret filtering on top of
@@ -321,6 +322,23 @@ BEDROCK_CONNECT_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_CONNECT_TIMEOUT", "5"))
 BEDROCK_READ_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_READ_TIMEOUT", "90"))
 BEDROCK_MAX_ATTEMPTS = int(os.getenv("ONCALL_BEDROCK_MAX_ATTEMPTS", "3"))
 BEDROCK_MAX_TOKENS = int(os.getenv("ONCALL_BEDROCK_MAX_TOKENS", "2000"))
+
+
+def _optional_float(name: str) -> float | None:
+    value = os.getenv(name)
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        raise RuntimeError(f"{name} must be a number, not {value!r}") from None
+
+
+# List prices in USD per million tokens for the configured profile, from the Bedrock
+# pricing page. Unset records cost as null, because a guessed price would make every
+# cost figure in the journal and the eval read as measured.
+PRICE_INPUT_PER_MTOK = _optional_float("ONCALL_PRICE_INPUT_PER_MTOK")
+PRICE_OUTPUT_PER_MTOK = _optional_float("ONCALL_PRICE_OUTPUT_PER_MTOK")
 
 
 # ---- production guard ------------------------------------------------------
