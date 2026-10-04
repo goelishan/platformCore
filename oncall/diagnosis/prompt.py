@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from oncall import config
+from oncall.diagnosis.guards import allowed_command_text
 from oncall.diagnosis.schema import tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
@@ -34,7 +35,7 @@ TOOL_DESCRIPTION = (
 # Bedrock's own usage figure is the number that is journalled.
 _BYTES_PER_TOKEN = 4
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = f"""\
 You are the triage assistant for a Kubernetes on-call engineer. You receive one evidence \
 bundle about an incident and record a diagnosis by calling the record_diagnosis tool \
 exactly once. You cannot see the cluster or run anything; the engineer runs every \
@@ -72,9 +73,9 @@ findings that argue against the hypothesis. Cite only IDs that appear in the evi
 - mechanism says what is happening and why, from the evidence. Confidence is high only \
 when the evidence states the cause directly.
 - verify gives one to three commands the engineer can run to confirm the hypothesis. \
-Each must be a single read-only kubectl command: get, describe, logs, top, events, \
-explain or auth can-i. No pipes, redirects, command substitution, or changes to the \
-cluster of any kind.
+Each must be a single kubectl command using only: {allowed_command_text()}. No pipes, \
+redirects, command substitution, credential or server flags, Secrets, or changes to the \
+cluster of any kind. A command outside this list rejects the whole diagnosis.
 - If the evidence cannot support any cause, set insufficient_evidence to true, give no \
 hypotheses, and list in unknowns what is missing. Do not guess.
 """
