@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle env help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle dryrun env help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -40,7 +40,7 @@ K8S_VERSION ?= v1.33.0
 help:
 	@echo "lab-up      create the $(CLUSTER) kind cluster ($(K8S_VERSION), 3 nodes)"
 	@echo "lab-down    delete it"
-	@echo "lab-stage   apply one stage of the fault library   (STAGE=1..5)"
+	@echo "lab-stage   apply one stage of the fault library   (STAGE=1..6)"
 	@echo "lab-all     apply every fault at once"
 	@echo "lab-clean   delete the $(LAB_NS) namespace, keep the cluster"
 	@echo "lab-status  what is running and what is broken"
@@ -48,6 +48,7 @@ help:
 	@echo "collect     one collection cycle for every registered source"
 	@echo "peek        what is in the buffer   (ARGS=\"--source k8s_pods --full\")"
 	@echo "bundle      one bundle as the reasoner sees it   (SUBJECT=crashloop ARGS=\"--at ...\")"
+	@echo "dryrun      collect twice and check every lab bundle against the standards"
 	@echo "env         the environment this expects, ready to eval"
 
 
@@ -150,6 +151,7 @@ collect:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
+	  ONCALL_KUBE_CONTEXT=$${ONCALL_KUBE_CONTEXT:-kind-$(CLUSTER)} \
 	  oncall/$(VENV)/bin/python oncall/dev/collect.py
 
 
@@ -167,3 +169,13 @@ bundle:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
 	  oncall/$(VENV)/bin/python oncall/dev/bundle.py $(SUBJECT) $(ARGS)
+
+
+# Collects against the lab, so it needs the context like collect does. Exits non-zero
+# when any standard fails, so it can gate a merge.
+dryrun:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
+	  ONCALL_KUBE_CONTEXT=$${ONCALL_KUBE_CONTEXT:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python oncall/dev/dryrun.py
