@@ -1,14 +1,14 @@
 """
 One bundle in, one journal record out, whatever the model does.
 
-  - diagnose() never raises for model behaviour. A Bedrock error, a malformed answer, a
-    bad citation and an unsafe command each end in a DiagnosisRecord with an outcome and
-    the errors that produced it, because the journal measures failure rates and cannot
-    measure what it never received. PromptTooLarge is the one exception: it is raised
-    before anything is sent, and it is a fault in the caller's bundle, not the model's.
-  - A malformed answer or a citation to a finding that is not in the bundle earns one
-    repair attempt, with the specific errors sent back as the tool result. Both are
-    mistakes the model can correct from that feedback.
+  - diagnose() never raises. A Bedrock error, a malformed answer, a bad citation, an
+    unsafe command and evidence over the prompt cap each end in a DiagnosisRecord with
+    an outcome and the errors that produced it, because the journal measures failure
+    rates and cannot measure what it never received.
+  - A malformed answer, a citation to a finding that is not in the bundle, a link in the
+    prose, or a leading hypothesis that rests only on namespace neighbours or on blind
+    sources earns one repair attempt, with the specific errors sent back as the tool
+    result. All are mistakes the model can correct from that feedback.
   - An unsafe verify command earns none. A model that proposes a write to the cluster has
     told us something about its reading of the incident, and asking it to try again only
     teaches it to hide that. The diagnosis is dropped and the record kept.
@@ -29,7 +29,7 @@ from oncall import config
 from oncall.diagnosis import bedrock, guards
 from oncall.diagnosis import prompt as prompts
 from oncall.diagnosis.schema import Diagnosis, DiagnosisRecord, Outcome
-from oncall.evidence.bundle import Bundle
+from oncall.evidence.bundle import Bundle, evidence_receipt
 
 MAX_ATTEMPTS = 2
 
@@ -88,8 +88,24 @@ def diagnose(
     client: Any = None,
     model_id: str | None = None,
 ) -> DiagnosisRecord:
-    p = prompts.build(bundle)
     model = model_id or config.BEDROCK_MODEL_ID or ""
+    try:
+        p = prompts.build(bundle)
+    except prompts.PromptTooLarge as e:
+        return DiagnosisRecord(
+            diagnosis_id=uuid.uuid4().hex,
+            incident_id=incident_id,
+            created_at=datetime.now(UTC),
+            model=model,
+            prompt_version=prompts.PROMPT_VERSION,
+            bundle_sha256=evidence_receipt(bundle),
+            prompt_sha256=None,
+            outcome=Outcome.PROMPT_TOO_LARGE,
+            attempts=0,
+            errors=[str(e)],
+        )
+    by_fingerprint = {f.fingerprint: f for f in bundle.findings}
+    by_label = {label: by_fingerprint[fp] for label, fp in p.labels.items()}
     messages = bedrock.first_message(p)
 
     attempts = input_tokens = output_tokens = latency_ms = 0
@@ -130,6 +146,8 @@ def diagnose(
                 break
             unknown = guards.check_citations(diagnosis, p.labels)
             problems = [f"{c} is not a finding ID in this bundle" for c in unknown]
+            problems += guards.check_prose(diagnosis)
+            problems += guards.check_grounding(diagnosis, by_label)
             if not problems:
                 kept = _to_fingerprints(diagnosis, p.labels)
                 outcome = Outcome.OK

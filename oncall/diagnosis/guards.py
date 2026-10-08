@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import shlex
 from collections.abc import Mapping
+from typing import Any
 
 from oncall.diagnosis.schema import Diagnosis
 
@@ -33,11 +34,19 @@ ALLOWED_COMMANDS: tuple[tuple[str, ...], ...] = (
 # Shell syntax that turns one command into several, or sends its output somewhere.
 SHELL_METACHARACTERS = (";", "|", "&", "`", "$(", ">", "<", "\n")
 
-# Flags that change whose credentials or which API server the command uses.
+# Flags that change whose credentials or which API server the command uses, read the
+# API outside every check below, or print more than the command's own output.
+#   - --context, --cluster and --user pick another kubeconfig entry: another cluster or
+#     another identity. The engineer is already pointed at the cluster being diagnosed.
+#   - --raw sends an arbitrary API path, so `get --raw .../secrets/db` prints a Secret
+#     with no resource name or output format for the Secret rule to see.
+#   - -v and --v at 8 or above log response bodies, Secret data included; no level is
+#     needed to verify a diagnosis, so none is allowed.
 FORBIDDEN_FLAGS = (
-    "--kubeconfig", "--token", "--as", "--as-group", "--as-uid", "--server", "-s",
-    "--username", "--password", "--client-key", "--client-certificate",
-    "--certificate-authority", "--insecure-skip-tls-verify",
+    "--kubeconfig", "--context", "--cluster", "--user", "--token", "--as", "--as-group",
+    "--as-uid", "--server", "-s", "--username", "--password", "--client-key",
+    "--client-certificate", "--certificate-authority", "--insecure-skip-tls-verify",
+    "--raw", "-v", "--v", "--vmodule",
 )
 
 # Secrets may be listed and described: both show names, types and key sizes, never
@@ -47,12 +56,35 @@ SECRET_RESOURCES = frozenset({"secret", "secrets"})
 SAFE_SECRET_OUTPUTS = frozenset({"name", "wide"})
 
 # Global flags that may sit between kubectl and the verb, and take a separate value.
-_VALUE_FLAGS_BEFORE_VERB = frozenset({"-n", "--namespace", "--context"})
+_VALUE_FLAGS_BEFORE_VERB = frozenset({"-n", "--namespace"})
+
+# Anything that reads as a link in prose the engineer will see. A model that has been
+# steered by text in the evidence most often shows it by sending the reader somewhere.
+_URL = re.compile(r"(?i)\b(?:https?|ftp)://|\bwww\.[a-z0-9-]+\.")
 
 
 def allowed_command_text() -> str:
     """The allowlist as the system prompt states it."""
     return ", ".join(" ".join(c) for c in ALLOWED_COMMANDS)
+
+
+def forbidden_flag_text() -> str:
+    """The forbidden flags as the system prompt states them."""
+    return ", ".join(FORBIDDEN_FLAGS)
+
+
+def _names_secret(token: str) -> bool:
+    """Whether a token names the Secret resource in any spelling kubectl accepts.
+
+    pods,secrets and secret/db are lists and paths; secrets.v1 and secret.v1. carry a
+    version and group, which kubectl resolves to the same resource. The part before the
+    first dot is the resource. A pod whose own name starts with "secret." is caught too,
+    which costs one rejected command and leaks nothing: fail closed.
+    """
+    return any(
+        part.split(".", 1)[0] in SECRET_RESOURCES
+        for part in re.split(r"[,/]", token.lower())
+    )
 
 
 def secret_rule_text() -> str:
@@ -105,10 +137,10 @@ def check_command(command: str) -> str | None:
     names_secret = False
     for token in tokens:
         flag = token.split("=", 1)[0]
-        if flag in FORBIDDEN_FLAGS:
+        # -v8 is -v with its value attached, as pflag allows for any short flag.
+        if flag in FORBIDDEN_FLAGS or re.fullmatch(r"-v\d+", flag):
             return f"flag {flag} is not allowed"
-        # pods,secrets and secret/name both name a Secret.
-        if SECRET_RESOURCES & set(re.split(r"[,/]", token.lower())):
+        if not token.startswith("-") and _names_secret(token):
             names_secret = True
 
     if names_secret:
@@ -140,3 +172,68 @@ def check_citations(diagnosis: Diagnosis, labels: Mapping[str, str]) -> list[str
     """Cited IDs that are not findings in this bundle, sorted, each once."""
     cited = {c for h in diagnosis.hypotheses for c in (*h.supporting, *h.contradicting)}
     return sorted(cited - set(labels))
+
+
+def check_prose(diagnosis: Diagnosis) -> list[str]:
+    """Free-text fields that carry a link, one line per field.
+
+    The engineer reads summary, titles, mechanisms, unknowns and command purposes, and
+    none of them has a reason to point anywhere outside the cluster. Evidence text that
+    steered the model most often surfaces as a link in its answer, so a link is a fault
+    the model is asked to correct. Commands named in prose are not checked: describing
+    how a node came to be cordoned is explanation, and the verify list is where commands
+    are held to the allowlist.
+    """
+    fields = [("summary", diagnosis.summary)]
+    fields += [(f"unknowns.{i}", u) for i, u in enumerate(diagnosis.unknowns)]
+    for h in diagnosis.hypotheses:
+        fields += [(f"hypothesis {h.rank} title", h.title),
+                   (f"hypothesis {h.rank} mechanism", h.mechanism)]
+        fields += [(f"hypothesis {h.rank} verify purpose", c.purpose) for c in h.verify]
+    return [f"{where}: contains a link; the diagnosis must not point outside the evidence"
+            for where, text in fields if _URL.search(text)]
+
+
+# Joins that say a finding is about the subject itself or where it runs. A namespace
+# join is co-location only: a Service sharing the namespace.
+_DIRECT_JOINS = frozenset({"subject", "owner", "node", "unscheduled", "cluster"})
+
+
+def check_grounding(
+    diagnosis: Diagnosis, findings: Mapping[str, Any]
+) -> list[str]:
+    """The leading hypothesis has to rest on evidence that bears on the subject.
+
+    findings maps a citation label to its Finding (duck-typed on joined_by and
+    observational, so this module stays free of the assembler). Two rules, rank 1 only,
+    because that is the answer an engineer acts on first:
+
+      - at least one supporting finding is about the subject or where it runs, not a
+        neighbour that merely shares its namespace;
+      - at least one supporting finding is evidence, not a report that a source saw
+        nothing.
+
+    no_fault is exempt from the first rule only: a healthy subject is shown healthy by
+    its own rows, which the second rule still asks for.
+    """
+    leading = next((h for h in diagnosis.hypotheses if h.rank == 1), None)
+    if leading is None:
+        return []
+    cited = [findings[c] for c in leading.supporting if c in findings]
+    if not cited:
+        return []
+
+    problems = []
+    if str(leading.cause_class) != "no_fault" and not any(
+        getattr(f, "joined_by", None) in _DIRECT_JOINS for f in cited
+    ):
+        problems.append(
+            "hypothesis 1: every supporting finding was admitted only via namespace; "
+            "cite evidence about the subject itself, or rank this hypothesis lower"
+        )
+    if all(getattr(f, "observational", False) for f in cited):
+        problems.append(
+            "hypothesis 1: every supporting finding only reports that a source saw "
+            "nothing; cite evidence of the cause, or set insufficient_evidence"
+        )
+    return problems

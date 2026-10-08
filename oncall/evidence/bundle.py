@@ -36,6 +36,7 @@ import hashlib
 import json
 import re
 import sqlite3
+import unicodedata
 from datetime import UTC, datetime, timedelta
 from sqlite3 import Connection
 from typing import Any
@@ -58,6 +59,7 @@ from oncall.envelope.masking import apply as _apply_rules
 from oncall.envelope.redact import RULES as _REDACTION_RULES
 from oncall.evidence.scope import (
     JOIN_CLUSTER,
+    JOIN_NAMESPACE,
     JOIN_OWNER,
     JOIN_SUBJECT,
     Scope,
@@ -687,16 +689,22 @@ def _group_by_fingerprint(rows: list[sqlite3.Row]) -> list[list[sqlite3.Row]]:
     return list(groups.values())
 
 
-def _order(finding: Finding) -> tuple[int, int, bool, datetime]:
-    """Rank first. At equal rank, what is true now leads what has stopped, then a
-    judgement leads a transcribed label.
+def _order(finding: Finding) -> tuple[int, bool, int, bool, datetime]:
+    """Rank first. At equal rank, evidence about the subject leads a neighbour that only
+    shares its namespace, then what is true now leads what has stopped, then a judgement
+    leads a transcribed label.
 
     Tie-breaks and not demotions: a stopped error still outranks an ongoing warning,
     because a crash that ended ten minutes ago is still the likeliest explanation for
     what the alert saw. What they settle is two findings at the same level.
+
+    The namespace tie-break came from the 4 Oct fixtures: in 6 of 17, F1 was an
+    unrelated Service with no endpoints, admitted only for sharing the namespace, and
+    every model read past it. A model that did not would blame the neighbour.
     """
     return (
         finding.rank,
+        finding.joined_by != JOIN_NAMESPACE,
         STATE_RANK.get(finding.state, 1),
         finding.severity_basis == BASIS_ASSESSED,
         finding.last_seen,
@@ -823,6 +831,29 @@ def _log_coverage(reports: list[SourceReport]) -> str | None:
 
 
 # ---- history, and what its absence costs -----------------------------------
+
+
+STALE_NOTE_PREFIX = "evidence may be stale"
+
+
+def _stale_note(reports: list[SourceReport], end: datetime) -> str | None:
+    """Sources whose newest run started too long before the window's end.
+
+    A threshold, not the age itself: the age moves with the clock, and the note sits in
+    the evidence receipt. Sources that never ran are reported elsewhere and not here.
+    """
+    limit = timedelta(seconds=config.BUNDLE_STALE_SECONDS)
+    old = sorted(
+        r.source for r in reports
+        if r.last_started is not None and end - r.last_started > limit
+    )
+    if not old:
+        return None
+    return (
+        f"{STALE_NOTE_PREFIX}: {', '.join(old)} last ran more than "
+        f"{config.BUNDLE_STALE_SECONDS // 60} minutes before assembly, so states shown "
+        "as ONGOING may have changed since"
+    )
 
 
 HISTORY_DROPPED = (
@@ -1119,6 +1150,10 @@ def build(
     if coverage:
         degraded.append(coverage)
 
+    stale = _stale_note(sources, end)
+    if stale:
+        degraded.append(stale)
+
     losses = [
         Loss(
             reason=r["reason"],
@@ -1333,9 +1368,33 @@ def _utc(moment: datetime | None) -> str:
 
 def _neutralise(text: str) -> str:
     """Nothing the cluster wrote may open or close a fence, nor the <evidence> wrapper
-    the reasoner puts around this text. Case-insensitive, because a reader matching
-    tags would be."""
+    the reasoner puts around this text.
+
+    Case-insensitive, because a reader matching tags would be. NFKC first, so a
+    fullwidth \uff1c is the < it renders as and is escaped like one. Format characters
+    (zero-width spaces and joiners, bidirectional overrides) are removed, because they
+    are invisible to a person reviewing the prompt and can split a tag so this pattern
+    misses it while a model still reads it. Line breaks and tabs are kept.
+    """
+    text = unicodedata.normalize("NFKC", text)
+    text = "".join(
+        ch for ch in text
+        if ch in "\n\t" or unicodedata.category(ch) not in ("Cf", "Cc")
+    )
     return re.sub(r"(?i)<(/?)(untrusted|evidence)", r"&lt;\1\2", text)
+
+
+def _sentence_like(value: Any) -> bool:
+    """A string with spaces in it is prose, and prose from the cluster is fenced.
+
+    Kubernetes reasons, phases, images and names are single tokens by convention, but
+    nothing enforces it: an Event's reason is whatever its writer chose, and anyone
+    allowed to create Events can write one. Lists and dicts render as their repr and are
+    built from label and port values, which the API does restrict, so they stay inline.
+    """
+    return isinstance(value, str) and any(c.isspace() for c in value.strip()) and not (
+        value.lstrip().startswith(("[", "{"))
+    )
 
 
 def finding_labels(bundle: Bundle) -> dict[str, str]:
@@ -1408,8 +1467,9 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         return text if len(text) <= max_value else f"{text[:max_value]}… (clipped)"
 
     def label(finding: Finding) -> str:
+        # The reason is cluster-written, so it is clipped and neutralised like any value.
         named = finding.facts.get("reason") or finding.kind
-        return f"{named} on {finding.subject_name}"
+        return f"{clip(named)} on {finding.subject_name}"
 
     header = [
         f"BUNDLE  subject={bundle.subject or '(whole cluster)'}  cluster={bundle.cluster}",
@@ -1427,7 +1487,8 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
     header += [
         f"{len(bundle.findings)} findings from {bundle.signals_read} stored rows, "
         "numbered F1, F2 ... in rank order. "
-        "'seen in N polls' counts collection runs, not occurrences.",
+        "'recorded N times' counts distinct observations; a state that held "
+        "steady across many polls is recorded once.",
         UNTRUSTED_NOTE,
         "",
     ]
@@ -1445,9 +1506,9 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
             f"{f.subject_name or ''}"
             f"  via {f.joined_by}{seen_before}"
         )
-        polls = "1 poll" if f.occurrences == 1 else f"{f.occurrences} polls"
+        times = "once" if f.occurrences == 1 else f"{f.occurrences} times"
         out.append(
-            f"      happened {_utc(f.first_seen)} to {_utc(f.last_seen)}, seen in {polls}"
+            f"      happened {_utc(f.first_seen)} to {_utc(f.last_seen)}, recorded {times}"
         )
         state = _state_line(f, reports)
         if state:
@@ -1473,14 +1534,14 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
         for key, value in f.facts.items():
             if key in counted:
                 continue
-            if key in UNTRUSTED_KEYS:
+            if key in UNTRUSTED_KEYS or _sentence_like(value):
                 fenced += _fence(key + (gap if key in f.partial else ""), value)
                 continue
             out.append(f"      {key} = {clip(value)}{gap if key in f.partial else ''}")
         for key, (first, last) in f.trends.items():
             if key in counted:
                 continue
-            if key in UNTRUSTED_KEYS:
+            if key in UNTRUSTED_KEYS or _sentence_like(first) or _sentence_like(last):
                 fenced += _fence(f"{key}, earliest", first) + _fence(f"{key}, newest", last)
                 continue
             # A key is only in trends because it moved, so equal endpoints mean it
@@ -1533,7 +1594,10 @@ def render(bundle: Bundle, max_value: int = 90) -> str:
     if bundle.omitted:
         out += ["", f"omitted ({len(bundle.omitted)})"]
         for o in bundle.omitted:
-            out.append(f"      {o.source:12} {str(o.severity):8} {o.occurrences:>4} polls  {o.reason}")
+            out.append(
+                f"      {o.source:12} {str(o.severity):8} recorded {o.occurrences:>4}x  "
+                f"{o.reason}"
+            )
 
     if bundle.losses:
         out += ["", f"buffer losses ({len(bundle.losses)})"]

@@ -20,7 +20,8 @@ from botocore.exceptions import ClientError
 from oncall import config
 from oncall.diagnosis import reasoner
 from oncall.diagnosis.schema import Outcome
-from oncall.envelope import Severity
+from oncall.envelope import Severity, SignalKind, SignalSource
+from oncall.evidence import bundle
 from oncall.tests import test_bundle as tb
 
 MODEL = "us.anthropic.claude-sonnet-4-6"
@@ -234,3 +235,58 @@ def test_the_reasoner_cannot_reach_the_cluster():
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
 
     assert done.returncode == 0, f"kubernetes modules loaded: {done.stdout or done.stderr}"
+
+
+def test_a_link_in_the_prose_is_sent_back_for_repair(lab):
+    linked = diagnosis()
+    linked["summary"] = "Image cannot be pulled; details at https://evil.example/fix"
+    client = FakeBedrock(answer(linked), answer(diagnosis()))
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.OK
+    assert r.attempts == 2
+    feedback = client.requests[1]["messages"][2]["content"][0]["toolResult"]
+    assert "summary: contains a link" in feedback["content"][0]["text"]
+
+
+@pytest.fixture
+def neighbour(buffer):
+    """F1 is the subject's own error; a Service in the same namespace is admitted only
+    via namespace and, at error, ranks beside it."""
+    tb.store([tb.make_signal(when=tb.NOW - timedelta(minutes=8), key="app|ErrImagePull|",
+                             severity=Severity.ERROR, payload={"reason": "ErrImagePull"})])
+    tb.store([tb.make_signal(when=tb.NOW - timedelta(minutes=8), key="NoEndpoints",
+                             severity=Severity.ERROR, pod="web-svc",
+                             source=SignalSource.K8S_SERVICES, kind=SignalKind.POD_STATE,
+                             payload={"reason": "NoEndpoints"})],
+             source=SignalSource.K8S_SERVICES)
+    return tb.build()
+
+
+def test_a_leading_hypothesis_on_a_namespace_neighbour_is_sent_back(neighbour):
+    labels = bundle.finding_labels(neighbour)
+    by_join = {f.joined_by: labels[f.fingerprint] for f in neighbour.findings}
+    client = FakeBedrock(answer(diagnosis(supporting=[by_join["namespace"]])),
+                         answer(diagnosis(supporting=[by_join["subject"]])))
+
+    r = run(neighbour, client)
+
+    assert r.outcome is Outcome.OK
+    assert r.attempts == 2
+    assert any("only via namespace" in e for e in r.errors)
+
+
+def test_evidence_over_the_cap_is_journalled_and_nothing_is_sent(lab, monkeypatch):
+    """A bundle that skipped fit(), a frozen fixture or one replayed under a smaller
+    cap. Raising would leave no record; the metrics need one."""
+    monkeypatch.setattr(config, "PROMPT_MAX_BYTES", 100)
+    client = FakeBedrock()
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.PROMPT_TOO_LARGE
+    assert client.requests == []
+    assert (r.attempts, r.input_tokens, r.prompt_sha256, r.diagnosis) == (0, 0, None, None)
+    assert r.bundle_sha256 == bundle.evidence_receipt(lab)
+    assert "over the prompt cap of 100" in r.errors[0]

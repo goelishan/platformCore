@@ -111,7 +111,8 @@ def test_a_successful_diagnosis_is_journalled_whole(buffer):
 
 
 @pytest.mark.parametrize(
-    "outcome", [Outcome.INVALID_OUTPUT, Outcome.GUARD_REJECTED, Outcome.MODEL_ERROR]
+    "outcome", [Outcome.INVALID_OUTPUT, Outcome.GUARD_REJECTED, Outcome.MODEL_ERROR,
+                Outcome.PROMPT_TOO_LARGE]
 )
 def test_a_failed_attempt_is_journalled_and_leaves_the_incident_open(buffer, outcome):
     incident = open_incident()
@@ -234,3 +235,28 @@ def test_an_incident_shipped_open_is_shipped_again_once_diagnosed(buffer, store_
 
     with store_db.connect() as conn:
         assert store_db.fetch_one(conn, "SELECT state FROM incidents")["state"] == "diagnosed"
+
+
+def test_a_prompt_too_large_record_ships_with_no_prompt_receipt(buffer, store_db):
+    """Nothing was sent, so there is no prompt receipt, no tokens and no stop reason.
+    The row still ships: it is what a 'prompt too large' rate is counted from."""
+    from oncall import shipper
+
+    incident = open_incident()
+    with lz.connect() as conn:
+        journal(conn, record(incident, Outcome.PROMPT_TOO_LARGE, prompt_sha256=None,
+                             attempts=0, stop_reason=None, input_tokens=0,
+                             output_tokens=0, latency_ms=0, cost_usd=None,
+                             errors=["evidence is 130000 bytes, over the prompt cap of 122880"]))
+
+    shipper.ship_all()
+
+    with store_db.connect() as conn:
+        diag = store_db.fetch_one(
+            conn, "SELECT outcome, prompt_sha256, attempts, cost_usd FROM diagnoses"
+        )
+        inc = store_db.fetch_one(conn, "SELECT state FROM incidents")
+
+    assert dict(diag) == {"outcome": "prompt_too_large", "prompt_sha256": None,
+                          "attempts": 0, "cost_usd": None}
+    assert inc["state"] != "diagnosed"

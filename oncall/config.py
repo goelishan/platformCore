@@ -291,6 +291,12 @@ BUNDLE_MAX_FINDINGS = int(os.getenv("ONCALL_BUNDLE_MAX_FINDINGS", "40"))
 # and it is a prompt budget, not a storage one: the bytes are already on disk.
 BUNDLE_PROMOTE_BYTES = int(os.getenv("ONCALL_BUNDLE_PROMOTE_BYTES", str(16 * 1024)))
 
+# How old a source's newest run may be, at assembly, before the bundle says its evidence
+# is stale. Collection is still triggered by hand, and on 2026-10-04 a diagnosis was made
+# over rows an hour old that described a cluster which had moved on. The slowest poll is
+# 120 s, so fifteen minutes is several missed cycles, never one late one.
+BUNDLE_STALE_SECONDS = int(os.getenv("ONCALL_BUNDLE_STALE_SECONDS", "900"))
+
 # Hard ceiling on the rendered bundle, in bytes. A model's context is what actually
 # limits the prompt, so findings are dropped lowest rank first until the render fits,
 # and each one dropped is listed in omitted. Roughly 30k tokens at the default, well

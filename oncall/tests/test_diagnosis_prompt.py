@@ -149,3 +149,18 @@ def test_the_tool_carries_the_output_contract():
 
     assert tool["name"] == "record_diagnosis"
     assert "CauseClass" in tool["inputSchema"]["json"]["$defs"]
+
+
+def test_v3_states_every_rule_the_reasoner_enforces():
+    """Each of these is checked in code and earns a repair. A model never told the rule
+    pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did."""
+    text = prompt.SYSTEM_PROMPT
+
+    assert prompt.PROMPT_VERSION == "3"
+    assert "at most 600 characters" in text
+    assert "never both" in text
+    assert "not only findings admitted via namespace" in text
+    assert "saw nothing" in text
+    assert "no links or URLs" in text
+    assert '"recorded N times" counts distinct observations' in text
+    assert "seen in N polls" not in text

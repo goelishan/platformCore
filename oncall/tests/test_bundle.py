@@ -524,14 +524,17 @@ def test_short_values_are_clipped_and_say_so(buffer):
     assert "… (clipped)" in bundle.render(build())
 
 
-def test_times_are_full_utc_and_polls_are_named_as_polls(buffer):
+def test_times_are_full_utc_and_occurrences_are_not_called_polls(buffer):
+    """'seen in N polls' said collection runs while counting distinct rows: a state
+    held steady for sixty polls is one row. Found writing the M4 doc, 2026-10-04."""
     store([make_signal(when=NOW - timedelta(minutes=5))])
 
     rendered = bundle.render(build())
 
     assert "All times are UTC." in rendered
     assert (NOW - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ") in rendered
-    assert "seen in 1 poll" in rendered
+    assert "recorded once" in rendered
+    assert "poll" not in rendered.split("happened", 1)[1]
 
 
 def test_the_state_is_stated_in_the_text(buffer):
@@ -1175,3 +1178,18 @@ def test_the_prompt_receipt_moves_with_the_wording(buffer):
 
     assert bundle.prompt_receipt(rendered) != bundle.prompt_receipt(rendered + " ")
     assert bundle.prompt_receipt(rendered) == bundle.prompt_receipt(rendered)
+
+
+def test_at_equal_rank_the_subject_leads_a_namespace_neighbour(buffer):
+    """In 6 of the 17 frozen bundles of 4 Oct, F1 was an unrelated Service admitted only
+    for sharing the namespace. Severity still decides first; this settles ties."""
+    # The neighbour is the newer of the two, so recency alone would put it first.
+    store([make_signal(when=NOW - timedelta(minutes=7), key="NoEndpoints",
+                       pod="web-svc", source=SignalSource.K8S_SERVICES,
+                       payload={"reason": "NoEndpoints"})],
+          source=SignalSource.K8S_SERVICES)
+    store([make_signal(when=NOW - timedelta(minutes=9), payload={"reason": "Error"})])
+
+    joins = [f.joined_by for f in build().findings]
+
+    assert joins == ["subject", "namespace"]

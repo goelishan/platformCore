@@ -108,6 +108,10 @@ class Outcome(StrEnum):
     INVALID_OUTPUT = "invalid_output"
     GUARD_REJECTED = "guard_rejected"
     MODEL_ERROR = "model_error"
+    # The evidence was over the prompt cap, so nothing was sent. Recorded rather than
+    # raised: a bundle too large to diagnose is a failure rate worth watching, and the
+    # journal cannot count what never reaches it.
+    PROMPT_TOO_LARGE = "prompt_too_large"
 
 
 class DiagnosisRecord(BaseModel):

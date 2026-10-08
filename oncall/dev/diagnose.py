@@ -110,8 +110,27 @@ def _journalled(diagnosis_id: str) -> dict[str, Any]:
     return dict(found)
 
 
+def _labels(b: assembler.Bundle) -> dict[str, str]:
+    """The labels the model saw, or none when the bundle was too large to send."""
+    try:
+        return prompt.build(b).labels
+    except prompt.PromptTooLarge:
+        return {}
+
+
+def _warn_stale(b: assembler.Bundle) -> None:
+    for note in b.degraded:
+        if note.startswith(assembler.STALE_NOTE_PREFIX):
+            print(f"warning: {note}", file=sys.stderr)
+
+
 def dry_run(b: assembler.Bundle) -> int:
-    p = prompt.build(b)
+    _warn_stale(b)
+    try:
+        p = prompt.build(b)
+    except prompt.PromptTooLarge as e:
+        print(f"prompt too large: {e}; nothing would be sent")
+        return 2
     _print_prompt(p)
     print(f"bundle_sha256  {p.bundle_sha256}")
     print(f"prompt_sha256  {p.prompt_sha256}")
@@ -133,13 +152,14 @@ def live(b: assembler.Bundle, cluster: str, subject: str | None, client: Any) ->
         attached = lz.attach_signal_ids(conn, incident, b.candidate_signal_ids)
 
     snapshots.save(b)
+    _warn_stale(b)
     record = reasoner.diagnose(b, incident_id=incident, client=client)
     with lz.connect() as conn:
         journal(conn, record)
 
     print(f"incident {incident} ({'reused' if reused else 'opened'}), {attached} signals attached")
     print()
-    _print_record(record, prompt.build(b).labels)
+    _print_record(record, _labels(b))
     return 0 if record.outcome == "ok" else 1
 
 
@@ -160,7 +180,8 @@ def replay(diagnosis_id: str, client: Any) -> int:
         ("tokens in/out", f"{old['input_tokens']}/{old['output_tokens']}",
          f"{new.input_tokens}/{new.output_tokens}"),
         ("latency ms", old["latency_ms"], new.latency_ms),
-        ("prompt_sha256", (old.get("prompt_sha256") or "-")[:16], new.prompt_sha256[:16]),
+        ("prompt_sha256", (old.get("prompt_sha256") or "-")[:16],
+         (new.prompt_sha256 or "-")[:16]),
     ]
     print(f"replay of {diagnosis_id} on bundle {old['bundle_sha256'][:16]} (receipt verified)")
     print()
