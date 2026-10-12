@@ -1,0 +1,23 @@
+#--------------------------------------------------------------------------------------------------------
+# LOCAL PROMETHEUS - ON-CALL AGENT
+#--------------------------------------------------------------------------------------------------------
+#
+#   - scrapes the journal exporter running on the host (make -C oncall exporter)
+#
+#   - loads the same rules file the cluster's PrometheusRule is rendered from
+#
+
+
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/rules/*.rules.yml
+
+scrape_configs:
+  # The job name is part of the contract: OncallJournalExporterDown matches on it.
+  - job_name: oncall-journal
+    static_configs:
+      - targets: ["host.docker.internal:9464"]

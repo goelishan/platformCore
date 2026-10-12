@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval dryrun env help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval dryrun env ui exporter obs-up obs-down obs-render rules-test help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -53,6 +53,12 @@ help:
 	@echo "diagnose    assemble, ask Bedrock, journal   (SUBJECT=crashloop ARGS=\"--dry-run | --replay ID\")"
 	@echo "eval-freeze freeze one bundle per golden subject into eval/fixtures"
 	@echo "eval        run the frozen fixtures through Bedrock and write a report   (ARGS=\"--repeat 3\")"
+	@echo "ui          the triage UI on 127.0.0.1:8501"
+	@echo "exporter    serve journal metrics on 127.0.0.1:9464/metrics"
+	@echo "obs-up      start the store, Prometheus (:9090) and Grafana (:3000)"
+	@echo "obs-down    stop them, keeping their volumes"
+	@echo "obs-render  regenerate the cluster PrometheusRule and dashboard ConfigMap"
+	@echo "rules-test  promtool check and unit-test the alert rules"
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -201,3 +207,54 @@ dryrun:
 	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
 	  ONCALL_KUBE_CONTEXT=$${ONCALL_KUBE_CONTEXT:-kind-$(CLUSTER)} \
 	  oncall/$(VENV)/bin/python oncall/dev/dryrun.py
+
+
+#--------------------------------------------------------------------------------------------------------
+# UI
+#--------------------------------------------------------------------------------------------------------
+#
+# Loopback only: the UI can open incidents and spend on Bedrock, and has no authentication
+# of its own.
+
+
+
+ui:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  ONCALL_KUBE_CONTEXT=$${ONCALL_KUBE_CONTEXT:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/streamlit run oncall/ui/app.py \
+	  --server.address 127.0.0.1 --server.port 8501 --server.headless true \
+	  --browser.gatherUsageStats false --client.toolbarMode minimal
+
+
+#--------------------------------------------------------------------------------------------------------
+# OBSERVABILITY
+#--------------------------------------------------------------------------------------------------------
+#
+# The exporter runs on the host against the store in oncall/.env; Prometheus and Grafana run
+# in the compose observability profile and scrape it through host.docker.internal.
+
+
+
+COMPOSE  := docker compose --env-file .env -f dev/compose.yaml
+PROMTOOL ?= promtool
+
+exporter:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python -m oncall.exporter.journal $(ARGS)
+
+obs-up:
+	$(COMPOSE) --profile observability up -d
+	@echo "Grafana http://127.0.0.1:3000  Prometheus http://127.0.0.1:9090  (run make exporter too)"
+
+obs-down:
+	$(COMPOSE) --profile observability down
+
+obs-render:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	$(VENV)/bin/python observability/render.py
+
+rules-test:
+	@command -v $(PROMTOOL) >/dev/null || { echo "promtool not found - brew install prometheus"; exit 1; }
+	$(PROMTOOL) check rules observability/prometheus/rules/*.rules.yml
+	$(PROMTOOL) test rules observability/prometheus/tests/*.test.yml

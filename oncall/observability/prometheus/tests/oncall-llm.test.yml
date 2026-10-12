@@ -1,0 +1,267 @@
+#--------------------------------------------------------------------------------------------------------
+# ON-CALL AGENT - RULE UNIT TESTS
+#--------------------------------------------------------------------------------------------------------
+#
+#   - every alert fires on a series built to trip it
+#
+#   - every alert stays silent just below its threshold or volume guard
+#
+#   - promtool test rules observability/prometheus/tests/oncall-llm.test.yml
+#
+
+
+
+rule_files:
+  - ../rules/oncall-llm.rules.yml
+
+evaluation_interval: 1m
+
+tests:
+
+  #------------------------------------------------------------------------------------------------
+  # EXPORTER AND JOURNAL
+  #------------------------------------------------------------------------------------------------
+
+  - name: exporter down fires after 10 minutes, not before
+    interval: 1m
+    input_series:
+      - series: 'up{job="oncall-journal", instance="exporter:9464"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: OncallJournalExporterDown
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: OncallJournalExporterDown
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, job: oncall-journal, instance: "exporter:9464"}
+            exp_annotations:
+              summary: "The on-call journal exporter is not being scraped."
+              description: "No successful scrape of job oncall-journal for 10 minutes. Every LLM-layer alert below is blind until it returns."
+
+  - name: exporter never scraped at all also fires
+    interval: 1m
+    input_series:
+      - series: 'up{job="something-else"}'
+        values: '1x20'
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: OncallJournalExporterDown
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, job: oncall-journal}
+            exp_annotations:
+              summary: "The on-call journal exporter is not being scraped."
+              description: "No successful scrape of job oncall-journal for 10 minutes. Every LLM-layer alert below is blind until it returns."
+
+  - name: an unreadable journal fires, a readable one does not
+    interval: 1m
+    input_series:
+      - series: 'oncall_journal_up{job="oncall-journal", instance="a"}'
+        values: '0x20'
+      - series: 'oncall_journal_up{job="oncall-journal", instance="b"}'
+        values: '1x20'
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: OncallJournalUnreadable
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, job: oncall-journal, instance: a}
+            exp_annotations:
+              summary: "The exporter cannot read the diagnosis journal."
+              description: "a has reported oncall_journal_up 0 for 10 minutes. The store is unreachable or the query timed out; diagnoses keep journalling to the local buffer and ship once the store returns."
+
+  #------------------------------------------------------------------------------------------------
+  # LATENCY
+  #------------------------------------------------------------------------------------------------
+  #
+  # Five calls between 60 s and 90 s, one a minute from minute 11. Every bucket at or below 60 s
+  # stays flat, so p95 lands inside the 60-90 bucket.
+
+  - name: five slow calls in an hour fire after the for period
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="30.0"}'
+        values: '0x90'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="60.0"}'
+        values: '0x90'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="90.0"}'
+        values: '0x10 1+1x4 5x75'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="+Inf"}'
+        values: '0x10 1+1x4 5x75'
+      - series: 'oncall_diagnosis_latency_seconds_count{model="m"}'
+        values: '0x10 1+1x4 5x75'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OncallDiagnosisLatencyHigh
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: OncallDiagnosisLatencyHigh
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, model: m}
+            exp_annotations:
+              summary: "Diagnosis p95 latency is above 60 s."
+              description: "p95 for m over the last hour is 1m 28s across at least 5 calls. Check oncall_diagnosis_attempts_total for a repair surge before blaming the model."
+
+  - name: four slow calls are under the volume guard
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="60.0"}'
+        values: '0x90'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="90.0"}'
+        values: '0x10 1+1x3 4x76'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="+Inf"}'
+        values: '0x10 1+1x3 4x76'
+      - series: 'oncall_diagnosis_latency_seconds_count{model="m"}'
+        values: '0x10 1+1x3 4x76'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: OncallDiagnosisLatencyHigh
+        exp_alerts: []
+
+  - name: five fast calls do not fire
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="30.0"}'
+        values: '0x10 1+1x4 5x75'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="60.0"}'
+        values: '0x10 1+1x4 5x75'
+      - series: 'oncall_diagnosis_latency_seconds_bucket{model="m", le="+Inf"}'
+        values: '0x10 1+1x4 5x75'
+      - series: 'oncall_diagnosis_latency_seconds_count{model="m"}'
+        values: '0x10 1+1x4 5x75'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: OncallDiagnosisLatencyHigh
+        exp_alerts: []
+
+  #------------------------------------------------------------------------------------------------
+  # FAILURES
+  #------------------------------------------------------------------------------------------------
+
+  - name: two failures in five fire, one in five does not
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="bad", prompt_version="5", outcome="ok"}'
+        values: '0x10 1+1x2 3x100'
+      - series: 'oncall_diagnoses_total{model="bad", prompt_version="5", outcome="invalid_output"}'
+        values: '0x10 1+1x1 2x100'
+      - series: 'oncall_diagnoses_total{model="fine", prompt_version="5", outcome="ok"}'
+        values: '0x10 1+1x3 4x100'
+      - series: 'oncall_diagnoses_total{model="fine", prompt_version="5", outcome="invalid_output"}'
+        values: '0x10 1x100'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: OncallDiagnosisFailureRateHigh
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, model: bad}
+            exp_annotations:
+              summary: "More than 20% of diagnoses failed in the last 6 hours."
+              description: "40% of diagnoses for bad ended in an outcome other than ok. Break it down by the outcome label on oncall_diagnoses_total."
+
+  - name: two model errors in 30 minutes fire, one does not
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="bad", prompt_version="5", outcome="model_error"}'
+        values: '0x10 1 2x50'
+      - series: 'oncall_diagnoses_total{model="fine", prompt_version="5", outcome="model_error"}'
+        values: '0x10 1x50'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OncallModelErrors
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, model: bad}
+            exp_annotations:
+              summary: "Repeated Bedrock call failures."
+              description: "More than one model_error for bad in 30 minutes: throttling, an IAM or endpoint change, or a regional Bedrock issue. make bedrock-check names which."
+      - eval_time: 50m
+        alertname: OncallModelErrors
+        exp_alerts: []
+
+  #------------------------------------------------------------------------------------------------
+  # OUTPUT SAFETY AND CONTRACT
+  #------------------------------------------------------------------------------------------------
+
+  - name: one guard rejection fires when the series already existed at zero
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="m", prompt_version="5", outcome="guard_rejected"}'
+        values: '0x10 1x60'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OncallUnsafeCommandRejected
+        exp_alerts:
+          - exp_labels: {severity: info, component: oncall-agent, model: m, prompt_version: "5"}
+            exp_annotations:
+              summary: "A diagnosis was rejected for suggesting a disallowed command."
+              description: "m on prompt v5. The rejected command is in the journal row's errors; decide whether the prompt or the allowlist is wrong."
+      - eval_time: 75m
+        alertname: OncallUnsafeCommandRejected
+        exp_alerts: []
+
+  # The trap the exporter's zero series exist for: a series born at 1 has no earlier sample,
+  # so increase() sees no rise and the first rejection ever recorded never alerts.
+  - name: a guard rejection on a series born at one is invisible to increase
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="m", prompt_version="6", outcome="guard_rejected"}'
+        values: '_x10 1x60'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OncallUnsafeCommandRejected
+        exp_alerts: []
+
+  - name: an oversized prompt fires
+    interval: 1m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="m", prompt_version="5", outcome="prompt_too_large"}'
+        values: '0x10 1x60'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OncallPromptTooLarge
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, model: m}
+            exp_annotations:
+              summary: "An incident was not diagnosed because its evidence exceeded the prompt cap."
+              description: "Nothing was sent to the model. Either the bundle's fit() was bypassed or ONCALL_PROMPT_MAX_BYTES is below what the assembler produces."
+
+  - name: seven first-attempt successes in ten fire, nine in ten do not
+    interval: 5m
+    input_series:
+      - series: 'oncall_diagnoses_total{model="drifted", prompt_version="5", outcome="ok"}'
+        values: '0x2 10x400'
+      - series: 'oncall_diagnoses_first_attempt_ok_total{model="drifted", prompt_version="5"}'
+        values: '0x2 7x400'
+      - series: 'oncall_diagnoses_total{model="steady", prompt_version="5", outcome="ok"}'
+        values: '0x2 10x400'
+      - series: 'oncall_diagnoses_first_attempt_ok_total{model="steady", prompt_version="5"}'
+        values: '0x2 9x400'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: OncallFirstAttemptValidLow
+        exp_alerts: []
+      - eval_time: 2h
+        alertname: OncallFirstAttemptValidLow
+        exp_alerts:
+          - exp_labels: {severity: info, component: oncall-agent, model: drifted}
+            exp_annotations:
+              summary: "Fewer than 80% of diagnoses were valid on the first attempt."
+              description: "70% for drifted over 24 hours. Each repair re-sends the whole prompt; the contract and the prompt have drifted apart. Compare against the latest eval report."
+
+  #------------------------------------------------------------------------------------------------
+  # COST
+  #------------------------------------------------------------------------------------------------
+
+  - name: six dollars in a day fires, four does not
+    interval: 10m
+    input_series:
+      - series: 'oncall_diagnosis_cost_usd_total{model="loop"}'
+        values: '0x6 0+1x6 6x200'
+      - series: 'oncall_diagnosis_cost_usd_total{model="normal"}'
+        values: '0x6 0+0.8x5 4x200'
+    alert_rule_test:
+      - eval_time: 3h
+        alertname: OncallCostBurnHigh
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, model: loop}
+            exp_annotations:
+              summary: "Diagnosis spend exceeded $5 in 24 hours."
+              description: "loop has spent $6.00 at list price in the last 24 hours. Check the diagnosis rate per incident for a loop."

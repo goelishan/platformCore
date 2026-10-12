@@ -19,3 +19,11 @@ botocore>=1.35
 # Golden labels for the evaluation. Already present as a dependency of the kubernetes
 # client; stated here because oncall/eval reads it directly.
 pyyaml>=6.0
+
+# The journal exporter. Custom collectors only; nothing in the agent itself is
+# instrumented, because a diagnose call is a short-lived process with nothing to scrape.
+prometheus-client>=0.21
+
+# The triage UI. A floor rather than a pin: AppTest, st.container(border=...) and
+# width="stretch" on dataframes are all in releases from 2025 on.
+streamlit>=1.45

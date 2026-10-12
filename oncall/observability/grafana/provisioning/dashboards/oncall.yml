@@ -1,0 +1,20 @@
+#--------------------------------------------------------------------------------------------------------
+# GRAFANA DASHBOARD PROVIDER - ON-CALL AGENT
+#--------------------------------------------------------------------------------------------------------
+#
+#   - loads every dashboard JSON under observability/grafana/dashboards
+#
+#   - the JSON in the repo is the source; edits made in the UI are not saved back
+#
+
+
+
+apiVersion: 1
+
+providers:
+  - name: oncall
+    folder: On-call agent
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
