@@ -11,7 +11,7 @@ metadata:
     release: kps
 spec:
   groups:
-  - name: oncall-llm.recording
+  - name: oncall-llm
     interval: 1m
     rules:
     - record: oncall:diagnosis_latency_seconds:p50_1h
@@ -30,8 +30,6 @@ spec:
         \ (increase(oncall_diagnoses_total{outcome!=\"prompt_too_large\"}[24h]))\n"
     - record: oncall:diagnosis_cost_usd:increase_24h
       expr: sum by (model) (increase(oncall_diagnosis_cost_usd_total[24h]))
-  - name: oncall-llm.alerts
-    rules:
     - alert: OncallJournalExporterDown
       expr: up{job="oncall-journal"} == 0 or absent(up{job="oncall-journal"})
       for: 10m

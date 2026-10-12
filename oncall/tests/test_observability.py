@@ -115,6 +115,22 @@ def test_every_alert_has_a_severity_and_both_annotations():
         assert {"summary", "description"} <= set(a["annotations"]), a["alert"]
 
 
+def test_a_rule_reads_only_series_recorded_earlier_in_its_own_group():
+    """Groups evaluate in no fixed order; rules within one run in sequence. A rule reading
+    a recording from another group, or from later in its own, sees last cycle's value or
+    this one at random. CI caught it: the cost alert rendered $6.00 or $6.32, 9 runs in 60."""
+    groups = yaml.safe_load(RULES.read_text())["groups"]
+    recorded_anywhere = {r["record"] for g in groups for r in g["rules"] if "record" in r}
+
+    for g in groups:
+        seen: set[str] = set()
+        for r in g["rules"]:
+            reads = set(re.findall(r"\b(oncall:[a-z0-9_:]+)", r["expr"])) & recorded_anywhere
+            assert reads <= seen, f"{r.get('alert') or r.get('record')} reads {sorted(reads - seen)}"
+            if "record" in r:
+                seen.add(r["record"])
+
+
 @pytest.mark.skipif(shutil.which("promtool") is None, reason="promtool not on PATH")
 def test_promtool_checks_and_unit_tests_pass():
     check = subprocess.run(["promtool", "check", "rules", str(RULES)],
