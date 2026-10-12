@@ -1,0 +1,31 @@
+#--------------------------------------------------------------------------------------------------------
+# ON-CALL AGENT - EKS
+#--------------------------------------------------------------------------------------------------------
+#
+#   - image from ECR, IRSA role from terraform output oncall_role_arn
+#
+#   - store is RDS as the oncall IAM-auth user, verify-full against the baked CA bundle
+#
+#   - set at install: image.repository, image.tag, serviceAccount.roleArn, store.host
+#
+
+
+
+clusterName: platformcore
+env: prod
+
+persistence:
+  storageClassName: gp3-delete
+
+store:
+  sslmode: verify-full
+  iamAuth: true
+  database: oncall
+  user: oncall
+
+bedrock:
+  enabled: true
+
+monitoring:
+  serviceMonitor: true
+  release: kps

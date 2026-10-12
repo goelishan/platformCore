@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval bedrock-check dryrun env ui exporter obs-up obs-down obs-render rules-test help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval bedrock-check dryrun env ui agent lock image image-kind chart-check deploy-kind ui-forward undeploy-kind exporter obs-up obs-down obs-render rules-test help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -55,6 +55,14 @@ help:
 	@echo "eval        run the frozen fixtures through Bedrock and write a report   (ARGS=\"--repeat 3\")"
 	@echo "bedrock-check  config, identity, endpoint, profile routing vs IAM, one call"
 	@echo "ui          the triage UI on 127.0.0.1:8501"
+	@echo "agent       the long-running agent: collection, shipping, retention"
+	@echo "lock        recompile requirements.lock (hashed, every platform)"
+	@echo "image       build $(IMAGE):<git describe>"
+	@echo "image-kind  build and load it into the $(CLUSTER) kind cluster"
+	@echo "chart-check helm lint and kubeconform, kind and eks values"
+	@echo "deploy-kind build, load and install the chart into kind"
+	@echo "ui-forward  port-forward the in-cluster UI to 127.0.0.1:8501"
+	@echo "undeploy-kind uninstall the release (the data PVC is kept)"
 	@echo "exporter    serve journal metrics on 127.0.0.1:9464/metrics"
 	@echo "obs-up      start the store, Prometheus (:9090) and Grafana (:3000)"
 	@echo "obs-down    stop them, keeping their volumes"
@@ -264,3 +272,75 @@ rules-test:
 	@command -v $(PROMTOOL) >/dev/null || { echo "promtool not found - brew install prometheus"; exit 1; }
 	$(PROMTOOL) check rules observability/prometheus/rules/*.rules.yml
 	$(PROMTOOL) test rules observability/prometheus/tests/*.test.yml
+
+
+#--------------------------------------------------------------------------------------------------------
+# AGENT AND IMAGE
+#--------------------------------------------------------------------------------------------------------
+#
+# The tag is git describe with --dirty, so an image built from uncommitted code says so.
+# The lock is universal: one file resolves on arm64 laptops and amd64 nodes alike.
+
+
+
+IMAGE ?= oncall
+TAG   ?= $(shell git describe --always --dirty 2>/dev/null || echo dev)
+
+agent:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. ONCALL_CLUSTER=$${ONCALL_CLUSTER:-kind-$(CLUSTER)} \
+	  ONCALL_NAMESPACES=$${ONCALL_NAMESPACES:-$(LAB_NS)} \
+	  ONCALL_KUBE_CONTEXT=$${ONCALL_KUBE_CONTEXT:-kind-$(CLUSTER)} \
+	  oncall/$(VENV)/bin/python -m oncall.agent
+
+lock:
+	@command -v uv >/dev/null || { echo "uv not found - brew install uv"; exit 1; }
+	uv pip compile requirements.txt --universal --generate-hashes --python-version 3.11 \
+	  --no-emit-package pytest --no-emit-package pluggy --no-emit-package iniconfig \
+	  --custom-compile-command "make -C oncall lock" -o requirements.lock
+
+image:
+	docker build -t $(IMAGE):$(TAG) .
+	@echo "built $(IMAGE):$(TAG)"
+
+image-kind: image
+	kind load docker-image $(IMAGE):$(TAG) --name $(CLUSTER)
+
+
+#--------------------------------------------------------------------------------------------------------
+# CHART
+#--------------------------------------------------------------------------------------------------------
+#
+# The release always goes into namespace oncall, which the agent excludes from collection.
+# chart-check renders both targets with placeholder values and validates them against the
+# schemas of the cluster's Kubernetes minor.
+
+
+
+CHART      := deploy/chart
+RELEASE    ?= oncall
+KUBECONFORM ?= kubeconform
+EKS_CHECK  := --set image.tag=check --set store.host=db.example.internal \
+              --set serviceAccount.roleArn=arn:aws:iam::111111111111:role/check
+
+chart-check:
+	@command -v helm >/dev/null || { echo "helm not found - brew install helm"; exit 1; }
+	@command -v $(KUBECONFORM) >/dev/null || { echo "kubeconform not found - brew install kubeconform"; exit 1; }
+	helm lint $(CHART) -n oncall -f $(CHART)/values-kind.yaml --set image.tag=check
+	helm lint $(CHART) -n oncall -f $(CHART)/values-eks.yaml $(EKS_CHECK)
+	helm template $(RELEASE) $(CHART) -n oncall -f $(CHART)/values-kind.yaml --set image.tag=check \
+	  | $(KUBECONFORM) -strict -summary -kubernetes-version $(K8S_VERSION:v%=%) -
+	helm template $(RELEASE) $(CHART) -n oncall -f $(CHART)/values-eks.yaml $(EKS_CHECK) \
+	  | $(KUBECONFORM) -strict -summary -ignore-missing-schemas -kubernetes-version $(K8S_VERSION:v%=%) -
+
+deploy-kind: image-kind
+	helm upgrade --install $(RELEASE) $(CHART) -n oncall --create-namespace \
+	  --kube-context kind-$(CLUSTER) -f $(CHART)/values-kind.yaml --set image.tag=$(TAG) \
+	  --wait --timeout 5m
+	kubectl --context kind-$(CLUSTER) -n oncall get pods -o wide
+
+ui-forward:
+	kubectl --context kind-$(CLUSTER) -n oncall port-forward svc/oncall-ui 8501:8501
+
+undeploy-kind:
+	helm uninstall $(RELEASE) -n oncall --kube-context kind-$(CLUSTER)

@@ -265,6 +265,14 @@ LOG_EXCERPT_BYTES = int(os.getenv("ONCALL_LOG_EXCERPT_BYTES", str(8 * 1024)))
 # reads the store on the critical path of a diagnosis.
 SHIP_INTERVAL = int(os.getenv("ONCALL_SHIP_INTERVAL", "120"))
 
+# The agent's maintenance cadence. Buffer and blob sweeps keep the PVC inside its size;
+# the store sweep drops expired partitions, which is coarse and cheap, so hourly is ample.
+BUFFER_SWEEP_INTERVAL = int(os.getenv("ONCALL_BUFFER_SWEEP_INTERVAL", "600"))
+STORE_SWEEP_INTERVAL = int(os.getenv("ONCALL_STORE_SWEEP_INTERVAL", "3600"))
+
+# Touched after every pass of the agent's loop; the liveness probe reads its age.
+HEARTBEAT_PATH = Path(os.getenv("ONCALL_HEARTBEAT_PATH", str(DATA_DIR / "heartbeat")))
+
 # Caps one shipping cycle so a large backlog drains over several bounded transactions
 # rather than one long one holding a write lock on the buffer.
 SHIP_BATCH_SIZE = int(os.getenv("ONCALL_SHIP_BATCH_SIZE", "1000"))
@@ -328,6 +336,10 @@ BEDROCK_GUARDRAIL_VERSION = os.getenv("ONCALL_BEDROCK_GUARDRAIL_VERSION") or Non
 BEDROCK_CONNECT_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_CONNECT_TIMEOUT", "5"))
 BEDROCK_READ_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_READ_TIMEOUT", "90"))
 BEDROCK_MAX_ATTEMPTS = int(os.getenv("ONCALL_BEDROCK_MAX_ATTEMPTS", "3"))
+
+# Off where the agent has no AWS identity (kind has no IRSA). The UI then offers Preview
+# only, instead of a Diagnose button that can only fail.
+DIAGNOSE_ENABLED = os.getenv("ONCALL_DIAGNOSE_ENABLED", "true").lower() in {"1", "true", "yes"}
 # The answer's token budget. A truncated answer earns no repair (the same budget cuts it
 # again), so this sits well above the longest answer seen: 1,671 tokens in one attempt
 # under prompt v3, 84% of the old 2,000, before the citation and summary bounds were

@@ -171,7 +171,9 @@ with diagnose_tab:
         for w in view.warnings(p.bundle):
             st.text(f"- {w}")
 
-    if diagnose_col.button("Diagnose", type="primary",
+    if not config.DIAGNOSE_ENABLED:
+        diagnose_col.caption("Diagnose is off here: this deployment has no AWS identity.")
+    if diagnose_col.button("Diagnose", type="primary", disabled=not config.DIAGNOSE_ENABLED,
                            help="Opens or reuses the incident, calls Bedrock, journals"):
         with st.spinner("Assembling evidence and asking the model"):
             b = service.assemble(cluster, subject)
@@ -224,6 +226,7 @@ with history_tab:
         show_diagnosis(view.build(row, b, service.labels(b) if b else {}))
 
         if b is not None and st.button("Replay on today's prompt and model",
+                                       disabled=not config.DIAGNOSE_ENABLED,
                                        help="Same evidence, new call, journalled"):
             with st.spinner("Replaying"):
                 r = service.replay(picked)

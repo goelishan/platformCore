@@ -1,0 +1,83 @@
+{{- /*
+Kind only: the store as one Postgres in this namespace. EKS uses RDS, with IAM auth.
+*/ -}}
+{{- if .Values.store.inCluster.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oncall-postgres
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: store
+spec:
+  serviceName: oncall-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "oncall.selector" . | nindent 6 }}
+      app.kubernetes.io/component: store
+  template:
+    metadata:
+      labels:
+        {{- include "oncall.selector" . | nindent 8 }}
+        app.kubernetes.io/component: store
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: {{ .Values.store.inCluster.image }}
+          env:
+            - {name: POSTGRES_DB, value: {{ .Values.store.database | quote }}}
+            - {name: POSTGRES_USER, value: {{ .Values.store.user | quote }}}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: oncall-store, key: ONCALL_STORE_PASSWORD}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          ports:
+            - {name: postgres, containerPort: 5432}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.store.user | quote }}, "-d", {{ .Values.store.database | quote }}]
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 256Mi}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: run, mountPath: /var/run/postgresql}
+      volumes:
+        - name: run
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.store.inCluster.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oncall-postgres
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: store
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "oncall.selector" . | nindent 4 }}
+    app.kubernetes.io/component: store
+  ports:
+    - {name: postgres, port: 5432, targetPort: postgres}
+{{- end }}

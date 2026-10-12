@@ -1,0 +1,158 @@
+{{- /*
+The agent pod: the collection loop and the triage UI, sharing the buffer on one RWO volume.
+
+  - One replica and Recreate: SQLite has a single writer and an RWO volume attaches to one
+    node, so a rolling update would start a second pod that can never mount the disk.
+  - Guaranteed QoS (requests equal limits on every container) and a high PriorityClass: the
+    agent must still be running when the cluster it diagnoses is short of memory.
+  - Liveness reads the heartbeat file the loop touches on every pass. A dead API server is
+    reported as unavailable sources, not fixed by a restart, so it does not fail the probe.
+*/ -}}
+{{- if .Values.priorityClass.create }}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ .Values.priorityClass.name }}
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+value: {{ .Values.priorityClass.value }}
+globalDefault: false
+description: On-call agent; outlives ordinary workloads under memory pressure.
+---
+{{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oncall-data
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+  annotations:
+    # Uninstalling the release keeps the buffer: it may hold rows the store never received.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- with .Values.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oncall-agent
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "oncall.selector" . | nindent 6 }}
+      app.kubernetes.io/component: agent
+  template:
+    metadata:
+      labels:
+        {{- include "oncall.selector" . | nindent 8 }}
+        app.kubernetes.io/component: agent
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      priorityClassName: {{ .Values.priorityClass.name }}
+      # A job in progress finishes on SIGTERM; a log collection can take most of a minute.
+      terminationGracePeriodSeconds: 90
+      securityContext:
+        {{- include "oncall.podSecurity" . | nindent 8 }}
+      containers:
+        - name: agent
+          image: {{ include "oncall.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["oncall.agent"]
+          envFrom:
+            {{- include "oncall.envFrom" . | nindent 12 }}
+          securityContext:
+            {{- include "oncall.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          startupProbe:
+            exec:
+              command: ["test", "-f", "/var/lib/oncall/data/heartbeat"]
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - test $(( $(date +%s) - $(stat -c %Y /var/lib/oncall/data/heartbeat) )) -lt {{ .Values.agent.heartbeatMaxAgeSeconds }}
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/oncall}
+            - {name: tmp, mountPath: /tmp}
+        {{- if .Values.ui.enabled }}
+        - name: ui
+          image: {{ include "oncall.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - streamlit
+            - run
+            - /app/oncall/ui/app.py
+            - --server.address=0.0.0.0
+            - --server.port=8501
+            - --server.headless=true
+            - --server.fileWatcherType=none
+            - --browser.gatherUsageStats=false
+            - --client.toolbarMode=minimal
+          envFrom:
+            {{- include "oncall.envFrom" . | nindent 12 }}
+          ports:
+            - {name: http, containerPort: 8501}
+          securityContext:
+            {{- include "oncall.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+          # 3 s, not the default 1 s: at a 200m CPU limit Streamlit's health handler can
+          # miss 1 s while it starts, and three misses would restart a healthy UI.
+          readinessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/oncall}
+            - {name: tmp, mountPath: /tmp}
+        {{- end }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: oncall-data
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+{{- if .Values.ui.enabled }}
+---
+# ClusterIP only. The UI has no authentication and can spend on Bedrock:
+# kubectl -n oncall port-forward svc/oncall-ui 8501:8501
+apiVersion: v1
+kind: Service
+metadata:
+  name: oncall-ui
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "oncall.selector" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+  ports:
+    - {name: http, port: 8501, targetPort: http}
+{{- end }}

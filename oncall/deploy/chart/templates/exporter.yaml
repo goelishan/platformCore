@@ -1,0 +1,91 @@
+{{- /*
+The journal exporter: stateless, reads the store, scraped as job oncall-journal.
+The Service name is the job label the operator assigns, and the alert rules match it.
+*/ -}}
+{{- if .Values.exporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oncall-journal
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "oncall.selector" . | nindent 6 }}
+      app.kubernetes.io/component: exporter
+  template:
+    metadata:
+      labels:
+        {{- include "oncall.selector" . | nindent 8 }}
+        app.kubernetes.io/component: exporter
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      # Same role as the agent: it needs rds-db:connect as the oncall user.
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        {{- include "oncall.podSecurity" . | nindent 8 }}
+      containers:
+        - name: exporter
+          image: {{ include "oncall.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["oncall.exporter.journal", "--addr", "0.0.0.0", "--port", "9464"]
+          envFrom:
+            {{- include "oncall.envFrom" . | nindent 12 }}
+          ports:
+            - {name: metrics, containerPort: 9464}
+          securityContext:
+            {{- include "oncall.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.exporter.resources | nindent 12 }}
+          # The process serving is what is probed; an unreadable store is reported in the
+          # metrics as oncall_journal_up 0, not hidden by an unready pod.
+          readinessProbe:
+            tcpSocket: {port: metrics}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: metrics}
+            periodSeconds: 30
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oncall-journal
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: exporter
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "oncall.selector" . | nindent 4 }}
+    app.kubernetes.io/component: exporter
+  ports:
+    - {name: metrics, port: 9464, targetPort: metrics}
+{{- if .Values.monitoring.serviceMonitor }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: oncall-journal
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.release }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "oncall.selector" . | nindent 6 }}
+      app.kubernetes.io/component: exporter
+  endpoints:
+    - port: metrics
+      interval: 30s
+{{- end }}
+{{- end }}

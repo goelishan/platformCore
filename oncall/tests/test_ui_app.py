@@ -127,3 +127,14 @@ def test_history_reopens_a_diagnosis_from_its_snapshot(lab, monkeypatch):
     assert len(fresh.dataframe) == 1
     assert "kubectl describe pod x" in codes(fresh)
     assert not any("No bundle snapshot" in t.value for t in fresh.text)
+
+
+def test_with_diagnose_off_the_button_is_disabled_and_says_why(lab, monkeypatch):
+    client = fake(monkeypatch)
+    monkeypatch.setattr(config, "DIAGNOSE_ENABLED", False)
+    at = run()
+
+    button = next(b for b in at.button if b.label == "Diagnose")
+    assert button.disabled
+    assert any("no AWS identity" in c.value for c in at.caption)
+    assert len(client.requests) == 0

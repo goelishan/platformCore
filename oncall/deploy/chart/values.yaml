@@ -1,0 +1,98 @@
+#--------------------------------------------------------------------------------------------------------
+# ON-CALL AGENT - DEFAULT VALUES
+#--------------------------------------------------------------------------------------------------------
+#
+#   - defaults are the production shape; values-kind.yaml and values-eks.yaml set the target
+#
+#   - install into the namespace the agent excludes from its own collection: oncall
+#
+#   - helm upgrade --install oncall oncall/deploy/chart -n oncall --create-namespace -f <values>
+#
+
+
+
+image:
+  repository: oncall
+  # Required. A commit-derived tag (make image) or an immutable ECR tag.
+  tag: ""
+  # Optional; when set it is what the runtime pulls, and the tag is for people.
+  digest: ""
+  pullPolicy: IfNotPresent
+
+# Name the agent reports for this cluster; joins every row it writes.
+clusterName: platformcore
+
+# Empty collects every namespace except oncall and kube-system.
+namespaces: []
+
+env: prod
+
+# The agent excludes the namespace oncall from collection; installing elsewhere would make it
+# collect itself. Override only for chart tests.
+allowOtherNamespace: false
+
+serviceAccount:
+  name: oncall-agent
+  # IRSA role from terraform output oncall_role_arn. Empty on clusters without IRSA.
+  roleArn: ""
+
+priorityClass:
+  create: true
+  name: oncall-critical
+  # Above workloads, below system-cluster-critical (2000000000).
+  value: 1000000
+
+persistence:
+  storageClassName: ""
+  size: 5Gi
+
+store:
+  host: ""
+  port: 5432
+  database: oncall
+  user: oncall
+  sslmode: verify-full
+  # RDS IAM authentication through the IRSA role; no password exists in prod.
+  iamAuth: true
+  # Kind only: a single Postgres in this namespace, with a generated password.
+  inCluster:
+    enabled: false
+    # The major the dev compose store and RDS run. Kind-only, so a tag rather than a digest.
+    image: postgres:16-alpine
+    size: 2Gi
+
+aws:
+  region: us-east-1
+
+bedrock:
+  # Off where the pods have no AWS identity. The UI then offers Preview only.
+  enabled: true
+  modelId: us.anthropic.claude-sonnet-4-6
+  # List prices per million tokens, for the journal's cost figure. Not secrets.
+  priceInputPerMTok: "3"
+  priceOutputPerMTok: "15"
+
+agent:
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: 250m, memory: 512Mi}
+  # The liveness probe fails once the heartbeat is older than this.
+  heartbeatMaxAgeSeconds: 300
+
+ui:
+  enabled: true
+  resources:
+    requests: {cpu: 250m, memory: 768Mi}
+    limits: {cpu: 250m, memory: 768Mi}
+
+exporter:
+  enabled: true
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 50m, memory: 128Mi}
+
+# ServiceMonitor for kube-prometheus-stack. The Service is named oncall-journal because the
+# alert rules match job="oncall-journal", and the operator sets job to the Service name.
+monitoring:
+  serviceMonitor: false
+  release: kps

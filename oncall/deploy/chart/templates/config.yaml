@@ -1,0 +1,50 @@
+{{- /*
+Non-secret configuration. The only secret, the kind store password, is generated once
+and kept across upgrades by looking up the Secret that already exists.
+*/ -}}
+{{- if and (ne .Release.Namespace "oncall") (not .Values.allowOtherNamespace) }}
+{{- fail "install into namespace oncall: the agent excludes that namespace from its own collection" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oncall-config
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+data:
+  ONCALL_ENV: {{ .Values.env | quote }}
+  ONCALL_CLUSTER: {{ .Values.clusterName | quote }}
+  ONCALL_NAMESPACES: {{ join "," .Values.namespaces | quote }}
+  {{- if .Values.store.inCluster.enabled }}
+  ONCALL_STORE_HOST: "oncall-postgres"
+  {{- else }}
+  ONCALL_STORE_HOST: {{ required "store.host is required unless store.inCluster.enabled" .Values.store.host | quote }}
+  {{- end }}
+  ONCALL_STORE_PORT: {{ .Values.store.port | quote }}
+  ONCALL_STORE_DB: {{ .Values.store.database | quote }}
+  ONCALL_STORE_USER: {{ .Values.store.user | quote }}
+  ONCALL_STORE_SSLMODE: {{ .Values.store.sslmode | quote }}
+  ONCALL_STORE_IAM_AUTH: {{ .Values.store.iamAuth | quote }}
+  ONCALL_AWS_REGION: {{ .Values.aws.region | quote }}
+  ONCALL_BEDROCK_REGION: {{ .Values.aws.region | quote }}
+  ONCALL_BEDROCK_MODEL_ID: {{ .Values.bedrock.modelId | quote }}
+  ONCALL_DIAGNOSE_ENABLED: {{ .Values.bedrock.enabled | quote }}
+  ONCALL_PRICE_INPUT_PER_MTOK: {{ .Values.bedrock.priceInputPerMTok | quote }}
+  ONCALL_PRICE_OUTPUT_PER_MTOK: {{ .Values.bedrock.priceOutputPerMTok | quote }}
+{{- if .Values.store.inCluster.enabled }}
+---
+{{- $existing := lookup "v1" "Secret" .Release.Namespace "oncall-store" }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oncall-store
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+type: Opaque
+data:
+  {{- if $existing }}
+  ONCALL_STORE_PASSWORD: {{ index $existing.data "ONCALL_STORE_PASSWORD" }}
+  {{- else }}
+  ONCALL_STORE_PASSWORD: {{ randAlphaNum 32 | b64enc }}
+  {{- end }}
+{{- end }}

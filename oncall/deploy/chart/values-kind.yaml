@@ -1,0 +1,41 @@
+#--------------------------------------------------------------------------------------------------------
+# ON-CALL AGENT - KIND
+#--------------------------------------------------------------------------------------------------------
+#
+#   - the lab cluster: image loaded with make image-kind, in-cluster Postgres, no AWS identity
+#
+#   - collects only the fault library's namespace, as make collect does
+#
+
+
+
+image:
+  repository: oncall
+  pullPolicy: IfNotPresent
+
+clusterName: kind-oncall
+namespaces: [oncall-lab]
+env: dev
+
+persistence:
+  storageClassName: standard
+
+store:
+  sslmode: disable
+  iamAuth: false
+  inCluster:
+    enabled: true
+
+# Kind has no IRSA, so no pod here has an AWS identity: Preview only, no helm test.
+bedrock:
+  enabled: false
+
+# The lab's three nodes are small; the PriorityClass still applies.
+agent:
+  resources:
+    requests: {cpu: 200m, memory: 384Mi}
+    limits: {cpu: 200m, memory: 384Mi}
+ui:
+  resources:
+    requests: {cpu: 200m, memory: 640Mi}
+    limits: {cpu: 200m, memory: 640Mi}

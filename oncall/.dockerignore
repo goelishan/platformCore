@@ -1,0 +1,28 @@
+# Build context is oncall/. Everything below stays out of the image.
+
+# Credentials and runtime state: never in an image layer.
+.env
+.env.*
+data/
+scratch/
+
+# Local tooling and caches.
+.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Not needed at runtime: tests, eval corpus and reports, notes, deploy and observability
+# sources, and the build files themselves.
+tests/
+eval/fixtures/
+eval/reports/
+observability/
+deploy/
+NOTES.md
+DESIGN.md
+Dockerfile
+.dockerignore
+Makefile
