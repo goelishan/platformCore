@@ -83,10 +83,16 @@ def resolve(rows: Iterable[sqlite3.Row], subject: str) -> Scope:
     if anchor["subject_kind"] == NODE_KIND:
         return Scope(subject=subject, found=True, nodes=[subject])
 
-    # Either branch lands here with the right owner: an owned row's owner_name is the
-    # subject by definition, so no special case is needed for a workload name.
+    # An owned row's owner_name is the subject by definition. The anchor alone is not
+    # enough: a Deployment and the Service in front of it usually share a name, and
+    # when the Service's row is the newest it anchors the scope with no owner, so
+    # every pod of the workload drops out (found 2026-10-08, notready: 16 findings
+    # became 3). If anything in the anchor's namespace is owned by the subject, the
+    # subject is the owner, whichever kind of row happened to be written last.
     namespace = anchor["namespace"]
     owner = anchor["owner_name"]
+    if not owner and any(r["namespace"] == namespace for r in owned):
+        owner = subject
     members = [
         r
         for r in rows

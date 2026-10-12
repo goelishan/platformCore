@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval dryrun env ui exporter obs-up obs-down obs-render rules-test help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval bedrock-check dryrun env ui exporter obs-up obs-down obs-render rules-test help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -53,6 +53,7 @@ help:
 	@echo "diagnose    assemble, ask Bedrock, journal   (SUBJECT=crashloop ARGS=\"--dry-run | --replay ID\")"
 	@echo "eval-freeze freeze one bundle per golden subject into eval/fixtures"
 	@echo "eval        run the frozen fixtures through Bedrock and write a report   (ARGS=\"--repeat 3\")"
+	@echo "bedrock-check  config, identity, endpoint, profile routing vs IAM, one call"
 	@echo "ui          the triage UI on 127.0.0.1:8501"
 	@echo "exporter    serve journal metrics on 127.0.0.1:9464/metrics"
 	@echo "obs-up      start the store, Prometheus (:9090) and Grafana (:3000)"
@@ -197,6 +198,11 @@ eval-freeze:
 eval:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python oncall/eval/run.py $(ARGS)
+
+# One Converse call of a few tokens; everything else is read-only.
+bedrock-check:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python oncall/dev/bedrock_check.py
 
 
 # Collects against the lab, so it needs the context like collect does. Exits non-zero
