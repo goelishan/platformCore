@@ -28,9 +28,7 @@ from datetime import datetime
 from typing import Any
 
 from oncall import config
-from oncall import landing_zone as lz
-from oncall.diagnosis import prompt, reasoner, snapshots
-from oncall.diagnosis.journal import journal
+from oncall.diagnosis import prompt, service
 from oncall.diagnosis.schema import DiagnosisRecord
 from oncall.evidence import bundle as assembler
 
@@ -88,36 +86,6 @@ def _top(d: dict[str, Any]) -> tuple[str, str]:
     return str(hypotheses[0].get("cause_class")), str(hypotheses[0].get("confidence"))
 
 
-def _journalled(diagnosis_id: str) -> dict[str, Any]:
-    """The buffer first, then the store, where diagnoses outlive buffer retention."""
-    with lz.connect() as conn:
-        row = conn.execute(
-            "SELECT * FROM diagnoses WHERE diagnosis_id = ?", (diagnosis_id,)
-        ).fetchone()
-    if row is not None:
-        out = dict(row)
-        out["hypotheses"] = json.loads(out["hypotheses"] or "[]")
-        return out
-
-    from oncall import store
-
-    with store.connect() as conn:
-        found = store.fetch_one(
-            conn, "SELECT * FROM diagnoses WHERE diagnosis_id = %s", (diagnosis_id,)
-        )
-    if found is None:
-        raise SystemExit(f"no diagnosis {diagnosis_id} in the buffer or the store")
-    return dict(found)
-
-
-def _labels(b: assembler.Bundle) -> dict[str, str]:
-    """The labels the model saw, or none when the bundle was too large to send."""
-    try:
-        return prompt.build(b).labels
-    except prompt.PromptTooLarge:
-        return {}
-
-
 def _warn_stale(b: assembler.Bundle) -> None:
     for note in b.degraded:
         if note.startswith(assembler.STALE_NOTE_PREFIX):
@@ -126,11 +94,11 @@ def _warn_stale(b: assembler.Bundle) -> None:
 
 def dry_run(b: assembler.Bundle) -> int:
     _warn_stale(b)
-    try:
-        p = prompt.build(b)
-    except prompt.PromptTooLarge as e:
-        print(f"prompt too large: {e}; nothing would be sent")
+    preview = service.preview(b)
+    if preview.prompt is None:
+        print(f"prompt too large: {preview.too_large}; nothing would be sent")
         return 2
+    p = preview.prompt
     _print_prompt(p)
     print(f"bundle_sha256  {p.bundle_sha256}")
     print(f"prompt_sha256  {p.prompt_sha256}")
@@ -141,34 +109,22 @@ def dry_run(b: assembler.Bundle) -> int:
 
 
 def live(b: assembler.Bundle, cluster: str, subject: str | None, client: Any) -> int:
-    with lz.connect() as conn:
-        incident = lz.unresolved_incident(conn, cluster, subject)
-        reused = incident is not None
-        if incident is None:
-            incident = lz.open_incident(
-                conn, cluster, b.scope.namespace if b.scope else None,
-                trigger="manual", title=subject,
-            )
-        attached = lz.attach_signal_ids(conn, incident, b.candidate_signal_ids)
-
-    snapshots.save(b)
     _warn_stale(b)
-    record = reasoner.diagnose(b, incident_id=incident, client=client)
-    with lz.connect() as conn:
-        journal(conn, record)
+    done = service.diagnose(b, cluster, subject, client=client)
 
-    print(f"incident {incident} ({'reused' if reused else 'opened'}), {attached} signals attached")
+    state = "reused" if done.reused else "opened"
+    print(f"incident {done.incident_id} ({state}), {done.attached} signals attached")
     print()
-    _print_record(record, _labels(b))
-    return 0 if record.outcome == "ok" else 1
+    _print_record(done.record, done.labels)
+    return 0 if done.record.outcome == "ok" else 1
 
 
 def replay(diagnosis_id: str, client: Any) -> int:
-    old = _journalled(diagnosis_id)
-    b = snapshots.load(old["bundle_sha256"])
-    new = reasoner.diagnose(b, incident_id=old["incident_id"], client=client)
-    with lz.connect() as conn:
-        journal(conn, new)
+    try:
+        replayed = service.replay(diagnosis_id, client=client)
+    except LookupError as e:
+        raise SystemExit(str(e)) from e
+    old, new = replayed.old, replayed.record
 
     new_dump = new.diagnosis.model_dump(mode="json") if new.diagnosis else {}
     rows = [
@@ -212,8 +168,7 @@ def main(argv: list[str] | None = None, client: Any = None) -> int:
     if args.replay:
         return replay(args.replay, client)
 
-    with lz.connect() as conn:
-        b = assembler.assemble(conn, args.cluster, subject_name=args.subject, now=args.at)
+    b = service.assemble(args.cluster, args.subject, args.at)
     if args.dry_run:
         return dry_run(b)
     return live(b, args.cluster, args.subject, client)

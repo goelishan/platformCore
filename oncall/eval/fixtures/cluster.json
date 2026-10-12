@@ -1,19 +1,12 @@
 {
  "candidate_signal_ids": [
-  "e4395d64784abbc155590d0844e589f7",
-  "14c99fc0329f1a2d245844a95e88c93e",
-  "7eac0e64a5a34b2a360a03df2bac7181",
   "ec579123e96ce84d376298737c37e77c",
   "b9a0c2558ffc866725dea9e903b639eb",
   "043e8c61513e3a453db7135aa7764886",
   "f71b6bb2f236943fa570def670e2b73c",
   "438ec9a064973d5b2136458cb003f034",
   "24ede9b82b2f163782fae0a8cfdc1c1c",
-  "4459a6656744774cf0b81bd239a42db4",
-  "459fc413a46a8f93dce30210b18a7a6e",
-  "150fce04731163fb7f128f599a45ab3b",
   "145cb4f92203df9836c8db30060bb375",
-  "17e61decc8aff8fe9d7b241b751b1d70",
   "257754cb59827e277485cb944195d38e",
   "760cba3d193e58fbedf6a12a20fb84e4",
   "6a472ed7abdd56e29ffd8f780d5e62bc",
@@ -30,298 +23,306 @@
   "24987712dc6f16aaab5bcef65f4c82e8",
   "fd2824b40a3be1431de5f585102ef3e5",
   "a23f58fa9625c7c98e95234e78676b02",
-  "cfaa14895a61b5f14f14284342be7686",
-  "b4b92b02f552894956bf2ae0aecb195e",
-  "0633ab5b63f9ea6a5d0325eeb23e068b",
-  "f91fe2e0c34b0d10c4f7cfcb01a27a12",
-  "49b885d15c69891a0d31891b8b18d00d",
-  "4155d1bee7078ea15a6d0419afe34df7",
-  "f7e248471866703410de437271bbdba5",
-  "f764f691aa1f0d1a853d55114ac0172e",
-  "ec7b27124d2776bf45a36284ef84aab0",
-  "b96da01b6955cb8aa8e3ea01305b50b6",
-  "9134e25a24cb5904b7d81736a7bf822d",
-  "952271d5b5b3a6ad4cb9ee77899592f5",
-  "c97354ab845b0ee2ac551147577b272c",
-  "cf2af16c5c0d85c15f59643220458918",
-  "cd8d62d3dd34df6fa1b8b8ea8d046617",
-  "5d83a08580797d01d210d8f47b2c3f9c",
-  "7e6ba8147c1d977027adb70251ff4654",
-  "3c84b93160ee16ae63ba83bfaab44b3d",
-  "5e1fbdb23fd08acf6a576ee95d764138",
-  "61f8a60fdb740f5670ff1f7930012801",
-  "f72fee923f25b7e695733843dbff493c",
-  "afa7326b5bf66bfa04fc351ab04ddcb0",
-  "eb2206ce70e12a80b166f0d22bc60fda",
-  "544d78b4b84215f9fdf590eafd09c889",
-  "f1db4f622db0f8427c43e0162b91591d",
-  "9a897fc52c17efffd6ae4d3d41b46616",
-  "10ad5c2214f49e16f8c18d903c429fdd",
-  "4b1cc04350efa37f0b570a9ac2ba2c78",
-  "d365f9a8ea6fbe1d00e6861b4cae1f44",
-  "a5ff7066b6b5b3041d13f60a433d3eda",
-  "f3994645b63ba04ec9a8665908db6c8c",
-  "2fd32d0e6b1d76af2cedd04919df878e",
-  "f304e13684863485579a010db8dba992",
-  "d3ff6caf26f8c82ef7392f9bf120882a",
-  "f5d2738080a67b18852f78d8d640c2cc",
-  "1c817a6fcbee8e133605d499efe0318f",
-  "9b83e1d1f297466c85e7dd4cb1227973",
-  "93a6102d3f15c05dc28a203af22236fc",
-  "4452b2d1104d00ebcfe135536382ba31",
-  "a56e9aa4f6313af623eca8ad9c96a9b6",
-  "350337f515cc8fadb8f42c0558d75f4e",
-  "6c9b511650945debe56d42c0cebd5ce0",
-  "1176305f2b9daae9f14231415221fe5f",
-  "d2a1c8a2a55283f3e58c31a485cf3949",
-  "4dd89717e325c3eb501f22515dffccbd",
-  "a5ca33b1b96b0fde31f4c3d054666147",
-  "523761717de84fa294303ee67d39515f",
-  "8a40e48bf877f3ce4fd6dc48ffb69e03",
-  "e64a12485e6d8db87256d512b29e7601",
-  "7e509a7d1b9f6cab6ebc16b57e7ca75f",
-  "ce1ddbab8f827526a1e56790388e1438",
-  "ea2406a5a6896d6e247877b31c0af462",
-  "85d774e9c8c78b9db1296b0df9c68123",
-  "9d2c8038267a311b9fe1d5c61c0f5a37",
-  "fb9bc56080464d4774a77c76a7fa6f7f",
-  "cb3739b32deeb46b9a085bb3515c0d72",
-  "3208fd563a806793a3dcdfdcb6ba7e40",
-  "107bd8a31f5745e300390eda9e5ad508",
-  "e94f0df69a56df04ce0caa0aad2ed0f0",
-  "433f67910e2f364d8402cc34223fee7d",
-  "6957918e644e0b2760fd3b3621b67441",
-  "d54d0326731d0475c4caeebf96307c9b",
-  "e16aeada7a6a38a123eee1f321b7ab94",
-  "162e85b82d2be8990bd93b06b29e8a00",
-  "777afaefa8423723111f4e38f664bf19",
-  "d49d637fa80d5f59fdbbdf02da3590a2",
-  "d6e680c77d3ae199e9561c5ea0d99dc9",
-  "6e122ec7661a6f4ea388f518be72a945",
-  "beaba10c251782b14cbb88e8697dd3b0",
-  "1a8fde5123ccbc3003ec7e7b6ed69e26",
-  "94f15514c51ee214bf4ca8fbacc91667",
-  "f31140e679e28198574a076bc7cb1c7a",
-  "3d402a6039c3d8eb624b95003cf57c2c",
-  "eb9bba2075cff88789c31c0360bd6460",
-  "b688475297a622418ff57f9a1c8c729a",
-  "07486ba85114294900bf80f78251235a",
-  "13c16cf26905361f898227b1138fc3b0",
-  "dbaa82e46e4489608f823d2d7309e55a",
-  "089fa364d0028f81431a332b6cd70376",
-  "f566818119ed681363ba556d2f53b73f",
-  "05d4d2290922d5c626ee063b0c47705c",
-  "0afc55a6a292d2920461b60d8bb41443",
-  "4806c47b38da555f0bf4d4034279e9c5",
-  "fa87be52181ce1ae59cfe508e69b2777",
-  "ae790d43cd49083f3fa0201bea2de6c3",
-  "4851ae8d5105d7cb702aa5be8122fd71",
-  "9ff97a361c8ae471cac5fa7c99e10f6c",
-  "0062596bf4f93e5420dc95f51e21b123",
-  "29b052a47e4f18b885d0eb6e9c0e04b0",
-  "bde4ef52fa5a45ebcdc4e74521a20fb4",
-  "2c4adc976c6d332dc75ff919565ce15f",
-  "a59e2f3957f048f8b4a85b23708d6dab",
-  "f5dcd8dd19b307cf52373bafcda1eefd",
-  "ad48cb6cb4b044e8e1f3354091476a57",
-  "85a65b35e709b4701ea4930c58842fe6",
-  "c9c67afe54b645e340bcbb8c7d1ee304",
-  "1f28378913a1a22d488ca1d4d19534e0",
-  "7c962fbc9ef98a0682ac76bf0f057bfc",
-  "cfc514760ddaddcd2b790db117e0f47d",
-  "86da3e9e845e63df628ea1ac04dd2b1f",
-  "965027238460b52a1c8afe5b7cbd89d8",
-  "5ec6fb06e79737ed8bbb081fb2681744",
-  "edac9fc1899be366f789dc93e1df936f",
-  "57baf4fb789bbd1181288619571bc4ec",
-  "86866951657c22b9252085bb7c8c5984",
-  "9bd2b30474d9345368591cbb5db9ce8f",
-  "fed83c5d392be921b5c13252be1af8d6",
-  "15936c7d54701745520754ba42745653",
-  "c71ca38b2c7541590f6f8a46eb76b73a",
-  "9ec04aea80460630c74fbbb1fe3a2c36",
-  "4e236093bad96253542eb490543a11b1",
-  "ba6f87a8f57aeacd8ad61f68a85b2cc0",
-  "95659aae589cd7c55c9e1502bc7a0439",
-  "f932f46586199bf5dc849cd47fe8fbe9",
-  "585b7326ebe5d103e7b3a39bb23a35f7",
-  "8f177c9a3868d143e055ef0613cbf188",
-  "bfd94c4d69dd87576ca4561ef48d3250",
-  "49c9b6ab34c63e4b6c7b756605e98eda",
-  "7fc0609cb3eeb3254a0d1d9c7db5d1e7",
-  "0999408278f343dac7175428188d3721",
-  "c70adcaaf3d6881d4c8e36e333d7b0de",
-  "84d72546a422e7b3c0c6179776035f67",
-  "748427a6e7c4f06467e44d93482ca4b5",
-  "d98e564bca7a2d7c0af4be11981e91fd",
-  "cff4d814a234acd955d93933485158d9",
-  "a20ff7d37f7336be8720aea58b38e9a0",
-  "c2ad2ab2bbbac45da441b49053f0aae6",
-  "b304a4886a206388ad70a9ff47d93985",
-  "754db50a9119dd9fcdbe22cb65d59889",
-  "163cdf56409d19737461e35951b7e569",
-  "da230ef9bf0c0f8203b333b2646ad42b",
-  "2325488b475a1ad20cffdaf206702938",
-  "b57524c2c05de1b99a70708af3fc55a9",
-  "e5bc112bac99879f1c81661c0cc4fb92",
-  "e381b60a9a283376481f0d20a7961160",
-  "be24b1cf1d45ae8599712ffa9c473f44",
-  "72564bc40f4ea53f9c2abaf38d95b640",
-  "a56b1f076941611c83ac24f47aff621a",
-  "d778dd0b1e0f60cea58983b3f7eb767a",
-  "d10dc12867449e05dd9c0978de405e62",
-  "d8327988b8a712b773eb84095810bbe1",
-  "8f5f1fbefac3d9824af486ec17340312",
-  "86c2f63bc9d091af115faa9da646c35c",
-  "c3bd6fbcf3b00bd51fe3feeca61d85d4",
-  "f012bd7ad47d242662021e9d01daec8d",
-  "1c61cd968ed66bb61b72053487377e9e",
-  "22ef2b10dcf6bbc7f0526643e75d102d",
-  "cbd7d5632ec505d9e0bea2be0029975d",
-  "9252fd677333b28d78a8aad81ab850da",
-  "bd25f422881257d67767ba32d6f2f2bd",
-  "71818544fc6c0e4cf719ffce4f699187",
-  "5ae13f3b040216880c3ffd3cd300bffb",
-  "5470aef75b67576954057eb9d2553e4a",
-  "9dfc2da9679b909ad3418204cefabba3",
-  "eeaade74e46c8e08041c88361af5c65b",
-  "d98f74c4b7046239a4c602461709cfd1",
-  "e33702575539f7a33d434fd7f54fac29",
-  "9e06d20040a9f3d8a5c318342ba432d2",
-  "83d82f98738d886e41ed008959ec2630",
-  "aac5e7bdf2d584b2881994412eab6f48",
-  "65690926e03aa4520aaf796dc57911d6",
-  "010fe26f7824fb50f7ae340a151ca70c",
-  "87b955d393a18c6409800e62a979ba57",
-  "945fbfb4b4c677e9e8937d863f6da5ce",
-  "6dfa9b25ae29c03304fecc7f1eecd67c",
-  "8b41c8ba8a0abde5f4c492b73ad7138c",
-  "663eaedd280ca0887be2de95158b7709",
-  "70c3b0ebcf5f88d345bebe9a2273eed9",
-  "ee49479fa08dc231552df07a75ec1fe2",
-  "867a49dc04865dd8d999d3c9fa06d450",
-  "173bfbe14255b6f0b9f8065f4df79d7f",
-  "51fa0b01c5a0818865760e7ef1e2d623",
-  "8b0e1b4aa3f55ef7ea4e870682fa1cb1",
-  "ecb667c4d435fd3326ad8fe178483c1d",
-  "8144983f907925ccd4b7839cbd1c2ef6",
-  "0fdaf26afc0b1224c81221078e267ef9",
-  "078507f75217e65987e4f60ff90ba132",
-  "13310d190a5c6b9f6d8cf82bb0b4663a",
-  "0ba5af128c480e360b74d88f3b219ad9",
-  "869ab489d4e1a227f2574e40d5c77c00",
-  "6c8657cf36ee94bbfb155cc287c5ff0b",
-  "6778b28a8026980de103bbd6cf595500",
-  "5d1029ade0bf9ec6e22567f1cdcfe013",
-  "d82d9404d20436752c61d637e3e8ccb2",
-  "afb4bfb552bf1a2d91eb64e738d7cd21",
-  "46d2b7ce7a0e15ee6ee08cd4dc51a78a",
-  "604116ee3fd048236b3d25bda8d73739",
-  "edc08bf0859ed56045429a3ddaa5420d",
-  "5fab1d8111e082c74fb0bf540a67a219",
-  "5cdd10268e908efe94c15311bfaee364",
-  "dc17fa776987f43b5e960e1bc65d7365",
-  "e6031da434638da7059e2792ddde0a38",
-  "390d6960d1139b9a93f41a7fec594780",
   "60ce16378f8af18ceacf28c5b5b81fb6",
   "2bb850433c1f454adf4ea2f77009ccf3",
   "f12297591618ff515b1329fb9551de5a",
   "da2e0cf086cfd21e77d9fbad45fdd22b",
-  "3a09dc50c50ed1a028f7030d1124d841",
-  "064aaaadb37c5f173f0fb876dad6b694",
-  "9aa4aa68b2fc7e0ae877de6f0c707ecd",
-  "535d60721ac2d4035f8f66cbf68e3d1b",
-  "9e3b4c960577e3235bf31f04302f2760",
-  "0cda6908ed4fb1d8c20cae1ac0bcd612",
-  "3d6aa6da37d7b495030bab6f71b0ccd8",
   "c4ee5e9fd769df29d8a4cc0de624d3fd",
   "6f68d18cdebd772c95b78a63330e9492",
-  "fe22f45a94d0e052788fd7f3ad1d903b",
-  "80ade7306d5d92be0e7b92a1f10913b1",
-  "eb32c28cf7bd4c73da78533646e7d47b",
-  "ca5be150f2e8345668f43b742873a213",
-  "9373f722c27bb0e110a70e19afb97915",
-  "4126bd3bcfcbf9cf68b6d0ddc43483b9",
-  "3d39387a36e5e0a3e14dba6eccfc7bc1",
-  "3debeca164e68778731632a3097025c0",
-  "9d51746c9d06b77db07675ffbf09b6c7",
-  "a895be5aa16dd092fcccf8dd4514da32",
-  "8a56a4bb466915d4343d4f76f7450dbc",
-  "d947bb0f17d3d620f2e398ce9bdf7421",
-  "78ee52cbd9ca9f72835f50e2d3bb102c",
-  "f549aee68b542c87485e488449284948",
-  "0379a2e883765014122e07e98e09afb7",
-  "6d91df1096020ffbc57521c170157fc4",
-  "742319000cc776ce5e2a97cdbeb1bdd0",
-  "3f3978815f1328c57d616028b8e51d52",
-  "bc13ac0098e658ec7d48cd8490737924",
-  "2866a9d60a4e878342e94c0251b9028d",
-  "be311b36d6e059e87fb7c1863a0aa3e2",
-  "18d6240937b7dc09b97df45bce9225f8",
-  "6a60c7dd5a4837df9b8a4eaec2ffe7b5",
-  "c7c02105b32df7db76f7ea32946b89f4",
-  "80d1df2bc6d8dd8e249e2e90546f4810",
-  "6ed3c832388273a5c9610b8335656ad3",
-  "b20a426beafdf47bf363430a48806f13",
-  "147e76dd9a739134ff4674772652351e",
-  "69593a1c771c40b648ad8c5608a8e40b",
-  "3a49abf642c7558a29b57b2caf79b753",
-  "dc783edf51757d5419b728ac414700c9",
-  "ccca8ad7c6f5088f0c179e7279d65bdd",
-  "ad5cae080e6b2d68f5848d3ce7e1c0a5",
-  "5c49e55cb3c8e10c28aea8acd41afaf9",
-  "8f9e5cd6166716fa09b3b9265838d3cd",
-  "2d9a658cd33b539df8fd362b3d8a360e",
-  "964b9ce166b7f4a75a8cf0bfcb014f09",
-  "c7d9e85131d22570f74dabd5b773843f",
-  "43fbc3ef23105a445b8c094e9f25928b",
-  "aa7d0ea5ee38980494306d210794dde5",
-  "83d5ed43022a9f0112ae498a82d12d92",
-  "ea38e20dd8d66bbdc5e740f4487dba11",
-  "dfdb18056b915e58f53fe4cba874cf45",
-  "ddf45c8d99c203bf48e4fe10add2d32d",
-  "7544411c18789d68b719c970d87cf89e",
-  "0bc57d5a7ae1eadcd8ae9f2fd03d5d52",
-  "9d24997b41598e4db75a85b01e644709",
-  "4b36522c9307b49eda6921412f4816c2",
-  "13634d510a9e19b5bd08a5f5d322ebeb",
-  "c14372cd88ecb71ac7492ceb23221c46",
-  "6de43895bcfffaca47c52b57ffff38be",
-  "4fa0d9a8b33d8f881d18112abbf9ad93",
-  "5791f0755b4491af26614d6f52f9084c",
-  "7a5b8cded2dbbab54b12c99f4e8641fa",
-  "9827456156d4a1f46d36368365782850",
-  "35979dac24e597803da7771be00114ee",
-  "64351eaff79c3ef35908a3aaa6636b60",
-  "29ad0bf73a150ac826cd4bdff9445438",
-  "986299ffd98a292d056992e69bd83850",
-  "72ef0519ef768259298bfa51e501b399",
-  "cd623092c9cb382ddf4caadd8f599396",
-  "7776538d5cd32767f3cfa6d322d15316",
-  "0dde90eb806fb094ec2d0bb38958c5f2",
-  "96193ffb4411aaeee948b4023dbbb8f4",
-  "f4408393935145c8696660b087edb786",
-  "f671b7ee5df79c0f2c68810cae4b04f9",
-  "ddece004bfa956adec737eed8d266229",
-  "06134ba70be68e54e1ca2d8afe2a4982",
-  "c4a8e0d25dba2fa3775802bc98fe014d",
-  "f0dc2320feebdfa4a0d4d608f0af84d3",
-  "dafa1eb9f68209be0be417556f44f68c",
-  "b7a857ef39bf1fc996a6d7f47660f997",
-  "b3621cf04356dbd939ae1bf5827703df",
-  "92dbdf2608188a7c0b2cc5377d494651",
-  "cf7ab7c7929fc7363b1babfee1c79e84",
-  "e33418dd0233eb91b27e3ac6dfd1b82e",
-  "eff69ad6b49513d16b826b665339968b",
-  "8b1e6f1f3f2b737ed8805bfa7b4327dd",
-  "a45c4574fe132cfaf93be29763d80f2d",
-  "3bc637767d1921b4b731e54fbe61a9ea"
+  "56440fcd51d9da599a8273e887a1f1ce",
+  "33f8599c0ab485b27d24b79b9ffd9c42",
+  "aa47bd689c79840214a7c1d684b3633b",
+  "77ed5e0d523aee00c3aab4f26cec7a35",
+  "48a742f150be25d975c462b7fb07b798",
+  "b7fc6332caa764aa6246ebd332740c03",
+  "fa5c7f95a84029714da651bb9ec18598",
+  "2b8bdc10e47966509e86357ec67620a0",
+  "494fde6b03753355dd4cb744720c021c",
+  "abeb0e74332648decb2d0e0d1aca7656",
+  "70a2a1afb7e2ff2856b4355128f22430",
+  "bae9c0c72f4a4451f5f90783259cf49a",
+  "14c6e74011af7f432d3ecf8a2a367418",
+  "aaa3c4266ebb20763a572be3db97c0c5",
+  "3486518d4a39eef52def9eb772cf3331",
+  "1632d919daa2af939bc2476fe4192e80",
+  "9a9a0ed620187390373d5b3b6c656fe3",
+  "5a79e12341489fdc86d13e971f886273",
+  "12c16cee727678e3b0b19cddb8b750e8",
+  "81abc5cec9e46d132f61439af3343910",
+  "f140b1d49f2519790c08743a00609178",
+  "d9b016c256f76cb9ae51f47670b0a370",
+  "7d8786173ecf7f5c2dd9ed972aba3949",
+  "2d97668e2e46b378bcbbe7fb4aa3ae00",
+  "f82a44673ab980028aae1860efaea18d",
+  "7ff0967b6c4b4f8fa01073e5658aecab",
+  "e27286d9c223ae24850ec0d698cf74d7",
+  "6fb014893dcd310a3f542613dacbd6c3",
+  "4c68028e9da4beddf222fc78bf510a75",
+  "5c1c61ff93c1bd2b5330ecd73c5945c3",
+  "63c738c7ad4b1667736cace406f0e7de",
+  "2865b84aa804b5412557f3109e3f5b0c",
+  "c25e7c8b9f233d0bcdd9c62e68d58f2a",
+  "96976aedd9aeae0b3324b9c32bfdbca4",
+  "a18b06be0324315cb6c1c282cd50c5ab",
+  "4b0d6d84fef62b6a2e0d864334f5cf2d",
+  "6ed4996b4b59629fd9554918c7efdf37",
+  "bce4fa38af4d76c53077a81c7f2ed708",
+  "edc04b9438909e5f2678041e73732369",
+  "0b4bc6421f537c1881b91193153c76f6",
+  "c41dab744b62553d51e0516fb0bed76d",
+  "133351645f09c2c21df6bff7d2f9cd6e",
+  "e6e3a93178dbd568c2dadffbf0d884d2",
+  "5351376972c9530b12117dbe7791d793",
+  "9dd976bfa72cc86fdf67f71c0bd0e9c7",
+  "4ffa2c72f2e951b7ec5003a0bab098eb",
+  "d05579c537aa18ca82b8f680ec7d664c",
+  "6d882802cb64b60a031f5d1c660afbc0",
+  "dcb3cfe4e500d938bd7d5114eb900dd9",
+  "e05432d41128218460f0b23e4ff01e1b",
+  "5d7e6278db2a0830d6425eddec85f6f8",
+  "9cf67bc58755545c57ab2777843be8dc",
+  "78d99b0009ffe24715b39d3de53bb91c",
+  "8ab4434b64199fe2f87d26adc408f39f",
+  "b5941e4dd598e8f4e0fa72c16c2b9692",
+  "d40dc70e1d4f2a770b36816d225fec1f",
+  "17f8d26a6196485837822273d37ce07b",
+  "c861b366bcba6a8f343209eee020b9f6",
+  "9a3376af9834859ffaaf0a337472c8d4",
+  "ee201265c28c43f0d117f178d6ebe10c",
+  "14b0b34ae91138f61b36bf40fba5fef2",
+  "18a81c2aabac1dea32caf1af1546fab1",
+  "17e5d893b05b6dbe0dcb5aeb0df28fd3",
+  "67b6341bfb3e0367477d040ce09eb8de",
+  "0c5b6d275d482e083698c6a80e6c26a4",
+  "85c192188478e111c2e0c04273c6eaf6",
+  "f066183dbb647c135a94d0c719eee595",
+  "890571a0f90d702400cc4a2a415a09cd",
+  "054afd640b2c1e412955b5496f8c68d1",
+  "06f5db71b5847e6bc7d49f0fd6eaf63d",
+  "6a5e82a559ea7eecfe93b75a5690a602",
+  "43d1f01634be1e3f9cca1a3403c1ab04",
+  "dc82086345edab1af8dda51048d487d2",
+  "288afdfe1109844eeb669616656abfe4",
+  "46c73d9abf547b298c512af9a68b117b",
+  "91b2be63ef9eba224143f6a0134d8459",
+  "0e293779fc2f2e1a9cad94b93c7ceed8",
+  "82a42074d409d1a0178a064dc28ae77c",
+  "249c7c94c06e3b8cba0c7ad612423530",
+  "ee65be3fafbbd5fdeba73b977e998163",
+  "f44353436532297ae24300f6fbafdcc5",
+  "ac6d3efc1e2817dff8f85c2769b88001",
+  "9d9bbde14442e45b565fa47de638b7bd",
+  "31736b4788bd6baee919146e1a4f06ec",
+  "d5489382b6283baf9be369b6569938ae",
+  "077992951039ae3bd3dcda99cfb3a4e9",
+  "a0b9980f9207464d14b8c78c40696bf9",
+  "d3841738f622eeeeb163731510d14735",
+  "d1a4500c0d5257ea34cc6de67fb3ed74",
+  "b1dad7f6e58fde54a7d8d52fcec80394",
+  "65630ab78ea783a33c34f22cb3bcd803",
+  "d1f788188573a0129a9bfa90f8fb6084",
+  "c379d8ce2235fb020609c9e56b53e88c",
+  "6667e0142db635c250842b2ab5bbd1c6",
+  "d99cf5cc3c2e3d8a80a97388d1be17af",
+  "84c857b5ca003691ed1cbd6e98a2b523",
+  "d5f62cd4add1739cc1664e35a36daa1a",
+  "3eb9111412bb26c81620a83db2aa1987",
+  "317ff771b3dbd27d4214b5a8a7322c2b",
+  "479fa57485ad3ca30f49a53093886c74",
+  "9959726b4cf49dd82bfba022516367ed",
+  "ae3c2934ffb231e49cb9f776e24f51cb",
+  "618738b8f1353f6117daf8483a2b1319",
+  "b87ad49b3391b55a50f1c4ff96b78c53",
+  "165d09148e0f809f5748faa77c09bddc",
+  "b0d4b5132a7c2e289b715b1bf2236463",
+  "0f437450e67fb1e335dd3733a0e7cb2f",
+  "27554d60fc693d63089f8f0106c019e7",
+  "8c7201bd234937cf12972ad18902687d",
+  "0e70741d40fcc1e3697699f18a704986",
+  "23450c3e886a2c2d591e3210acee50e7",
+  "a008ef918554727788b58f75438043cf",
+  "52cc1e1c3be7242963e96c566c0e6af2",
+  "d8e810a12abdad625d34aec99267d807",
+  "02193efa08927f5ad0e5e9f765b59b1a",
+  "7d96c7adecc2769b8ef51f7f3b77da07",
+  "29b8e8e990a8b4d285491e2b3a8ba617",
+  "a90130a15e9bcc3b6eee29a0ebb3966a",
+  "0b10cdfd3b5d6e85b88c4adc72a82c7a",
+  "dde5d178fd3e04d7c68962a3ed3169fd",
+  "42e9a2ee36c6acd67d053c598e9a6308",
+  "4fc5d1d3f691bf24daab40f9223b2612",
+  "ce86026746683051d8929d8f0710a9d8",
+  "91748473b7ad93a7da183119469640d3",
+  "a9d6b668d53ee8e4d59c0ea724e5094a",
+  "ce183b011fcad382f9363cf4c94d85b6",
+  "8fa0f2ec0a1d7661e7cd39f817b87c7d",
+  "933ff0f2909fc85d611b4e598f7ea688",
+  "57c3719efb64b3d1b801b62fbe6b4ac0",
+  "69bc7ca0f7b5763da4a2e4191b6f7492",
+  "7034e5fbe50e99d268631eab94a9f281",
+  "81fc50a58cdfafaa39f2c4eb9b8712af",
+  "90806061cf5c39abaa9511d1456a962a",
+  "31c90d3cfe1df972344180e8ba8823be",
+  "f880ef5b084b3f335d0218918598e7c0",
+  "ac2bb31c17a589b86c07b1c599106b6b",
+  "6431621d227aaaeec5bf9d46062b26af",
+  "48e822e097731cabbfec4028f03c9ccc",
+  "8e00e8752a48e2af1e5434eb572c821e",
+  "fed26c5add246ca6ed17d758f6bd5008",
+  "36e4c613d0844183c1abceee6678bafb",
+  "31497021db8f81e53e6f742e461c75df",
+  "cdeaec31e9c3b813e5994833b5f44a3e",
+  "bdd5790b94fcc1814670e370f385ca2b",
+  "0bbd321c14524ef8b6e85c5891fc771d",
+  "e9bffbfb47647bd279bc4d1a94c9bb07",
+  "fe9acbae69610742e7b56faf304fbf6c",
+  "16c853277c7f8e676b8ee93158381b4b",
+  "ba465b15b02ccb80aecd06cb92db74c0",
+  "6f19df23b27f1d56a904a172480c1a8a",
+  "615a9199f6fda32f0a63d26f22dbf555",
+  "52066151f43aa19cc7d5ebd2e5edea55",
+  "0ee70ab61384dfeea3ad267c82ccf912",
+  "b0223ef748c63d8860f2b5a3c91a776e",
+  "b36184ba7fd3ada43bf33da6f2e40784",
+  "c42b810e02e4f1d4b720a85dcba0de02",
+  "7798896d64aa4bc6812fdfe6ad1fe079",
+  "5e6c6146282be28a5acb52a6ddf8065b",
+  "3c077b35372370330dd2ec46b0371400",
+  "50ff0c06e6cc92bbf274fe2be7252f30",
+  "ea4513522bb28fd59b06eec4343d78cb",
+  "69eb1e821c8148345d3434cab5352b98",
+  "6ce738e35c463dac78a1cdff0e74e975",
+  "a298c1388e886ec5b9d7eefe512db228",
+  "ee4d1832494720631616ee1bf72bba86",
+  "499230c768963c18044cabfd7ad1ae8a",
+  "6bc7833dadba287750f506e4b46be626",
+  "c1e337cdd393dfc9e6d752bfd7cfbbdd",
+  "1b22f787af1058dec6c917ec04db40d2",
+  "befed28f79721c54271994445d00716c",
+  "ff0602f01e730a671c4b32ab3e59ba32",
+  "827a4152b1a57a3f17f7529a1a5e7932",
+  "8f92ee6360ea41e197f0482ce853132e",
+  "44e721b07780d559e5edea8cbfd67ba9",
+  "a82f2b7a2a6367e97bb56425ae7d83a3",
+  "c40418863cfccddde195bf9c01b06d9b",
+  "d7f3f45e17758c94182850e59cb8537e",
+  "b91f9f89f0a5e77e38011cf4a83d72d0",
+  "21e60529ff876a75de55e2a4f3eea232",
+  "41a57c22d3c4df3fa4b2b544d937f1fc",
+  "18a0726905bf415f04f173ace5d27a03",
+  "3fc01b60f9e87180f9203b87b6ba0b30",
+  "855c1e64d8dcf275936a680de0bd32fa",
+  "8b7f44e1a98ccce77d8f7b774d03835a",
+  "fa80adc8dc0bbb451ae17541c35e6ba0",
+  "cb999e0e03d7e0effffa342eba6b67b8",
+  "760269ac0e3f6bfc896ba1f2b2e989ef",
+  "a9793a1c2c254953afc07dcb38af234b",
+  "2ac125441d1c0a4fb232208cd1c319ca",
+  "e963d3f37bbd7894db2cb28fc84514f9",
+  "1d5ce73a7eb929a86c59cc30d9b17580",
+  "c4b30b103eb4e7e81374d1430517d8e3",
+  "46a0bc2ccd31eca5cf50db3897d4ffb5",
+  "2ba7a935420d1ad99312bee3919994db",
+  "5d5887336deb35400d216631796a2028",
+  "18b2b89c30b049d77f80f67b3b43fad7",
+  "78d4c8125ad36a434e20fb82e05ff05f",
+  "c72cfa4e15937fa8266a6dad334d4b17",
+  "9bd6d83af41063c317476ba522ab9f10",
+  "2b4928b17d5446f1225461fb2a6316b1",
+  "b25bdd0627f4541e5046416eba67cd7f",
+  "52c5a798accf92133074e78c13df00f0",
+  "373443fd3b074fcd3bba36a44869dabc",
+  "91dcfa96390f079a1f890635359bfc8b",
+  "fccd6f80cc7348a45bdbf863f4fe22bf",
+  "0dfd5cf30aeaf8ab63774bfc163a50bc",
+  "05819ccaeae5602a71b165bd376d5638",
+  "3ea319d6b2e49c2b4b9bed5317eff40b",
+  "c3bf2f4e63cb098569ab4f7126223b2d",
+  "cd29cf48987a3acc45b8f63a096ebba6",
+  "a28bbab8c17ce4e488d14738749f97a9",
+  "33ee5ae9e0925bb0f343a00339e4ac88",
+  "8989c7746963e337c9107e95590bcb80",
+  "68dbf7a1bb2e50901af70bf2dfd6dd34",
+  "689721d6e405768128552ba2886316d4",
+  "cf660ac064f9b17b2ac6b683d937b4f7",
+  "0d4dd853712ad6a71aa63989ebd4139f",
+  "fb13ae80cf7d4efefc3a4c6943071a83",
+  "078d912f94089f306f5820c699749a81",
+  "42eee6e87da1f4cc693dff232517494d",
+  "93cd12853e9a36e6497bdf2afa3c8974",
+  "65b4e422234276a84bf16158ab85396a",
+  "a00d10a4a7d2325c13db74b89ce91ca2",
+  "9c9fb23557c87da1912ad21d01300974",
+  "b5dcce3a957024978d114b8684fd3744",
+  "1c19faaceba91969d1ed3403e1051c77",
+  "c816db71a4b72b2b60d788d304e07b3f",
+  "f6963d5405654a38fa74b135c98eca44",
+  "bca577933b3072ad605af78abce9780a",
+  "f28d736a0a2cfc52f00047344a7c5c30",
+  "b2f8c063fa35dfc51f63251c53ea09c2",
+  "f53d7a3428fe53d2e817702d41935c00",
+  "206fc1ce73cdd96d3653020c4c8d6f20",
+  "38ea17bfc60004691167c8a4a5eaa067",
+  "12eb2f5dc4c25f169887575cc35c2f09",
+  "9025dc7092c439034914eecbeeb2cd9d"
  ],
  "cluster": "kind-oncall",
  "degraded": [
-  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+  "the store holds nothing from kind-oncall, so no finding can be called new or old",
+  "evidence may be stale: k8s_events, k8s_logs, k8s_nodes, k8s_pods, k8s_services last ran more than 15 minutes before assembly, so states shown as ONGOING may have changed since"
  ],
  "findings": [
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "Ready",
+    "kubelet_version": "v1.33.0",
+    "message": "Kubelet stopped posting node status.",
+    "reason": "NodeStatusUnknown",
+    "status": "Unknown",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule",
+     "node.kubernetes.io/unreachable:NoSchedule",
+     "node.kubernetes.io/unreachable:NoExecute"
+    ]
+   },
+   "fingerprint": "04050537306942fca92ddd748223eb60",
+   "first_seen": "2026-10-05T07:43:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "node_state",
+   "last_observed": "2026-10-08T10:12:41.362477Z",
+   "last_seen": "2026-10-05T07:43:41Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "critical",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "77ed5e0d523aee00c3aab4f26cec7a35"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
   {
    "blob_ids": [],
    "deltas": [],
@@ -332,13 +333,13 @@
     "exit_code": 1,
     "image": "docker.io/library/busybox:1.36",
     "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:58:00.000000Z",
+    "pod_start_time": "2026-10-08T10:12:00.000000Z",
     "ready": false,
     "reason": "Error",
     "restart_count": 0
    },
-   "fingerprint": "7a1071355565b4430e48ba1184ba9b6a",
-   "first_seen": "2026-10-04T13:58:00Z",
+   "fingerprint": "62212e9c7f677492452216117d9a5dcf",
+   "first_seen": "2026-10-08T10:12:00Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -346,8 +347,8 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248572Z",
-   "last_seen": "2026-10-04T13:58:00Z",
+   "last_observed": "2026-10-08T10:12:41.331278Z",
+   "last_seen": "2026-10-08T10:12:00Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
@@ -359,25 +360,16 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "72ef0519ef768259298bfa51e501b399"
+    "bca577933b3072ad605af78abce9780a"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
-   "subject_name": "failingcronjob-29852038-9kj6z",
+   "subject_name": "failingcronjob-29857572-q8qzd",
    "trends": {}
   },
   {
    "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 5,
-     "first": 35,
-     "key": "restart_count",
-     "last": 40,
-     "series": 1
-    }
-   ],
+   "deltas": [],
    "explains": null,
    "facts": {
     "container": "app",
@@ -389,10 +381,11 @@
     "pod_start_time": "2026-10-04T10:39:15.000000Z",
     "ready": false,
     "reason": "Error",
+    "restart_count": 176,
     "waiting_reason": "CrashLoopBackOff"
    },
    "fingerprint": "11d3059577e67d2ab3d434172fe3689c",
-   "first_seen": "2026-10-04T13:30:39Z",
+   "first_seen": "2026-10-08T10:11:38Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -400,12 +393,12 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248543Z",
-   "last_seen": "2026-10-04T13:56:20Z",
+   "last_observed": "2026-10-08T10:12:41.331249Z",
+   "last_seen": "2026-10-08T10:11:38Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
-   "occurrences": 2,
+   "occurrences": 1,
    "owner_name": "crashloop",
    "partial": [],
    "provenance": {},
@@ -413,31 +406,16 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "9bd2b30474d9345368591cbb5db9ce8f",
-    "aa7d0ea5ee38980494306d210794dde5"
+    "9c9fb23557c87da1912ad21d01300974"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
    "subject_name": "crashloop-77d8bdc744-6892x",
-   "trends": {
-    "restart_count": [
-     35,
-     40
-    ]
-   }
+   "trends": {}
   },
   {
    "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 5,
-     "first": 36,
-     "key": "restart_count",
-     "last": 41,
-     "series": 1
-    }
-   ],
+   "deltas": [],
    "explains": null,
    "facts": {
     "container": "app",
@@ -449,10 +427,11 @@
     "pod_start_time": "2026-10-04T10:39:15.000000Z",
     "ready": false,
     "reason": "OOMKilled",
+    "restart_count": 178,
     "waiting_reason": "CrashLoopBackOff"
    },
    "fingerprint": "3949324f699b10b0b53f4e100fd16f32",
-   "first_seen": "2026-10-04T13:30:24Z",
+   "first_seen": "2026-10-08T10:11:12Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -460,12 +439,12 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248712Z",
-   "last_seen": "2026-10-04T13:56:03Z",
+   "last_observed": "2026-10-08T10:12:41.331425Z",
+   "last_seen": "2026-10-08T10:11:12Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
    "observational": false,
-   "occurrences": 2,
+   "occurrences": 1,
    "owner_name": "oomkill",
    "partial": [],
    "provenance": {},
@@ -473,75 +452,16 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "57baf4fb789bbd1181288619571bc4ec",
-    "c7d9e85131d22570f74dabd5b773843f"
+    "0d4dd853712ad6a71aa63989ebd4139f"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
    "subject_name": "oomkill-dc648b8fb-cgbgh",
-   "trends": {
-    "restart_count": [
-     36,
-     41
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 0,
-    "exit_code": 1,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:56:00.000000Z",
-    "ready": false,
-    "reason": "Error",
-    "restart_count": 0
-   },
-   "fingerprint": "5771bc58e630806059819181684a492a",
-   "first_seen": "2026-10-04T13:56:00Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248563Z",
-   "last_seen": "2026-10-04T13:56:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "failingcronjob",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "8f9e5cd6166716fa09b3b9265838d3cd"
-   ],
-   "source": "k8s_pods",
-   "state": "ongoing",
-   "subject_name": "failingcronjob-29852036-5v2x4",
    "trends": {}
   },
   {
    "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 5,
-     "first": 36,
-     "key": "restart_count",
-     "last": 41,
-     "series": 1
-    }
-   ],
+   "deltas": [],
    "explains": null,
    "facts": {
     "container": "app",
@@ -553,10 +473,11 @@
     "pod_start_time": "2026-10-04T10:39:16.000000Z",
     "ready": false,
     "reason": "Error",
+    "restart_count": 178,
     "waiting_reason": "CrashLoopBackOff"
    },
    "fingerprint": "77c8bf92f2f88e32cfb7966e163a7ce1",
-   "first_seen": "2026-10-04T13:30:21Z",
+   "first_seen": "2026-10-08T10:11:10Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -564,12 +485,12 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248645Z",
-   "last_seen": "2026-10-04T13:55:58Z",
+   "last_observed": "2026-10-08T10:12:41.331355Z",
+   "last_seen": "2026-10-08T10:11:10Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
    "observational": false,
-   "occurrences": 2,
+   "occurrences": 1,
    "owner_name": "leakylogger",
    "partial": [],
    "provenance": {},
@@ -577,18 +498,102 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "5ec6fb06e79737ed8bbb081fb2681744",
-    "dc783edf51757d5419b728ac414700c9"
+    "689721d6e405768128552ba2886316d4"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
    "subject_name": "leakylogger-5577459bb8-nb5w6",
-   "trends": {
-    "restart_count": [
-     36,
-     41
-    ]
-   }
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-08T10:10:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "08178b702d3a7777caa43b642076d709",
+   "first_seen": "2026-10-08T10:10:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331269Z",
+   "last_seen": "2026-10-08T10:10:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "2ba7a935420d1ad99312bee3919994db"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "failingcronjob-29857570-srnf4",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 58,
+    "exit_code": 137,
+    "image": "docker.io/library/busybox:1.36",
+    "message_template": "back-off <dur> restarting failed container=app pod=probefail-<hex>-<rand>_oncall-lab(<uuid>)",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:19.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 193,
+    "waiting_reason": "CrashLoopBackOff"
+   },
+   "fingerprint": "264fe64f00e176273e63f1eb0625f82d",
+   "first_seen": "2026-10-08T10:09:52Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331465Z",
+   "last_seen": "2026-10-08T10:09:52Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "probefail",
+   "partial": [],
+   "provenance": {},
+   "sample": "back-off 5m0s restarting failed container=app pod=probefail-b886c94bd-kbp2p_oncall-lab(b29386e2-8e0a-42db-9a6b-44f5b581ad09)",
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "e963d3f37bbd7894db2cb28fc84514f9"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "probefail-b886c94bd-kbp2p",
+   "trends": {}
   },
   {
    "blob_ids": [],
@@ -599,14 +604,14 @@
     "image": "registry.invalid/app:v2",
     "message_template": "Back-off pulling image \"registry.invalid/app:v<n>\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v<n>\": failed to resolve reference \"registry.invalid/app:v<n>\": failed to do request: Head \"https://<host>/v<n>/app/manifests/v<n>\": dial tcp: lookup registry.invalid on <ip>: no such host",
     "phase": "Pending",
-    "pod_start_time": "2026-10-04T13:55:31.000000Z",
+    "pod_start_time": "2026-10-08T10:09:15.000000Z",
     "ready": false,
     "reason": "ErrImagePull",
     "restart_count": 0,
     "waiting_reason": "ImagePullBackOff"
    },
-   "fingerprint": "1ebd69bef0d82a667242927d56ceed86",
-   "first_seen": "2026-10-04T13:55:31Z",
+   "fingerprint": "bc6ea64df8624e588354818f4595ab1a",
+   "first_seen": "2026-10-08T10:09:15Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -614,8 +619,8 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248822Z",
-   "last_seen": "2026-10-04T13:55:31Z",
+   "last_observed": "2026-10-08T10:12:41.331560Z",
+   "last_seen": "2026-10-08T10:09:15Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
@@ -627,11 +632,55 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "be311b36d6e059e87fb7c1863a0aa3e2"
+    "3fc01b60f9e87180f9203b87b6ba0b30"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
-   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "subject_name": "stuckrollout-557464b9d5-4ttwh",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 0,
+    "exit_code": 1,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Failed",
+    "pod_start_time": "2026-10-08T10:08:00.000000Z",
+    "ready": false,
+    "reason": "Error",
+    "restart_count": 0
+   },
+   "fingerprint": "1b1c8c12ebdcc86f16acffe36f257aca",
+   "first_seen": "2026-10-08T10:08:00Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331260Z",
+   "last_seen": "2026-10-08T10:08:00Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "error",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "8f92ee6360ea41e197f0482ce853132e"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "failingcronjob-29857568-f8s4q",
    "trends": {}
   },
   {
@@ -652,7 +701,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248940Z",
+   "last_observed": "2026-10-08T10:12:41.331674Z",
    "last_seen": "2026-10-04T13:55:19Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -692,7 +741,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.249323Z",
+   "last_observed": "2026-10-08T10:12:41.332080Z",
    "last_seen": "2026-10-04T13:55:19Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -737,7 +786,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248452Z",
+   "last_observed": "2026-10-08T10:12:41.331149Z",
    "last_seen": "2026-10-04T13:55:19Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -769,50 +818,6 @@
     "exit_code": 1,
     "image": "docker.io/library/busybox:1.36",
     "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:54:00.000000Z",
-    "ready": false,
-    "reason": "Error",
-    "restart_count": 0
-   },
-   "fingerprint": "4c83e4cba4e542bedd3dc74d2b72e308",
-   "first_seen": "2026-10-04T13:54:00Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248554Z",
-   "last_seen": "2026-10-04T13:54:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "failingcronjob",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "ecb667c4d435fd3326ad8fe178483c1d"
-   ],
-   "source": "k8s_pods",
-   "state": "ongoing",
-   "subject_name": "failingcronjob-29852034-2lp9w",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 0,
-    "exit_code": 1,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Failed",
     "pod_start_time": "2026-10-04T10:39:53.000000Z",
     "ready": false,
     "reason": "Error",
@@ -827,7 +832,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248603Z",
+   "last_observed": "2026-10-08T10:12:41.331311Z",
    "last_seen": "2026-10-04T10:39:53Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -871,7 +876,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248585Z",
+   "last_observed": "2026-10-08T10:12:41.331292Z",
    "last_seen": "2026-10-04T10:39:33Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -915,7 +920,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248594Z",
+   "last_observed": "2026-10-08T10:12:41.331302Z",
    "last_seen": "2026-10-04T10:39:23Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -953,7 +958,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.249025Z",
+   "last_observed": "2026-10-08T10:12:41.331759Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -1005,7 +1010,7 @@
    },
    "joined_by": "cluster",
    "kind": "service_state",
-   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_observed": "2026-10-08T10:12:41.351228Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -1045,7 +1050,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.249175Z",
+   "last_observed": "2026-10-08T10:12:41.331911Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -1091,7 +1096,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248394Z",
+   "last_observed": "2026-10-08T10:12:41.331080Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -1134,7 +1139,7 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248494Z",
+   "last_observed": "2026-10-08T10:12:41.331199Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker2",
@@ -1166,13 +1171,13 @@
     "exit_code": 1,
     "image": "docker.io/library/busybox:1.36",
     "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:34:00.000000Z",
+    "pod_start_time": "2026-10-08T10:06:00.000000Z",
     "ready": false,
     "reason": "Error",
     "restart_count": 0
    },
-   "fingerprint": "c303284dcd788b86e4e77633410e7e53",
-   "first_seen": "2026-10-04T13:34:00Z",
+   "fingerprint": "3284d352e1ef2de8c7a0f9b99b3776e6",
+   "first_seen": "2026-10-08T10:06:00Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1180,102 +1185,12 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.983958Z",
-   "last_seen": "2026-10-04T13:34:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "failingcronjob",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "b57524c2c05de1b99a70708af3fc55a9"
-   ],
-   "source": "k8s_pods",
-   "state": "stopped",
-   "subject_name": "failingcronjob-29852014-xlfvx",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 50,
-    "exit_code": 137,
-    "image": "docker.io/library/busybox:1.36",
-    "message_template": "back-off <dur> restarting failed container=app pod=probefail-<hex>-<rand>_oncall-lab(<uuid>)",
-    "phase": "Running",
-    "pod_start_time": "2026-10-04T10:39:15.000000Z",
-    "ready": false,
-    "reason": "Error",
-    "restart_count": 49,
-    "waiting_reason": "CrashLoopBackOff"
-   },
-   "fingerprint": "8d2da71df2c1e4b7627b3e57132a3952",
-   "first_seen": "2026-10-04T13:32:59Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.984129Z",
-   "last_seen": "2026-10-04T13:32:59Z",
+   "last_observed": "2026-10-08T10:11:40.545752Z",
+   "last_seen": "2026-10-08T10:06:00Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
    "occurrences": 1,
-   "owner_name": "probefail",
-   "partial": [],
-   "provenance": {},
-   "sample": "back-off 5m0s restarting failed container=app pod=probefail-7c99b78d4-t99td_oncall-lab(9f9230dc-3468-412a-8722-9563c0e77d8f)",
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "d98e564bca7a2d7c0af4be11981e91fd"
-   ],
-   "source": "k8s_pods",
-   "state": "stopped",
-   "subject_name": "probefail-7c99b78d4-t99td",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 0,
-    "exit_code": 1,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:32:00.000000Z",
-    "ready": false,
-    "reason": "Error",
-    "restart_count": 0
-   },
-   "fingerprint": "6e59f1d26ed49aa17596b247d2125a13",
-   "first_seen": "2026-10-04T13:32:00Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.983949Z",
-   "last_seen": "2026-10-04T13:32:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 1,
    "owner_name": "failingcronjob",
    "partial": [],
    "provenance": {},
@@ -1283,11 +1198,11 @@
    "severity": "error",
    "severity_basis": "assessed",
    "signal_ids": [
-    "9ec04aea80460630c74fbbb1fe3a2c36"
+    "ee4d1832494720631616ee1bf72bba86"
    ],
    "source": "k8s_pods",
    "state": "stopped",
-   "subject_name": "failingcronjob-29852012-8zjh8",
+   "subject_name": "failingcronjob-29857566-b5ctb",
    "trends": {}
   },
   {
@@ -1296,203 +1211,17 @@
    "explains": null,
    "facts": {
     "container": "app",
-    "container_lifetime_seconds": 0,
-    "exit_code": 1,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Failed",
-    "pod_start_time": "2026-10-04T13:30:00.000000Z",
-    "ready": false,
-    "reason": "Error",
-    "restart_count": 0
-   },
-   "fingerprint": "064bca9c5345980937a85562a4640691",
-   "first_seen": "2026-10-04T13:30:00Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.983939Z",
-   "last_seen": "2026-10-04T13:30:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "failingcronjob",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "cfc514760ddaddcd2b790db117e0f47d"
-   ],
-   "source": "k8s_pods",
-   "state": "stopped",
-   "subject_name": "failingcronjob-29852010-mvqmd",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "image": "registry.invalid/app:v2",
-    "message_template": "Back-off pulling image \"registry.invalid/app:v<n>\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v<n>\": failed to resolve reference \"registry.invalid/app:v<n>\": failed to do request: Head \"https://<host>/v<n>/app/manifests/v<n>\": dial tcp: lookup registry.invalid on <ip>: no such host",
-    "phase": "Pending",
-    "pod_start_time": "2026-10-04T11:07:18.000000Z",
-    "ready": false,
-    "reason": "ErrImagePull",
-    "restart_count": 0,
-    "waiting_reason": "ImagePullBackOff"
-   },
-   "fingerprint": "1d7ea4b1b02a3db236bb3e0240279e32",
-   "first_seen": "2026-10-04T11:07:18Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.984238Z",
-   "last_seen": "2026-10-04T11:07:18Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "stuckrollout",
-   "partial": [],
-   "provenance": {},
-   "sample": "Back-off pulling image \"registry.invalid/app:v2\": ErrImagePull: failed to pull and unpack image \"registry.invalid/app:v2\": failed to resolve reference \"registry.invalid/app:v2\": failed to do request: Head \"https://registry.invalid/v2/app/manifests/v2\": dial tcp: lookup registry.invalid on 192.168.65.254:53: no such host",
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "b4b92b02f552894956bf2ae0aecb195e"
-   ],
-   "source": "k8s_pods",
-   "state": "stopped",
-   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "message_template": "<n>/<n> nodes are available: <n> node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, <n> Insufficient cpu. preemption: <n>/<n> nodes are available: <n> Preemption is not helpful for scheduling, <n> No preemption victims found for incoming pod.",
-    "phase": "Pending",
-    "reason": "Unschedulable"
-   },
-   "fingerprint": "641c3ef148cc58e65a8c2c4150232239",
-   "first_seen": "2026-10-04T10:39:15Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:34:32.984474Z",
-   "last_seen": "2026-10-04T10:39:15Z",
-   "namespace": "oncall-lab",
-   "node_name": null,
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "unschedulable",
-   "partial": [],
-   "provenance": {
-    "keyed_on_message": true
-   },
-   "sample": "0/3 nodes are available: 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 2 Insufficient cpu. preemption: 0/3 nodes are available: 1 Preemption is not helpful for scheduling, 2 No preemption victims found for incoming pod.",
-   "severity": "error",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "17e61decc8aff8fe9d7b241b751b1d70"
-   ],
-   "source": "k8s_pods",
-   "state": "stopped",
-   "subject_name": "unschedulable-5ddcff94bf-rw5pd",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 1,
-     "first": 3,
-     "key": "restart_count",
-     "last": 4,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 50,
-    "exit_code": 137,
+    "container_lifetime_seconds": 267462,
+    "exit_code": 255,
     "image": "docker.io/library/busybox:1.36",
     "phase": "Running",
     "pod_start_time": "2026-10-04T13:55:19.000000Z",
-    "ready": true,
-    "reason": "Error"
-   },
-   "fingerprint": "264fe64f00e176273e63f1eb0625f82d",
-   "first_seen": "2026-10-04T13:57:49Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248720Z",
-   "last_seen": "2026-10-04T13:58:39Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "probefail",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "warning",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "5791f0755b4491af26614d6f52f9084c",
-    "b7a857ef39bf1fc996a6d7f47660f997"
-   ],
-   "source": "k8s_pods",
-   "state": "ongoing",
-   "subject_name": "probefail-b886c94bd-kbp2p",
-   "trends": {
-    "restart_count": [
-     3,
-     4
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "container_lifetime_seconds": 3600,
-    "exit_code": 0,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Running",
-    "pod_start_time": "2026-10-04T10:39:15.000000Z",
     "ready": false,
-    "reason": "Completed",
+    "reason": "Unknown",
     "restart_count": 2
    },
-   "fingerprint": "34f584355b97e573363eccbfbc6394e8",
-   "first_seen": "2026-10-04T12:52:00Z",
+   "fingerprint": "c9515823243047c90a7565279edc963a",
+   "first_seen": "2026-10-08T10:00:15Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1500,8 +1229,8 @@
    },
    "joined_by": "cluster",
    "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248671Z",
-   "last_seen": "2026-10-04T12:52:00Z",
+   "last_observed": "2026-10-08T10:12:41.331374Z",
+   "last_seen": "2026-10-08T10:00:15Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
@@ -1513,11 +1242,340 @@
    "severity": "warning",
    "severity_basis": "assessed",
    "signal_ids": [
-    "8a40e48bf877f3ce4fd6dc48ffb69e03"
+    "a90130a15e9bcc3b6eee29a0ebb3966a"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "notready-599597b566-qhdb2",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 248617,
+    "exit_code": 255,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T10:39:15.000000Z",
+    "ready": false,
+    "reason": "Unknown",
+    "restart_count": 13
+   },
+   "fingerprint": "0cc825f1257eab95f3dbfa86f615fb10",
+   "first_seen": "2026-10-08T10:00:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331383Z",
+   "last_seen": "2026-10-08T10:00:15Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "notready",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "0b10cdfd3b5d6e85b88c4adc72a82c7a"
    ],
    "source": "k8s_pods",
    "state": "ongoing",
    "subject_name": "notready-59b6fcb87d-78d7r",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 267462,
+    "exit_code": 255,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:19.000000Z",
+    "ready": true,
+    "reason": "Unknown",
+    "restart_count": 2
+   },
+   "fingerprint": "23937bb44953e0e562da63d3fdd46f77",
+   "first_seen": "2026-10-08T10:00:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331569Z",
+   "last_seen": "2026-10-08T10:00:15Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "dde5d178fd3e04d7c68962a3ed3169fd"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckrollout-8565fb48dc-h2fwt",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 267462,
+    "exit_code": 255,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:19.000000Z",
+    "ready": true,
+    "reason": "Unknown",
+    "restart_count": 2
+   },
+   "fingerprint": "595d6db5c2f4546d63a1a358d0b2d8f4",
+   "first_seen": "2026-10-08T10:00:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331365Z",
+   "last_seen": "2026-10-08T10:00:15Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "noendpoints",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "4fc5d1d3f691bf24daab40f9223b2612"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "noendpoints-bf76b6b85-tmlcn",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "container_lifetime_seconds": 267462,
+    "exit_code": 255,
+    "image": "docker.io/library/busybox:1.36",
+    "phase": "Running",
+    "pod_start_time": "2026-10-04T13:55:20.000000Z",
+    "ready": true,
+    "reason": "Unknown",
+    "restart_count": 2
+   },
+   "fingerprint": "e2ed101e2b531c9a979836934dd06e72",
+   "first_seen": "2026-10-08T10:00:15Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "pod_state",
+   "last_observed": "2026-10-08T10:12:41.331577Z",
+   "last_seen": "2026-10-08T10:00:15Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": "stuckrollout",
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "ce86026746683051d8929d8f0710a9d8"
+   ],
+   "source": "k8s_pods",
+   "state": "ongoing",
+   "subject_name": "stuckrollout-8565fb48dc-v9wgk",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "MemoryPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "Kubelet stopped posting node status.",
+    "reason": "NodeStatusUnknown",
+    "status": "Unknown",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule",
+     "node.kubernetes.io/unreachable:NoSchedule",
+     "node.kubernetes.io/unreachable:NoExecute"
+    ]
+   },
+   "fingerprint": "c20ba6fb495bb02897b3c95174deec04",
+   "first_seen": "2026-10-05T07:43:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "node_state",
+   "last_observed": "2026-10-08T10:12:41.362429Z",
+   "last_seen": "2026-10-05T07:43:41Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "56440fcd51d9da599a8273e887a1f1ce"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "DiskPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "Kubelet stopped posting node status.",
+    "reason": "NodeStatusUnknown",
+    "status": "Unknown",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule",
+     "node.kubernetes.io/unreachable:NoSchedule",
+     "node.kubernetes.io/unreachable:NoExecute"
+    ]
+   },
+   "fingerprint": "f144fe78c501dcdf76718f8e60fb4a65",
+   "first_seen": "2026-10-05T07:43:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "node_state",
+   "last_observed": "2026-10-08T10:12:41.362448Z",
+   "last_seen": "2026-10-05T07:43:41Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "33f8599c0ab485b27d24b79b9ffd9c42"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [],
+   "explains": null,
+   "facts": {
+    "allocatable_cpu": "10",
+    "allocatable_memory": "8024852Ki",
+    "allocatable_pods": "110",
+    "capacity_cpu": "10",
+    "capacity_memory": "8024852Ki",
+    "capacity_pods": "110",
+    "condition": "PIDPressure",
+    "kubelet_version": "v1.33.0",
+    "message": "Kubelet stopped posting node status.",
+    "reason": "NodeStatusUnknown",
+    "status": "Unknown",
+    "taints": [
+     "node-role.kubernetes.io/control-plane:NoSchedule",
+     "node.kubernetes.io/unreachable:NoSchedule",
+     "node.kubernetes.io/unreachable:NoExecute"
+    ]
+   },
+   "fingerprint": "ab38d2acde8e85164aa250dcde2c2cf5",
+   "first_seen": "2026-10-05T07:43:41Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "node_state",
+   "last_observed": "2026-10-08T10:12:41.362463Z",
+   "last_seen": "2026-10-05T07:43:41Z",
+   "namespace": null,
+   "node_name": "oncall-control-plane",
+   "observational": false,
+   "occurrences": 1,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {},
+   "sample": null,
+   "severity": "warning",
+   "severity_basis": "assessed",
+   "signal_ids": [
+    "aa47bd689c79840214a7c1d684b3633b"
+   ],
+   "source": "k8s_nodes",
+   "state": "ongoing",
+   "subject_name": "oncall-control-plane",
    "trends": {}
   },
   {
@@ -1550,7 +1608,7 @@
    },
    "joined_by": "cluster",
    "kind": "service_state",
-   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_observed": "2026-10-08T10:12:41.351235Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -1575,15 +1633,15 @@
   {
    "blob_ids": [],
    "deltas": [],
-   "explains": "02fc7451191450e71495570f0bb86d3b",
+   "explains": "3284d352e1ef2de8c7a0f9b99b3776e6",
    "facts": {
     "container": "app",
     "error": "ApiException 404: Not Found",
-    "previous_unavailable": true,
+    "log_status": "unavailable",
     "stream": "previous"
    },
-   "fingerprint": "1b61ded7d2662cf3a11c884d1655632c",
-   "first_seen": "2026-10-04T13:33:16Z",
+   "fingerprint": "bb6369887318c2619e1845f510be7a62",
+   "first_seen": "2026-10-08T10:06:00Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1591,53 +1649,45 @@
    },
    "joined_by": "cluster",
    "kind": "log_excerpt",
-   "last_observed": "2026-10-04T13:59:14.463508Z",
-   "last_seen": "2026-10-04T13:53:11Z",
+   "last_observed": "2026-10-08T10:12:41.555813Z",
+   "last_seen": "2026-10-08T10:06:00Z",
    "namespace": "oncall-lab",
-   "node_name": null,
+   "node_name": "oncall-worker",
    "observational": true,
-   "occurrences": 2,
-   "owner_name": null,
-   "partial": [
-    "error",
-    "previous_unavailable"
-   ],
+   "occurrences": 1,
+   "owner_name": "failingcronjob",
+   "partial": [],
    "provenance": {
     "collector_version": 2,
-    "trigger_fingerprint": "02fc7451191450e71495570f0bb86d3b",
-    "trigger_signal_id": "ee49479fa08dc231552df07a75ec1fe2",
-    "trigger_source": "k8s_events",
-    "window_end": "2026-10-04T13:59:14.283599Z",
-    "window_start": "2026-10-04T13:49:14.283599Z"
+    "trigger_fingerprint": "3284d352e1ef2de8c7a0f9b99b3776e6",
+    "trigger_signal_id": "ee4d1832494720631616ee1bf72bba86",
+    "trigger_source": "k8s_pods",
+    "window_end": "2026-10-08T10:12:41.368064Z",
+    "window_start": "2026-10-08T10:02:41.368064Z"
    },
    "sample": null,
    "severity": "warning",
    "severity_basis": "assessed",
    "signal_ids": [
-    "754db50a9119dd9fcdbe22cb65d59889",
-    "867a49dc04865dd8d999d3c9fa06d450"
+    "6bc7833dadba287750f506e4b46be626"
    ],
    "source": "k8s_logs",
    "state": null,
-   "subject_name": "stuckrollout-78f8fc8b7-8k2wf",
-   "trends": {
-    "log_status": [
-     "no_container",
-     "unavailable"
-    ]
-   }
+   "subject_name": "failingcronjob-29857566-b5ctb",
+   "trends": {}
   },
   {
    "blob_ids": [],
    "deltas": [],
-   "explains": "16d26509e49ef32166e5879464e80d53",
+   "explains": "f0c9abcb0c9dead5987d5ed9cf2a6382",
    "facts": {
     "container": "app",
     "error": "ApiException 404: Not Found",
+    "log_status": "unavailable",
     "stream": "previous"
    },
-   "fingerprint": "a43f9278545d592303a11329c475f20b",
-   "first_seen": "2026-10-04T13:32:59Z",
+   "fingerprint": "2b1670dfac1964f9dfbe208555364244",
+   "first_seen": "2026-10-08T10:05:26Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1645,40 +1695,32 @@
    },
    "joined_by": "cluster",
    "kind": "log_excerpt",
-   "last_observed": "2026-10-04T13:59:14.463518Z",
-   "last_seen": "2026-10-04T13:52:59Z",
+   "last_observed": "2026-10-08T10:12:41.556088Z",
+   "last_seen": "2026-10-08T10:05:26Z",
    "namespace": "oncall-lab",
    "node_name": null,
    "observational": true,
-   "occurrences": 2,
+   "occurrences": 1,
    "owner_name": null,
-   "partial": [
-    "error"
-   ],
+   "partial": [],
    "provenance": {
     "collector_version": 2,
-    "trigger_fingerprint": "16d26509e49ef32166e5879464e80d53",
-    "trigger_signal_id": "663eaedd280ca0887be2de95158b7709",
+    "trigger_fingerprint": "f0c9abcb0c9dead5987d5ed9cf2a6382",
+    "trigger_signal_id": "50ff0c06e6cc92bbf274fe2be7252f30",
     "trigger_source": "k8s_events",
-    "window_end": "2026-10-04T13:59:14.283599Z",
-    "window_start": "2026-10-04T13:49:14.283599Z"
+    "window_end": "2026-10-08T10:12:41.368064Z",
+    "window_start": "2026-10-08T10:02:41.368064Z"
    },
    "sample": null,
    "severity": "warning",
    "severity_basis": "assessed",
    "signal_ids": [
-    "cff4d814a234acd955d93933485158d9",
-    "70c3b0ebcf5f88d345bebe9a2273eed9"
+    "ea4513522bb28fd59b06eec4343d78cb"
    ],
    "source": "k8s_logs",
    "state": null,
-   "subject_name": "probefail-7c99b78d4-t99td",
-   "trends": {
-    "log_status": [
-     "empty",
-     "unavailable"
-    ]
-   }
+   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "trends": {}
   },
   {
    "blob_ids": [],
@@ -1694,13 +1736,12 @@
    ],
    "explains": null,
    "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:32.000000Z",
     "container": "app",
     "reason": "Failed",
     "type": "Warning"
    },
-   "fingerprint": "f0c9abcb0c9dead5987d5ed9cf2a6382",
-   "first_seen": "2026-10-04T13:57:08Z",
+   "fingerprint": "fdcfd7acab0f289f4427352a74d03ea3",
+   "first_seen": "2026-10-08T10:10:38Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1708,8 +1749,8 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201603Z",
-   "last_seen": "2026-10-04T13:59:09Z",
+   "last_observed": "2026-10-08T10:12:41.278827Z",
+   "last_seen": "2026-10-08T10:12:40Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
@@ -1719,22 +1760,26 @@
    "provenance": {
     "collector_version": 2,
     "component": "kubelet",
-    "event_uid": "750308bf-9590-49e2-bbf1-55934c078c01",
+    "event_uid": "6b0f6981-8aad-4887-9cbf-454c58764ac4",
     "severity_basis": "cluster"
    },
    "sample": "Error: ImagePullBackOff",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "ea38e20dd8d66bbdc5e740f4487dba11",
-    "f0dc2320feebdfa4a0d4d608f0af84d3",
-    "b3621cf04356dbd939ae1bf5827703df",
-    "a45c4574fe132cfaf93be29763d80f2d"
+    "33ee5ae9e0925bb0f343a00339e4ac88",
+    "a00d10a4a7d2325c13db74b89ce91ca2",
+    "38ea17bfc60004691167c8a4a5eaa067",
+    "12eb2f5dc4c25f169887575cc35c2f09"
    ],
    "source": "k8s_events",
    "state": null,
-   "subject_name": "stuckrollout-557464b9d5-gsgn5",
+   "subject_name": "stuckrollout-557464b9d5-4ttwh",
    "trends": {
+    "api_first_timestamp": [
+     "2026-10-08T10:09:16.000000Z",
+     "2026-10-08T10:09:17.000000Z"
+    ],
     "count": [
      4,
      13
@@ -1742,126 +1787,6 @@
     "message_template": [
      "Error: ErrImagePull",
      "Error: ImagePullBackOff"
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 5,
-     "first": 15,
-     "key": "count",
-     "last": 20,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
-    "container": "app",
-    "message_template": "Error: configmap \"no-such-configmap\" not found",
-    "reason": "Failed",
-    "type": "Warning"
-   },
-   "fingerprint": "978a628eec6a4424cb6d14dab77cbf3a",
-   "first_seen": "2026-10-04T13:58:04Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.198328Z",
-   "last_seen": "2026-10-04T13:59:08Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "configerror",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "fbdc85bf-a4f2-4896-8939-056143781497",
-    "severity_basis": "cluster"
-   },
-   "sample": "Error: configmap \"no-such-configmap\" not found",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "f4408393935145c8696660b087edb786",
-    "eff69ad6b49513d16b826b665339968b"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "configerror-5bbf7d9d7f-qc6jj",
-   "trends": {
-    "count": [
-     15,
-     20
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 2,
-     "first": 8,
-     "key": "count",
-     "last": 10,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:29.000000Z",
-    "container": "app",
-    "message_template": "Liveness probe failed: dial tcp <ip>: connect: connection refused",
-    "reason": "Unhealthy",
-    "type": "Warning"
-   },
-   "fingerprint": "d4df9bcbb304d5e148f3b28ad11dc38d",
-   "first_seen": "2026-10-04T13:58:09Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201344Z",
-   "last_seen": "2026-10-04T13:58:59Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "probefail",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "a038cdcd-549f-4a56-a78b-fcd2b1490ef7",
-    "severity_basis": "cluster"
-   },
-   "sample": "Liveness probe failed: dial tcp 10.244.2.98:8080: connect: connection refused",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "ddece004bfa956adec737eed8d266229",
-    "92dbdf2608188a7c0b2cc5377d494651"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "probefail-b886c94bd-kbp2p",
-   "trends": {
-    "count": [
-     8,
-     10
     ]
    }
   },
@@ -1879,14 +1804,14 @@
    ],
    "explains": null,
    "facts": {
-    "api_first_timestamp": "2026-10-04T13:58:03.000000Z",
+    "api_first_timestamp": "2026-10-08T10:12:02.000000Z",
     "count": 1,
     "message_template": "Job has reached the specified backoff limit",
     "reason": "BackoffLimitExceeded",
     "type": "Warning"
    },
-   "fingerprint": "69cb6fbb4806acf5d5735d90c5e7cfbb",
-   "first_seen": "2026-10-04T13:58:03Z",
+   "fingerprint": "6034395149bc3e38121ffdbd143b3491",
+   "first_seen": "2026-10-08T10:12:02Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1894,8 +1819,8 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.200776Z",
-   "last_seen": "2026-10-04T13:58:03Z",
+   "last_observed": "2026-10-08T10:12:41.277801Z",
+   "last_seen": "2026-10-08T10:12:02Z",
    "namespace": "oncall-lab",
    "node_name": null,
    "observational": false,
@@ -1905,42 +1830,32 @@
    "provenance": {
     "collector_version": 2,
     "component": "job-controller",
-    "event_uid": "6e556b52-b826-46dc-ab39-ea24f122cbdd",
+    "event_uid": "63135947-592a-48c0-8f01-28f420ccfbf3",
     "severity_basis": "cluster"
    },
    "sample": "Job has reached the specified backoff limit",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "96193ffb4411aaeee948b4023dbbb8f4"
+    "f53d7a3428fe53d2e817702d41935c00"
    ],
    "source": "k8s_events",
    "state": null,
-   "subject_name": "failingcronjob-29852038",
+   "subject_name": "failingcronjob-29857572",
    "trends": {}
   },
   {
    "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "one observation of a series that began inside the window",
-     "change": 7,
-     "first": 7,
-     "key": "count",
-     "last": 7,
-     "series": 1
-    }
-   ],
+   "deltas": [],
    "explains": null,
    "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:48.000000Z",
-    "count": 7,
+    "count": 2,
     "message_template": "<n>/<n> nodes are available: <n> Insufficient cpu, <n> node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, <n> node(s) were unschedulable. preemption: <n>/<n> nodes are available: <n> No preemption victims found for incoming pod, <n> Preemption is not helpful for scheduling.",
     "reason": "FailedScheduling",
     "type": "Warning"
    },
    "fingerprint": "0d736f9c28289f9c6113879456a92587",
-   "first_seen": "2026-10-04T13:58:02Z",
+   "first_seen": "2026-10-08T10:11:23.473508Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -1948,8 +1863,8 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.202614Z",
-   "last_seen": "2026-10-04T13:58:02Z",
+   "last_observed": "2026-10-08T10:12:41.279871Z",
+   "last_seen": "2026-10-08T10:11:23.473508Z",
    "namespace": "oncall-lab",
    "node_name": null,
    "observational": false,
@@ -1959,14 +1874,14 @@
    "provenance": {
     "collector_version": 2,
     "component": "default-scheduler",
-    "event_uid": "06c82c25-231c-432b-b0c4-ad10b2876b2b",
+    "event_uid": "7046291b-1e6a-403f-a26e-933bfb2072e9",
     "severity_basis": "cluster"
    },
    "sample": "0/3 nodes are available: 1 Insufficient cpu, 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 1 node(s) were unschedulable. preemption: 0/3 nodes are available: 1 No preemption victims found for incoming pod, 2 Preemption is not helpful for scheduling.",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "7776538d5cd32767f3cfa6d322d15316"
+    "93cd12853e9a36e6497bdf2afa3c8974"
    ],
    "source": "k8s_events",
    "state": null,
@@ -1975,26 +1890,16 @@
   },
   {
    "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 115,
-     "first": 687,
-     "key": "count",
-     "last": 802,
-     "series": 1
-    }
-   ],
+   "deltas": [],
    "explains": null,
    "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:26.000000Z",
-    "container": "app",
-    "message_template": "Back-off restarting failed container app in pod leakylogger-<hex>-<rand>_oncall-lab(<uuid>)",
-    "reason": "BackOff",
+    "count": 2,
+    "message_template": "<n>/<n> nodes are available: <n> Insufficient cpu, <n> node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, <n> node(s) were unschedulable. preemption: <n>/<n> nodes are available: <n> No preemption victims found for incoming pod, <n> Preemption is not helpful for scheduling.",
+    "reason": "FailedScheduling",
     "type": "Warning"
    },
-   "fingerprint": "fdb14b5e47ffc802e4bae5f171a13669",
-   "first_seen": "2026-10-04T13:33:04Z",
+   "fingerprint": "9bc4aaae26c1a3e7d8f9e3bfe2689512",
+   "first_seen": "2026-10-08T10:11:23.473031Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -2002,34 +1907,90 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.200841Z",
-   "last_seen": "2026-10-04T13:57:57Z",
+   "last_observed": "2026-10-08T10:12:41.279638Z",
+   "last_seen": "2026-10-08T10:11:23.473031Z",
    "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
+   "node_name": null,
    "observational": false,
-   "occurrences": 2,
-   "owner_name": "leakylogger",
+   "occurrences": 1,
+   "owner_name": "unschedulable",
    "partial": [],
    "provenance": {
     "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "726cf9f8-6ec2-4f85-98d9-9157988b5226",
+    "component": "default-scheduler",
+    "event_uid": "fea0e0aa-9169-451e-8e1f-3ab1a393489b",
     "severity_basis": "cluster"
    },
-   "sample": "Back-off restarting failed container app in pod leakylogger-5577459bb8-nb5w6_oncall-lab(109778be-78e9-4c0c-9777-99e07d2206b2)",
+   "sample": "0/3 nodes are available: 1 Insufficient cpu, 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 1 node(s) were unschedulable. preemption: 0/3 nodes are available: 1 No preemption victims found for incoming pod, 2 Preemption is not helpful for scheduling.",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "c2ad2ab2bbbac45da441b49053f0aae6",
-    "64351eaff79c3ef35908a3aaa6636b60"
+    "078d912f94089f306f5820c699749a81"
    ],
    "source": "k8s_events",
    "state": null,
-   "subject_name": "leakylogger-5577459bb8-nb5w6",
+   "subject_name": "unschedulable-5ddcff94bf-rw5pd",
+   "trends": {}
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "summed across 2 counting series, later ones taken whole",
+     "change": 41,
+     "first": 1181,
+     "key": "count",
+     "last": 41,
+     "series": 2
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "message_template": "storageclass.storage.k<n>s.io \"no-such-storage-class\" not found",
+    "reason": "ProvisioningFailed",
+    "type": "Warning"
+   },
+   "fingerprint": "004fc9d32fea12c4cd838a9d0559ea6c",
+   "first_seen": "2026-10-05T14:05:21Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "event",
+   "last_observed": "2026-10-08T10:12:41.279225Z",
+   "last_seen": "2026-10-08T10:10:42Z",
+   "namespace": "oncall-lab",
+   "node_name": null,
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": null,
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "persistentvolume-controller",
+    "event_uid": "871ea113-f93c-4a37-9a1a-bb00029e13b1",
+    "severity_basis": "cluster"
+   },
+   "sample": "storageclass.storage.k8s.io \"no-such-storage-class\" not found",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "8c7201bd234937cf12972ad18902687d",
+    "68dbf7a1bb2e50901af70bf2dfd6dd34"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "unbound",
    "trends": {
+    "api_first_timestamp": [
+     "2026-10-05T07:42:51.000000Z",
+     "2026-10-08T10:00:42.000000Z"
+    ],
     "count": [
-     687,
-     802
+     1181,
+     41
     ]
    }
   },
@@ -2037,24 +1998,23 @@
    "blob_ids": [],
    "deltas": [
     {
-     "basis": "diffed across 2 observations of one series",
-     "change": 308,
-     "first": 1860,
+     "basis": "summed across 2 counting series, later ones taken whole",
+     "change": 27,
+     "first": 1020,
      "key": "count",
-     "last": 2168,
-     "series": 1
+     "last": 27,
+     "series": 2
     }
    ],
    "explains": null,
    "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:29.000000Z",
     "container": "app",
-    "message_template": "Readiness probe failed: dial tcp <ip>: connect: connection refused",
-    "reason": "Unhealthy",
+    "message_template": "Back-off restarting failed container app in pod probefail-<hex>-<rand>_oncall-lab(<uuid>)",
+    "reason": "BackOff",
     "type": "Warning"
    },
-   "fingerprint": "25b96cfdf3f0a4b7cd59edae2fc38427",
-   "first_seen": "2026-10-04T13:32:57Z",
+   "fingerprint": "4dc058f79a85da528c4496d648fa57eb",
+   "first_seen": "2026-10-05T14:05:23Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -2062,8 +2022,71 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201111Z",
-   "last_seen": "2026-10-04T13:57:54Z",
+   "last_observed": "2026-10-08T10:12:41.278662Z",
+   "last_seen": "2026-10-08T10:10:41Z",
+   "namespace": "oncall-lab",
+   "node_name": "oncall-worker2",
+   "observational": false,
+   "occurrences": 2,
+   "owner_name": "probefail",
+   "partial": [],
+   "provenance": {
+    "collector_version": 2,
+    "component": "kubelet",
+    "event_uid": "fb87a7e9-54a5-4390-b9e0-47b79db03820",
+    "severity_basis": "cluster"
+   },
+   "sample": "Back-off restarting failed container app in pod probefail-b886c94bd-kbp2p_oncall-lab(b29386e2-8e0a-42db-9a6b-44f5b581ad09)",
+   "severity": "warning",
+   "severity_basis": "cluster",
+   "signal_ids": [
+    "0e70741d40fcc1e3697699f18a704986",
+    "8989c7746963e337c9107e95590bcb80"
+   ],
+   "source": "k8s_events",
+   "state": null,
+   "subject_name": "probefail-b886c94bd-kbp2p",
+   "trends": {
+    "api_first_timestamp": [
+     "2026-10-05T07:46:01.000000Z",
+     "2026-10-08T10:03:42.000000Z"
+    ],
+    "count": [
+     1020,
+     27
+    ]
+   }
+  },
+  {
+   "blob_ids": [],
+   "deltas": [
+    {
+     "basis": "summed across 2 counting series, later ones taken whole",
+     "change": 126,
+     "first": 3647,
+     "key": "count",
+     "last": 126,
+     "series": 2
+    }
+   ],
+   "explains": null,
+   "facts": {
+    "container": "app",
+    "message_template": "Readiness probe failed: dial tcp <ip>: connect: connection refused",
+    "reason": "Unhealthy",
+    "type": "Warning"
+   },
+   "fingerprint": "25b96cfdf3f0a4b7cd59edae2fc38427",
+   "first_seen": "2026-10-05T14:05:13Z",
+   "history": {
+    "first_seen_ever": null,
+    "is_new": null,
+    "watching_since": null
+   },
+   "joined_by": "cluster",
+   "kind": "event",
+   "last_observed": "2026-10-08T10:12:41.278395Z",
+   "last_seen": "2026-10-08T10:10:31Z",
    "namespace": "oncall-lab",
    "node_name": "oncall-worker",
    "observational": false,
@@ -2073,143 +2096,27 @@
    "provenance": {
     "collector_version": 2,
     "component": "kubelet",
-    "event_uid": "ddcabddb-2a6d-4af7-b195-4a7c2af9baff",
+    "event_uid": "1b04eccb-eaca-4e55-8378-d28a5de813de",
     "severity_basis": "cluster"
    },
-   "sample": "Readiness probe failed: dial tcp 10.244.1.4:8080: connect: connection refused",
+   "sample": "Readiness probe failed: dial tcp 10.244.1.6:8080: connect: connection refused",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "c70adcaaf3d6881d4c8e36e333d7b0de",
-    "9827456156d4a1f46d36368365782850"
+    "618738b8f1353f6117daf8483a2b1319",
+    "cd29cf48987a3acc45b8f63a096ebba6"
    ],
    "source": "k8s_events",
    "state": null,
    "subject_name": "notready-59b6fcb87d-78d7r",
    "trends": {
+    "api_first_timestamp": [
+     "2026-10-05T07:42:40.000000Z",
+     "2026-10-08T10:00:27.000000Z"
+    ],
     "count": [
-     1860,
-     2168
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 114,
-     "first": 684,
-     "key": "count",
-     "last": 798,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:25.000000Z",
-    "container": "app",
-    "message_template": "Back-off restarting failed container app in pod crashloop-<hex>-<rand>_oncall-lab(<uuid>)",
-    "reason": "BackOff",
-    "type": "Warning"
-   },
-   "fingerprint": "873a9ae0d49d31ad0bdcbd3c30829df3",
-   "first_seen": "2026-10-04T13:33:01Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.198464Z",
-   "last_seen": "2026-10-04T13:57:51Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "crashloop",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "01e639b8-ddb3-41af-b1d3-95bd1cd3d523",
-    "severity_basis": "cluster"
-   },
-   "sample": "Back-off restarting failed container app in pod crashloop-77d8bdc744-6892x_oncall-lab(64b1132b-28b3-4adf-a2a3-63cea61cf60e)",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "a20ff7d37f7336be8720aea58b38e9a0",
-    "7a5b8cded2dbbab54b12c99f4e8641fa"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "crashloop-77d8bdc744-6892x",
-   "trends": {
-    "count": [
-     684,
-     798
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 116,
-     "first": 693,
-     "key": "count",
-     "last": 809,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:22.000000Z",
-    "container": "app",
-    "message_template": "Back-off restarting failed container app in pod oomkill-<hex>-cgbgh_oncall-lab(<uuid>)",
-    "reason": "BackOff",
-    "type": "Warning"
-   },
-   "fingerprint": "254f55638d2ca979edaa5566bf7ef89d",
-   "first_seen": "2026-10-04T13:32:54Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201175Z",
-   "last_seen": "2026-10-04T13:57:47Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "oomkill",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "ff4f25ee-38f3-4b75-8cbc-5b0e090dda98",
-    "severity_basis": "cluster"
-   },
-   "sample": "Back-off restarting failed container app in pod oomkill-dc648b8fb-cgbgh_oncall-lab(de7097f7-122c-4761-a189-73448abaa8ba)",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "8f177c9a3868d143e055ef0613cbf188",
-    "c14372cd88ecb71ac7492ceb23221c46"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "oomkill-dc648b8fb-cgbgh",
-   "trends": {
-    "count": [
-     693,
-     809
+     3647,
+     126
     ]
    }
   },
@@ -2218,21 +2125,22 @@
    "deltas": [
     {
      "basis": "summed across 2 counting series, later ones taken whole",
-     "change": 130,
-     "first": 661,
+     "change": 125,
+     "first": 3650,
      "key": "count",
-     "last": 39,
+     "last": 125,
      "series": 2
     }
    ],
    "explains": null,
    "facts": {
     "container": "app",
-    "reason": "Failed",
+    "message_template": "Readiness probe failed: dial tcp <ip>: connect: connection refused",
+    "reason": "Unhealthy",
     "type": "Warning"
    },
-   "fingerprint": "6306ce9af753a089fcea3fb3661ea346",
-   "first_seen": "2026-10-04T13:32:55Z",
+   "fingerprint": "d98768f379cf95e6972b781d70a84d0c",
+   "first_seen": "2026-10-05T14:05:10Z",
    "history": {
     "first_seen_ever": null,
     "is_new": null,
@@ -2240,103 +2148,38 @@
    },
    "joined_by": "cluster",
    "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.198257Z",
-   "last_seen": "2026-10-04T13:57:47Z",
+   "last_observed": "2026-10-08T10:12:41.278336Z",
+   "last_seen": "2026-10-08T10:10:30Z",
    "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
-   "observational": false,
-   "occurrences": 3,
-   "owner_name": "badimage",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "839ce688-1324-46ae-8133-5f25931d644c",
-    "severity_basis": "cluster"
-   },
-   "sample": "Failed to pull image \"registry.invalid/does-not-exist:v9\": failed to pull and unpack image \"registry.invalid/does-not-exist:v9\": failed to resolve reference \"registry.invalid/does-not-exist:v9\": failed to do request: Head \"https://registry.invalid/v2/does-not-exist/manifests/v9\": dial tcp: lookup registry.invalid on 192.168.65.254:53: no such host",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "bfd94c4d69dd87576ca4561ef48d3250",
-    "8b41c8ba8a0abde5f4c492b73ad7138c",
-    "4b36522c9307b49eda6921412f4816c2"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "badimage-6c9fd97fb7-q6p7f",
-   "trends": {
-    "api_first_timestamp": [
-     "2026-10-04T10:39:22.000000Z",
-     "2026-10-04T10:39:21.000000Z"
-    ],
-    "count": [
-     661,
-     39
-    ],
-    "message_template": [
-     "Error: ImagePullBackOff",
-     "Failed to pull image \"registry.invalid/does-not-exist:v<n>\": failed to pull and unpack image \"registry.invalid/does-not-exist:v<n>\": failed to resolve reference \"registry.invalid/does-not-exist:v<n>\": failed to do request: Head \"https://<host>/v<n>/does-not-exist/manifests/v<n>\": dial tcp: lookup registry.invalid on <ip>: no such host"
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 115,
-     "first": 692,
-     "key": "count",
-     "last": 807,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:21.000000Z",
-    "container": "app",
-    "message_template": "Error: configmap \"no-such-configmap\" not found",
-    "reason": "Failed",
-    "type": "Warning"
-   },
-   "fingerprint": "a0b390fa368f6e076f21e88fd86f0915",
-   "first_seen": "2026-10-04T13:32:56Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "cluster",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.198382Z",
-   "last_seen": "2026-10-04T13:57:47Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker2",
+   "node_name": "oncall-worker",
    "observational": false,
    "occurrences": 2,
-   "owner_name": "configerror",
+   "owner_name": "notready",
    "partial": [],
    "provenance": {
     "collector_version": 2,
     "component": "kubelet",
-    "event_uid": "50b41abc-f9fb-42aa-84c8-8269919c2cdc",
+    "event_uid": "dfbc0aab-42ab-40fa-bdfe-4e696f681695",
     "severity_basis": "cluster"
    },
-   "sample": "Error: configmap \"no-such-configmap\" not found",
+   "sample": "Readiness probe failed: dial tcp 10.244.1.3:8080: connect: connection refused",
    "severity": "warning",
    "severity_basis": "cluster",
    "signal_ids": [
-    "7fc0609cb3eeb3254a0d1d9c7db5d1e7",
-    "13634d510a9e19b5bd08a5f5d322ebeb"
+    "ae3c2934ffb231e49cb9f776e24f51cb",
+    "3ea319d6b2e49c2b4b9bed5317eff40b"
    ],
    "source": "k8s_events",
    "state": null,
-   "subject_name": "configerror-64f758599-bj8tp",
+   "subject_name": "notready-599597b566-qhdb2",
    "trends": {
+    "api_first_timestamp": [
+     "2026-10-05T07:42:40.000000Z",
+     "2026-10-08T10:00:26.000000Z"
+    ],
     "count": [
-     692,
-     807
+     3650,
+     125
     ]
    }
   }
@@ -2347,29 +2190,113 @@
  ],
  "omitted": [
   {
-   "fingerprint": "004fc9d32fea12c4cd838a9d0559ea6c",
+   "fingerprint": "978a628eec6a4424cb6d14dab77cbf3a",
    "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9bc4aaae26c1a3e7d8f9e3bfe2689512",
+   "fingerprint": "873a9ae0d49d31ad0bdcbd3c30829df3",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "6306ce9af753a089fcea3fb3661ea346",
+   "occurrences": 3,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "fdb14b5e47ffc802e4bae5f171a13669",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "a0b390fa368f6e076f21e88fd86f0915",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "254f55638d2ca979edaa5566bf7ef89d",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "dd30dc1d9ebacf92941c0aad813d3073",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d98768f379cf95e6972b781d70a84d0c",
+   "fingerprint": "6b66095bf26d6b05b5534c662187d405",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "12070ece921e65d749ad863652e4ade0",
+   "fingerprint": "b6e6eeaf58b921cb1672fa1ee062bcc1",
    "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "d4df9bcbb304d5e148f3b28ad11dc38d",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "f0c9abcb0c9dead5987d5ed9cf2a6382",
+   "occurrences": 3,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "29f138c8237e9a0dc54a96beda78b755",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "d93691d48d1649dc0a399b901c96adc4",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "c20dd86f5582537f43f27313a0ac40b3",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "7ca995f25c1a390952321cf6b3a212ea",
+   "occurrences": 2,
+   "reason": "below the top 40 by rank",
+   "severity": "warning",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "cfcdbaf4cf8b76770b30f7848bc30b05",
+   "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
@@ -2383,395 +2310,269 @@
   },
   {
    "fingerprint": "9cf75e02bdf873e1346b63ea11f28721",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "7ca995f25c1a390952321cf6b3a212ea",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "91c1a2f42e50e83361908c03b4bac8f0",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "cfcdbaf4cf8b76770b30f7848bc30b05",
    "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "02fc7451191450e71495570f0bb86d3b",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "16d26509e49ef32166e5879464e80d53",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "c84936e02589da93827aef7aadad74b5",
+   "fingerprint": "203e12091b6d1c38a1bed7e1c091ae29",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5a8197eecaf29821bd5c2714b7212b14",
+   "fingerprint": "0c48e04e521d0e9be3f5a24afc7981dc",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "1a1e5aeefa673900eef8e15677f41207",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "e84453092119f61ca8924dae21dc3922",
+   "fingerprint": "bad701a346ce6afb019eba01d1629e94",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "11ef06620b134358f3e1b552771c3272",
+   "fingerprint": "67e8c144b753d02361a26a3880e1309d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "44b7be51b1c80d471096becdca8797dd",
+   "fingerprint": "ec386220df5d07febe234aed254d7f0f",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ed45bf9b36cb36d7a279094f0423a729",
+   "fingerprint": "a3445d90cc95e93cf9d2305d12023093",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "7b2a5444931e7fb90af6a61c41005c83",
+   "fingerprint": "e50316ace0d984b756ed6bb05eeb4fe4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "e332309642d406681cc92bba886a3296",
+   "fingerprint": "c9295e34d124416e294e1bd54ff7c3bb",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ab4a5cc5d2605a2db8eb408625bee251",
+   "fingerprint": "c700e504ac4bf68c3d63e7481b4074c3",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "7b1a1867521648b129276b46ac6d80cf",
+   "fingerprint": "1e50476a2767771646c1792b7e132fb0",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "12e11fa1a28636b14f3790b71d923a23",
+   "fingerprint": "9ad3c43ccb2717c240aacbc4400d599d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "f42778b484f93174acf22491616d0a87",
+   "fingerprint": "68c135f46e636e13295200083882492f",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "225f9e81c60a127c6d3df98d15bc2594",
+   "fingerprint": "473594353f7f56c5545dfacaf7e04ce4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d0e1010e19fbdbce29a85fe7de224930",
+   "fingerprint": "9b7988138def7a812ea6996a6a86c949",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "7729b37f2dd1702f07d8a1d1775feff0",
+   "fingerprint": "828a9a6827f7cf3f48ca0208288dbe9e",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9e59921cdab944a030cecb02dd13d95f",
+   "fingerprint": "b4d14aa6b0aed715d8ffe603e3719065",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d3d473397ee3087d0ade1e7626d6ceab",
+   "fingerprint": "8bf91de5f1563d172ec681954beb6d6a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "c57c36fe4b559ab9a3b206a139c85a72",
+   "fingerprint": "5a070cf872fca4d80802617ca304a527",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "2923e23b3427e93b7edb4a8ace15911f",
+   "fingerprint": "402595ff82a0a160dcacbad668da850c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "02bfc3335572c5a96ff7d95bd224c7dd",
+   "fingerprint": "8dc3c6d5ac0c4d39831d8eb09198c717",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "3c178e34252004373ed441aee18ed8ad",
+   "fingerprint": "26e5fe65f4b3f45c6d430cf96ff598f1",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "135eb4faba04dabebc7d2c772d37f46c",
+   "fingerprint": "9a701601c0d020141f6e42553ecbb362",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8bfcf013ac3bb8a40938f7c0e09685d5",
+   "fingerprint": "16e8d8d7cdfa394ea6c48fa17f1f16f4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "49c56e1ac31191a572d4f59f3851660a",
+   "fingerprint": "06aa0a8122927b40ef9231f6483b812c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "be9c9ed28f2b5c61d59243433385edd1",
+   "fingerprint": "c1c850342ae1cd0def892defb4054a3d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "51e52fbb86acef4dda7721fa882f466b",
+   "fingerprint": "39aa6b2ea7001de3a0ee627b80f0947e",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "a0feda86f3a9e4da4e550351b1916af6",
+   "fingerprint": "540474a3fcc280439b692a33e800ac5b",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "f5ea64885c30006a209eee85b6fc0455",
+   "fingerprint": "5e715a75c0804ee4d1a1f8bd3d3d3bf2",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "390c8607ec71e00fe9bef9d5cbbaed2b",
+   "fingerprint": "a627427c55ab12377fe3ddf246f6e5c5",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9a669dc49b3518a6d0f00638a74db012",
+   "fingerprint": "bc0a8632708e3cad2c137c56b2a43b1a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "c1790dde244dbec9624d0019fec3e3c1",
+   "fingerprint": "69a4fcae0c93944a0e853bb0998bbb40",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "b222f5ffded509cdc673f447269b1da6",
+   "fingerprint": "e3ff9081ddad59f9f6766a1c9744770d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "245cbefdbe424f13d6063585dc3438e2",
+   "fingerprint": "06d5499ee551c904581558e72e82570e",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "bb45394fe22480a5c6a27d491e35e4bc",
+   "fingerprint": "7cd40a95b2a4cf7bd91ea6acf2945831",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "834fe29a17a7d7013c0567080c3b0e83",
+   "fingerprint": "44e6ee4b67827d1bb98ca18779c7efee",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5078307665a1b37626bd1f886e9e5237",
+   "fingerprint": "6d562f466df6d0798e5bf8ccefad1d2b",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "warning",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "31de9a07cdf1b0f5f3fc3ff9a3018561",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "9d12fa0b0827ee802b220a66a63c1b4a",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "5ad8b259a777d6db5fb2cd5dda9ce8b9",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "8946298aa18ca474abd7bedef0d3a150",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "63f4a1829e1b6c90578f05b58a48b82a",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "91cd1845d29ee88765c9f6519a564012",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "13a70e5110e3dd32527b55d23d24808e",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "warning",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "c272d926c3fcba9a1e193df68ae13ea6",
+   "fingerprint": "e3d29060f325683709d82d72be93c0af",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "a431f429f1f8f48d961caca5d30bf49d",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "4c5f2861c052c46b08073d171920649b",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "4c8eca9fdb0f8a339ccbfbf1ee41051b",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "3401ec1aeb9e9ad7bac642243e48e7bb",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_pods"
-  },
-  {
-   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_services"
   },
   {
    "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
@@ -2788,11 +2589,11 @@
    "source": "k8s_nodes"
   },
   {
-   "fingerprint": "8089a6cd38f034cc9f6421c4a7f13f01",
+   "fingerprint": "35ee27358141cc968f9ea55252002fe4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
-   "source": "k8s_nodes"
+   "source": "k8s_services"
   },
   {
    "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
@@ -2837,43 +2638,22 @@
    "source": "k8s_nodes"
   },
   {
-   "fingerprint": "1b5f0fad147a976ba738c15cae69e398",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_nodes"
-  },
-  {
-   "fingerprint": "8f6d1b22f12d3633fd04bf99ce1b3e1c",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_nodes"
-  },
-  {
-   "fingerprint": "b97f207f7ac662258c50699b73190543",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_nodes"
-  },
-  {
-   "fingerprint": "2b1670dfac1964f9dfbe208555364244",
+   "fingerprint": "c67a9018c230292ceba948412a9fef7f",
    "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
   },
   {
-   "fingerprint": "a4d1eb42b6632a2c6346e8984a848150",
-   "occurrences": 2,
+   "fingerprint": "d78e0f7a86b8437812e0f2f926d96302",
+   "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
   },
   {
-   "fingerprint": "3017dc3e9c4d175acb2649fb44b150e9",
-   "occurrences": 2,
+   "fingerprint": "49bdbb3e07830676eedbd83b59e0a89d",
+   "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
@@ -2886,63 +2666,14 @@
    "source": "k8s_logs"
   },
   {
-   "fingerprint": "1d22b4ea8c20aaba5e0e852214524af0",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "d903c8a8bb1ecc975e78e3a3b2b38902",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "50ac3b038d140dcbd7643057f2d36fff",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "a957fd77a69e37b6fe08683a6f0a831f",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
    "fingerprint": "52f8bdaf7abdaea7fb68a81c63d792aa",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "43ab770c30f839d8b63e81c6770250ab",
    "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "49bdbb3e07830676eedbd83b59e0a89d",
-   "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
   },
   {
    "fingerprint": "1ea74dc179019d5a1c66c6091a0da264",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "c77a9928ef071c33c8a3a3273ae9d3ef",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -2950,14 +2681,84 @@
   },
   {
    "fingerprint": "2c15ee7a5493f5ca2138198235df12b2",
-   "occurrences": 2,
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "d903c8a8bb1ecc975e78e3a3b2b38902",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "5803e6d1b71c17631923ea889ea5d550",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "a4d1eb42b6632a2c6346e8984a848150",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "50ac3b038d140dcbd7643057f2d36fff",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "a957fd77a69e37b6fe08683a6f0a831f",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "0c3a7dbb56ea85c680dc710cafd7cd25",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "3017dc3e9c4d175acb2649fb44b150e9",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "d65bdaa7fecc8b4c4e1bd414c1c4601e",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "2c8962999ff2b269d4878f21d9103ff0",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "2db29373ca8c2833658cc775cdf4fa7a",
+   "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
   },
   {
    "fingerprint": "0c3ce60a2a4a82588502ff6d41955f2f",
-   "occurrences": 2,
+   "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_logs"
@@ -2970,7 +2771,21 @@
    "source": "k8s_logs"
   },
   {
-   "fingerprint": "987aba5ef208f99c0abf1a0a4db9b4d1",
+   "fingerprint": "232fe3d0120a1de7b42ff3f1d82b9149",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "725d0cecc439ab7593b5b9d3cbe3d9e7",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_logs"
+  },
+  {
+   "fingerprint": "ec949efcdbf270358382e25f679df757",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -2992,62 +2807,6 @@
   },
   {
    "fingerprint": "a06663eb74dafb1be12ed32ba236fb79",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "7d6d2353a4424cacbfc9fe58e5096560",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "c186e756aed9987c3c08539ec8c042a0",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "afa5ac58283ff1ca14de64a84bc5af6f",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "34040c3d3f8f99f771cd7cfac5e92112",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "682d4daaf5c943f72ca6f8e1fd4c6f05",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "71544e21b402149d2f5127408e8d7f9c",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "b0c52ff54c19e41943c7fa6cc24313e7",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_logs"
-  },
-  {
-   "fingerprint": "9dfd989c79fd60d2e43498186287fe16",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -3103,42 +2862,56 @@
    "source": "k8s_logs"
   },
   {
-   "fingerprint": "8199d63256b27c377ea56aed48a68cee",
-   "occurrences": 2,
+   "fingerprint": "6e85d0c0d5febee63ca61aae936e9d63",
+   "occurrences": 7,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ed163c6a4e7ff02f3178d43de8e88ac8",
+   "fingerprint": "db76b8edaddf3978e397187d6389bcbc",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "88fa0faa0dca59399030802f9d422c5d",
+   "fingerprint": "32e8fded75c908b76dfc2da0fc681eee",
+   "occurrences": 7,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "950370bb17b591f508afee1a3d00122e",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "e58d5c3b8820536910e6a029fefd266e",
+   "fingerprint": "94b791f28638dae75555a10fc5c89a04",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "81b3f80ccc0d9ad3f371e360194e7e70",
+   "fingerprint": "31e31c914950afbd5bc29bf917396e21",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "33c5c1514252616cf61486d1d008705e",
+   "fingerprint": "c3ed57a7e7f243110093e5f36a43613f",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "700dab89f3322d7775d8e48551406c04",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -3152,15 +2925,15 @@
    "source": "k8s_events"
   },
   {
-   "fingerprint": "7a69939fe1a490ab7a2b8e3a326b7591",
-   "occurrences": 1,
+   "fingerprint": "8199d63256b27c377ea56aed48a68cee",
+   "occurrences": 2,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "cb1ae02c070de6c3586c9ca97b718563",
-   "occurrences": 3,
+   "fingerprint": "117ea5ecb677ef0f9c7b2dddfd431c01",
+   "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
@@ -3173,7 +2946,14 @@
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5b0bbd29152776bcb6ae43b3285efe15",
+   "fingerprint": "cb1ae02c070de6c3586c9ca97b718563",
+   "occurrences": 1,
+   "reason": "below the top 40 by rank",
+   "severity": "info",
+   "source": "k8s_events"
+  },
+  {
+   "fingerprint": "ddc097fc74038cff90be8ab9e74652f5",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -3181,202 +2961,146 @@
   },
   {
    "fingerprint": "8bd81e80be4e4f4095f60ee8329df01a",
-   "occurrences": 3,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "a115a3adf6e7febf2a1eb4c4b1d245a2",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "8c5936799ff9e8a66d7b661e62156e1c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6ed11cfb4dbed15320241dc3bf00f5ee",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "73a60d0ec41caf8025726fb2b43e032d",
+   "fingerprint": "23aadb32cb5019511c67d487a94c44ef",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "72de00cad139a7758fe6cd6de89a3996",
+   "fingerprint": "e1f7fdb7ff2be1b5a2d4899fa4ba3c5b",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "70eb30d4e0a019e5c4295fccabdda50f",
+   "fingerprint": "2f7e53fbefc32a4825354cef1f1c14c8",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "af780031a7f9bb5173a1f8349e332b0e",
+   "fingerprint": "4e466d8eb78b688ec6c75d4dd6e36bda",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5012a95852a711797bf29791505b67c8",
+   "fingerprint": "37dd187e74412628f08e79f6d2f8a32c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5ca4e9d5eb27c9c0657c7bb9d4012500",
+   "fingerprint": "55b492a7b2f561db7e62bf7f98a4b72c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ede11177c04135a2433990a6d6a9f335",
+   "fingerprint": "6c693f36f277c36ee4cebf2781431839",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d295d50b75d01bbbf932c783e72c4c42",
+   "fingerprint": "9a811d12fcdfba86a875ef6a9c3deae9",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "b2174534fd91b6ef73538ae19289f68c",
+   "fingerprint": "4dd8a202bb0c2465f1483b139b2222ab",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "072c00a00b8de0f58179ce9372b802e7",
+   "fingerprint": "93bc72eca455a4fcaa4d05e4ce87bbe4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "4677c5400bd8e99288f500dd7b195975",
+   "fingerprint": "267918a8d69018028ae98ca93ff2847a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "1d0f9d15fe474b253c8aa76d6aecbb16",
+   "fingerprint": "ac821f9daa01458d1cd5eda4ff8453f7",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "c55c7af2b671b040189f942b5b893231",
+   "fingerprint": "97342bac56bcb4737398e4a2ac3a656c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "2ceb11475e3c09882b52800a19cbf94c",
+   "fingerprint": "63341035cda19e7294a4923cda548eec",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "979cd4ae8cc8d9420c88216b7e40e950",
+   "fingerprint": "44a066dad0808c2eb00ef0c6f34c66bd",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5633fbe64bbc4621b97d71f3ca34bab4",
+   "fingerprint": "358782bb5b6975aa5008d5e2e75e48f6",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "c438d2739919b5cb8c56d2eb8299cae7",
+   "fingerprint": "2896378a878a64bd41114f11751155aa",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6c9323236099264cf1f8458e01ead22c",
+   "fingerprint": "bfebf57ec392a227c19744b22b704fd7",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "a2c2f870dcf316b5d7f9fa80b938c4a4",
+   "fingerprint": "15ee4a4392074b8bd88a6abdff2c755c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "c055e9dcefc05bbdccec6eefe5cdc33e",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "13ee5eff7cd2efc3e4bf78a93d881759",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "0ca8667dacad6874c52a1eafdfdc5bf1",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "25c7417b51ba1bc01c1c662b2a423f96",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "7706412833ea8d55f0b76da30d0f3cf3",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "c7ce1497e8b1cd53c808db48261da06c",
+   "fingerprint": "40c06f863be9af96a83c0a41dabc832d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
@@ -3384,657 +3108,475 @@
   },
   {
    "fingerprint": "8592bec8c9a352bf45c83339a843cdf8",
-   "occurrences": 2,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "03b1a6e3c6a2ad29720216b199933cfb",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "8c0a071a6da7ed04712a4f196025b8e0",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "b10d746519e88725756ee3262cd85039",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "afbecce73fb64184dd3d0619bd11dd01",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "3df5511e490a5bc493424652aae8cac6",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "646eb00437dc7548a8b682ed17975117",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "8f96f1482cefff248f7a6a837fb7ad12",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "b6ba08d0434dd839e44be2088bda4a97",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "ff2e40ed535732a2891e5a2343148401",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "0d23d3609a93ebd77ab3e7784ac5d233",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "b3516281a6859c92897be10d0ac78225",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "39954e769629bd3dc9a1405358545607",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "8cb1a8adf5f949d90cdd235f6d89e765",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "39609c07572b58ca77e34f9e8fe6c744",
+   "fingerprint": "c40c9f9e96281d37d9ba3766f884abdd",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "a8ee917a5d8a8c09b6c729b599d69b07",
+   "fingerprint": "8d8d5a7047fa3134b0617955fb12eb13",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9c6bab52212ab0730cad14f939aaa50c",
+   "fingerprint": "571f0f9f53fcab71bc284565e2eae999",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "e530427879e1e672eef669515958dde6",
+   "fingerprint": "a6504ef396f9184c4df26de591637f4a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "70baf8eb71b7be798057d0f5ec8ea3fa",
+   "fingerprint": "64b8e332e0659337091524e8fa84f528",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "fd974e48e9b7e40e2191c1ef80374ec0",
+   "fingerprint": "a11020c7c2affebdba291c693b75213c",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "1151de375e82eed5ca8cec3ffea19def",
+   "fingerprint": "e637f79ba76accb11d264a5c00b8fa01",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "678b9ec445064517464418b7b4813f16",
+   "fingerprint": "53f8a2ce0d2ccc22fc0c16163a031afd",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "eb01eee365706fe03b29d2236db4140e",
+   "fingerprint": "9100f48e8437c7edfa96602546acda38",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "337d07900daa35da2b0b01b392df3b09",
+   "fingerprint": "0f77648fe78619b3da9be1f736c8b769",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "80f7d13734e2585948542f4cb50abdbe",
+   "fingerprint": "dfd304706bafdcfde3a23aef0872fbd0",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "337c9ee77d33c3b8a7e7bd7e3803f7bb",
+   "fingerprint": "3c0112c40bfe6a375b2764d79893d052",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "f6e26a126fe120be5a6096c22dbc2823",
+   "fingerprint": "77f82da87ebb4198197afd0b60cf8ce4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5733071032de8296e159be69eea6421c",
+   "fingerprint": "0421a14ff66a36ce83994195cc326bfe",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8c64de478f1509016c5ab5eda6bfb422",
+   "fingerprint": "3fe1034ca548e0ace33707f261ebf90d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "0d12692a7f8ec0a8eee26e17ca91d332",
+   "fingerprint": "1ee4f4bccfc9ccbee394a49019421c6e",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "de9da89bc7d541fc6e15b7ce442db176",
+   "fingerprint": "c966c6f4ffc0d0322bde8190c8bb5f84",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "06b52701ce84530e10b5bbd2ce88929a",
+   "fingerprint": "a294a6313a0df577d1cc319a000954ac",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "bb4c96050a687695457dab18c940804f",
+   "fingerprint": "5d40c2f1c3b1c66093421fcfb1240565",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "a101e13ff133ff642604519b68aaee1c",
+   "fingerprint": "f6b3119c3c83239a0d1b43d2a2b84586",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "560b43b0b87fb66f742e53cc9dcd68e0",
+   "fingerprint": "73c57ff836c754a84eb77ecf70d44b1f",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ded1eab2d43b957f9c56bd20af75935e",
+   "fingerprint": "0a9d46956e5ff4037aeeead17303c0b7",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d20f8eccbbbafc671684f1f5374738c4",
+   "fingerprint": "5f4346fe95b963c5569a265407aabd2b",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8b7d839afb4c5dca6bc43f69989da2b6",
+   "fingerprint": "cef973abf2e4132ff87540fc6cc305c5",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "f4e2bd4385f8429b839dca252d09bdc6",
+   "fingerprint": "0c938d87eac50397d57de7cd56df9c70",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "4cbb96e1b48ac3e90d37d554bb6fa606",
+   "fingerprint": "c1f2e840115ef51673ced494bfc4eddc",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "e5e483277e5dab37fcf5fa5d3e1981a7",
+   "fingerprint": "07d53fa72be08a39254c469d56c4d7ff",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9894e95bde4dc388713a0162cea4c414",
+   "fingerprint": "eb0d3ecef51a1c7eff63168846926acf",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "969a2ed86d519ee29b8f16efc87f8c33",
+   "fingerprint": "43bed1257d419de8758576286d34aff1",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "10309d3448aed1f80bcad98cfade7ac5",
+   "fingerprint": "6307cc2808299a5ec49f7b0b83397cbd",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "af7c566c418194c341b9f1f396afc274",
+   "fingerprint": "8b423a12c9266d3fba076588fcd247b0",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "fbcad61494d6544ff558b8f7188db98c",
+   "fingerprint": "67ee0002d6aa60ecc2b59610bb373f4a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "1d97f99dd3a3eb06e910272f17d30975",
+   "fingerprint": "fc6ef148115d5829f24f9dfb50e921d0",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "16e75d194d44505ee1a1f15ff6215218",
+   "fingerprint": "21447eee9c3953773783fbd94cb0d828",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8910b7f572ef85c5ffb364f9c74fcfb3",
+   "fingerprint": "63e2ad8c74edb57a9ae768f4915ac24b",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8e20878a1dc74b64b7ee5a97e3a1162c",
+   "fingerprint": "864125042a8b5a239eeb4fda599e3290",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6293357e63da15dbe14615e6c39f8c69",
+   "fingerprint": "d993fcfe5663d24b52b193da2c338503",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6810b25e5b0834a19057c07e2bb59c71",
+   "fingerprint": "29324c12935aa2a209db21f63daa9cf8",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "0852ff734fe09e05816174d9bdce6fbb",
+   "fingerprint": "22485350ab57ce6607117933eee2ac59",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "efd3930f071f34a1e3f0b29a81f37f71",
+   "fingerprint": "cf598066dce02e4584a7dc384580b36a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "42c4c96d17d94eeee34df39578956310",
+   "fingerprint": "56f06a44580a33500d1d3584c7a2d73a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "4b6051b6b339871b3b09afa776059205",
+   "fingerprint": "3d78e82e60a74cbac8379c8fa4aa223a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "9fb5f9a6d458177912c2e19f45fc78ec",
+   "fingerprint": "1b91d99001c10b8d2ea5975980cd059d",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "0ad255475dc21f28d6a9d6e2415126be",
+   "fingerprint": "f80a3e8af7a213a0d2500fed87503170",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "993422ab1801c8e040d971df514da0b4",
+   "fingerprint": "114a578852dc2acc8b517bfef1a2efd7",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "ed67902b3746f1295cefa68da1b4b4e9",
+   "fingerprint": "f537959cd3df81fb572e77f9792da2dd",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "4664ec7fb6c7ac5ab8da4339871d5ca9",
+   "fingerprint": "9f248805dd34d6aeae8c67cd4ff70330",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "85b530e1c85bdf2a1100a28c0289d16e",
+   "fingerprint": "c773b7cc8c665eac1f9ebf30fb8d239a",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "406b22d84c49ad27dfb2f0b765294f3c",
+   "fingerprint": "14223806fcbd9a5a3730cfe391ab64e6",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "87234d55c1f77883ae382e0bcbf8634f",
+   "fingerprint": "ae5ce3a300608804d02f42ae509060f1",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "5066ecc223044a554f57d87f6cde11e2",
+   "fingerprint": "15d04406811855a11f17ead6f95f64c8",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6d0ed10ae4edc8039893854c668cf6e1",
+   "fingerprint": "7913651e03078cb993db2540445aeca4",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "d3c5ff3db2f21087e9c5afb9620790df",
+   "fingerprint": "d75fdee39ecb78cb54b89819212b5233",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "8a601f34936ce8aa5e71b349daa1ad0d",
+   "fingerprint": "d5b4dda989d3c088bfaa2791d9af3baf",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "e3a946f1b3937fed57f78f0b2f453fb6",
+   "fingerprint": "8b4f16acbf052d26738d7a0e87728101",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "466b67c69e8a5c3b1766ca77073dd272",
+   "fingerprint": "17a6c233607f488ad2ec49fbf1d8e121",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "6d2abdbf0631709fa21129d243d60384",
+   "fingerprint": "8c93875de75b432e846a97e67ca39a46",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
   },
   {
-   "fingerprint": "df0812ac289c4c9c7daec409fd88feac",
+   "fingerprint": "a5098b5ff58cf2f37531004c9ea9dde5",
    "occurrences": 1,
    "reason": "below the top 40 by rank",
    "severity": "info",
    "source": "k8s_events"
-  },
-  {
-   "fingerprint": "c7b0ba23023c3389f3c1e9375fe60482",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "ae085bc238de9b85b43411effbb76f4c",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "84c2fc7cb314f3f51be22f11bddfa3fd",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "f850c8b7379bb8a9bf83e04c0a9cfc08",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "1ea87931f833faf657e10857338cd29a",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "78aa37e562ccc382cfa8cdd74c0ff4e4",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "cb91ea35ff9f0af3c36e2a13ecffc174",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "bbbc3b3d1558ddf2ada92c90800b8648",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "c2a3a473fc233e631f2ca799ff5004a8",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "e080e38cb6f7d7cc9962badcbe380f26",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "41cd09ea7a6e5cc501899e2139901867",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "900d0da522f036585f7935365bb8785a",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_events"
-  },
-  {
-   "fingerprint": "3ea7f285b8cfd1ee0376f982898ece91",
-   "occurrences": 1,
-   "reason": "below the top 40 by rank",
-   "severity": "info",
-   "source": "k8s_pods"
   }
  ],
  "promoted": [],
- "render_bytes": 46395,
+ "render_bytes": 42823,
  "scope": null,
  "sources": [
   {
-   "attempts": 3,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.213591Z",
+   "last_started": "2026-10-08T10:12:41.291817Z",
    "never_ran": false,
    "signals": 24,
    "source": "k8s_pods",
    "status": "ok"
   },
   {
-   "attempts": 3,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.253834Z",
+   "last_started": "2026-10-08T10:12:41.337433Z",
    "never_ran": false,
    "signals": 3,
    "source": "k8s_services",
    "status": "ok"
   },
   {
-   "attempts": 3,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.270408Z",
+   "last_started": "2026-10-08T10:12:41.354752Z",
    "never_ran": false,
    "signals": 12,
    "source": "k8s_nodes",
    "status": "ok"
   },
   {
-   "attempts": 3,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.091870Z",
+   "last_started": "2026-10-08T10:12:41.157239Z",
    "never_ran": false,
-   "signals": 157,
+   "signals": 191,
    "source": "k8s_events",
    "status": "ok"
   },
   {
-   "attempts": 3,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.282237Z",
+   "last_started": "2026-10-08T10:12:41.366244Z",
    "never_ran": false,
-   "signals": 30,
+   "signals": 33,
    "source": "k8s_logs",
    "status": "ok"
   }
  ],
  "subject": null,
- "window_basis": "fixed lookback",
- "window_end": "2026-10-04T14:03:17.845838Z",
- "window_start": "2026-10-04T13:03:17.845838Z"
+ "window_basis": "extended to the lookback cap, which the leading finding predates",
+ "window_end": "2026-10-08T10:33:19.779349Z",
+ "window_start": "2026-10-08T04:33:19.779349Z"
 }

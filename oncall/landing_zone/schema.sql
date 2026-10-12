@@ -143,7 +143,9 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     cost_usd              REAL,          -- NULL when no price was configured
     summary               TEXT,
     errors                TEXT,          -- JSON
-    insufficient_evidence INTEGER        -- 0/1, NULL when there is no diagnosis
+    insufficient_evidence INTEGER,       -- 0/1, NULL when there is no diagnosis
+    unknowns              TEXT           -- JSON; what the model said it could not see,
+                                         -- NULL when there is no diagnosis
 );
 
 

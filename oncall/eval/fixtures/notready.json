@@ -1,30 +1,13 @@
 {
  "candidate_signal_ids": [
-  "ec579123e96ce84d376298737c37e77c",
-  "b9a0c2558ffc866725dea9e903b639eb",
-  "043e8c61513e3a453db7135aa7764886",
-  "459fc413a46a8f93dce30210b18a7a6e",
   "257754cb59827e277485cb944195d38e",
   "760cba3d193e58fbedf6a12a20fb84e4",
-  "6a472ed7abdd56e29ffd8f780d5e62bc",
-  "ae4a3f240f344f69d06553c337f22b03",
-  "68d728a1e4528eef85705d54e8d27fd4",
-  "9f99af51b4fae31564f7ede8d1ae3e47",
-  "8a40e48bf877f3ce4fd6dc48ffb69e03",
-  "c70adcaaf3d6881d4c8e36e333d7b0de",
-  "84d72546a422e7b3c0c6179776035f67",
-  "6778b28a8026980de103bbd6cf595500",
-  "5d1029ade0bf9ec6e22567f1cdcfe013",
-  "3a09dc50c50ed1a028f7030d1124d841",
-  "9aa4aa68b2fc7e0ae877de6f0c707ecd",
-  "dfdb18056b915e58f53fe4cba874cf45",
-  "ddf45c8d99c203bf48e4fe10add2d32d",
-  "9827456156d4a1f46d36368365782850",
-  "35979dac24e597803da7771be00114ee"
+  "6a472ed7abdd56e29ffd8f780d5e62bc"
  ],
  "cluster": "kind-oncall",
  "degraded": [
-  "the store holds nothing from kind-oncall, so no finding can be called new or old"
+  "the store holds nothing from kind-oncall, so no finding can be called new or old",
+  "evidence may be stale: k8s_events, k8s_logs, k8s_nodes, k8s_pods, k8s_services last ran more than 15 minutes before assembly, so states shown as ONGOING may have changed since"
  ],
  "findings": [
   {
@@ -57,7 +40,7 @@
    },
    "joined_by": "namespace",
    "kind": "service_state",
-   "last_observed": "2026-10-04T13:59:14.267344Z",
+   "last_observed": "2026-10-08T10:12:41.351228Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -78,67 +61,6 @@
    "state": "ongoing",
    "subject_name": "noendpoints",
    "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 2 observations of one series",
-     "change": 1,
-     "first": 1,
-     "key": "restart_count",
-     "last": 2,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "exit_code": 0,
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Running",
-    "pod_start_time": "2026-10-04T10:39:15.000000Z",
-    "ready": false,
-    "reason": "Completed"
-   },
-   "fingerprint": "34f584355b97e573363eccbfbc6394e8",
-   "first_seen": "2026-10-04T11:51:59Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248671Z",
-   "last_seen": "2026-10-04T12:52:00Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 2,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "warning",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "ae4a3f240f344f69d06553c337f22b03",
-    "8a40e48bf877f3ce4fd6dc48ffb69e03"
-   ],
-   "source": "k8s_pods",
-   "state": "ongoing",
-   "subject_name": "notready-59b6fcb87d-78d7r",
-   "trends": {
-    "container_lifetime_seconds": [
-     4356,
-     3600
-    ],
-    "restart_count": [
-     1,
-     2
-    ]
-   }
   },
   {
    "blob_ids": [],
@@ -170,7 +92,7 @@
    },
    "joined_by": "subject",
    "kind": "service_state",
-   "last_observed": "2026-10-04T13:59:14.267351Z",
+   "last_observed": "2026-10-08T10:12:41.351235Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -190,164 +112,6 @@
    "source": "k8s_services",
    "state": "ongoing",
    "subject_name": "notready",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "diffed across 3 observations of one series",
-     "change": 1116,
-     "first": 1052,
-     "key": "count",
-     "last": 2168,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T10:39:29.000000Z",
-    "container": "app",
-    "message_template": "Readiness probe failed: dial tcp <ip>: connect: connection refused",
-    "reason": "Unhealthy",
-    "type": "Warning"
-   },
-   "fingerprint": "25b96cfdf3f0a4b7cd59edae2fc38427",
-   "first_seen": "2026-10-04T12:17:09Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201111Z",
-   "last_seen": "2026-10-04T13:57:54Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 3,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "ddcabddb-2a6d-4af7-b195-4a7c2af9baff",
-    "severity_basis": "cluster"
-   },
-   "sample": "Readiness probe failed: dial tcp 10.244.1.4:8080: connect: connection refused",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "68d728a1e4528eef85705d54e8d27fd4",
-    "c70adcaaf3d6881d4c8e36e333d7b0de",
-    "9827456156d4a1f46d36368365782850"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "notready-59b6fcb87d-78d7r",
-   "trends": {
-    "count": [
-     1052,
-     2168
-    ]
-   }
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "one observation of a series that began inside the window",
-     "change": 25,
-     "first": 25,
-     "key": "count",
-     "last": 25,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:27.000000Z",
-    "container": "app",
-    "count": 25,
-    "message_template": "Readiness probe failed: dial tcp <ip>: connect: connection refused",
-    "reason": "Unhealthy",
-    "type": "Warning"
-   },
-   "fingerprint": "d98768f379cf95e6972b781d70a84d0c",
-   "first_seen": "2026-10-04T13:57:23Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201059Z",
-   "last_seen": "2026-10-04T13:57:23Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "kubelet",
-    "event_uid": "52aabc82-74cb-4f67-a7ba-0236b47c7239",
-    "severity_basis": "cluster"
-   },
-   "sample": "Readiness probe failed: dial tcp 10.244.1.8:8080: connect: connection refused",
-   "severity": "warning",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "dfdb18056b915e58f53fe4cba874cf45"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "notready-599597b566-qhdb2",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "container": "app",
-    "image": "docker.io/library/busybox:1.36",
-    "phase": "Running",
-    "pod_start_time": "2026-10-04T13:55:19.000000Z",
-    "ready": false,
-    "reason": "Running",
-    "restart_count": 0
-   },
-   "fingerprint": "4c8eca9fdb0f8a339ccbfbf1ee41051b",
-   "first_seen": "2026-10-04T13:55:19Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "pod_state",
-   "last_observed": "2026-10-04T13:59:14.248662Z",
-   "last_seen": "2026-10-04T13:55:19Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "9aa4aa68b2fc7e0ae877de6f0c707ecd"
-   ],
-   "source": "k8s_pods",
-   "state": "ongoing",
-   "subject_name": "notready-599597b566-qhdb2",
    "trends": {}
   },
   {
@@ -380,7 +144,7 @@
    },
    "joined_by": "namespace",
    "kind": "service_state",
-   "last_observed": "2026-10-04T13:59:14.267334Z",
+   "last_observed": "2026-10-08T10:12:41.351219Z",
    "last_seen": "2026-10-04T10:39:15Z",
    "namespace": "oncall-lab",
    "node_name": null,
@@ -401,454 +165,6 @@
    "state": "ongoing",
    "subject_name": "healthy",
    "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "allocatable_cpu": "10",
-    "allocatable_memory": "8024852Ki",
-    "allocatable_pods": "110",
-    "capacity_cpu": "10",
-    "capacity_memory": "8024852Ki",
-    "capacity_pods": "110",
-    "condition": "Ready",
-    "instance_type": "t3.small",
-    "kubelet_version": "v1.33.0",
-    "message": "kubelet is posting ready status",
-    "reason": "KubeletReady",
-    "status": "True",
-    "zone": "us-east-1a"
-   },
-   "fingerprint": "4aff5020f51835d6424ca3d21a3b775f",
-   "first_seen": "2026-10-04T10:39:05Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "node",
-   "kind": "node_state",
-   "last_observed": "2026-10-04T13:59:14.279179Z",
-   "last_seen": "2026-10-04T10:39:05Z",
-   "namespace": null,
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": null,
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "459fc413a46a8f93dce30210b18a7a6e"
-   ],
-   "source": "k8s_nodes",
-   "state": "ongoing",
-   "subject_name": "oncall-worker",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "allocatable_cpu": "10",
-    "allocatable_memory": "8024852Ki",
-    "allocatable_pods": "110",
-    "capacity_cpu": "10",
-    "capacity_memory": "8024852Ki",
-    "capacity_pods": "110",
-    "condition": "MemoryPressure",
-    "instance_type": "t3.small",
-    "kubelet_version": "v1.33.0",
-    "message": "kubelet has sufficient memory available",
-    "reason": "KubeletHasSufficientMemory",
-    "status": "False",
-    "zone": "us-east-1a"
-   },
-   "fingerprint": "c8e1789e7cf15a9a959da18a1cd9b6b1",
-   "first_seen": "2026-10-04T10:38:52Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "node",
-   "kind": "node_state",
-   "last_observed": "2026-10-04T13:59:14.279136Z",
-   "last_seen": "2026-10-04T10:38:52Z",
-   "namespace": null,
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": null,
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "ec579123e96ce84d376298737c37e77c"
-   ],
-   "source": "k8s_nodes",
-   "state": "ongoing",
-   "subject_name": "oncall-worker",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "allocatable_cpu": "10",
-    "allocatable_memory": "8024852Ki",
-    "allocatable_pods": "110",
-    "capacity_cpu": "10",
-    "capacity_memory": "8024852Ki",
-    "capacity_pods": "110",
-    "condition": "DiskPressure",
-    "instance_type": "t3.small",
-    "kubelet_version": "v1.33.0",
-    "message": "kubelet has no disk pressure",
-    "reason": "KubeletHasNoDiskPressure",
-    "status": "False",
-    "zone": "us-east-1a"
-   },
-   "fingerprint": "f1817db9a6d78b95fc792619fca8bca4",
-   "first_seen": "2026-10-04T10:38:52Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "node",
-   "kind": "node_state",
-   "last_observed": "2026-10-04T13:59:14.279149Z",
-   "last_seen": "2026-10-04T10:38:52Z",
-   "namespace": null,
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": null,
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "b9a0c2558ffc866725dea9e903b639eb"
-   ],
-   "source": "k8s_nodes",
-   "state": "ongoing",
-   "subject_name": "oncall-worker",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": null,
-   "facts": {
-    "allocatable_cpu": "10",
-    "allocatable_memory": "8024852Ki",
-    "allocatable_pods": "110",
-    "capacity_cpu": "10",
-    "capacity_memory": "8024852Ki",
-    "capacity_pods": "110",
-    "condition": "PIDPressure",
-    "instance_type": "t3.small",
-    "kubelet_version": "v1.33.0",
-    "message": "kubelet has sufficient PID available",
-    "reason": "KubeletHasSufficientPID",
-    "status": "False",
-    "zone": "us-east-1a"
-   },
-   "fingerprint": "2bb035138f675636fbd9a624ed4258cd",
-   "first_seen": "2026-10-04T10:38:52Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "node",
-   "kind": "node_state",
-   "last_observed": "2026-10-04T13:59:14.279165Z",
-   "last_seen": "2026-10-04T10:38:52Z",
-   "namespace": null,
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": null,
-   "partial": [],
-   "provenance": {},
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "043e8c61513e3a453db7135aa7764886"
-   ],
-   "source": "k8s_nodes",
-   "state": "ongoing",
-   "subject_name": "oncall-worker",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": "25b96cfdf3f0a4b7cd59edae2fc38427",
-   "facts": {
-    "container": "app",
-    "log_status": "empty",
-    "stream": "previous"
-   },
-   "fingerprint": "d903c8a8bb1ecc975e78e3a3b2b38902",
-   "first_seen": "2026-10-04T12:17:09Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "log_excerpt",
-   "last_observed": "2026-10-04T13:59:14.463392Z",
-   "last_seen": "2026-10-04T13:57:54Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": true,
-   "occurrences": 3,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "trigger_fingerprint": "25b96cfdf3f0a4b7cd59edae2fc38427",
-    "trigger_signal_id": "9827456156d4a1f46d36368365782850",
-    "trigger_source": "k8s_events",
-    "window_end": "2026-10-04T13:59:14.283599Z",
-    "window_start": "2026-10-04T13:49:14.283599Z"
-   },
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "9f99af51b4fae31564f7ede8d1ae3e47",
-    "84d72546a422e7b3c0c6179776035f67",
-    "35979dac24e597803da7771be00114ee"
-   ],
-   "source": "k8s_logs",
-   "state": null,
-   "subject_name": "notready-59b6fcb87d-78d7r",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [],
-   "explains": "d98768f379cf95e6972b781d70a84d0c",
-   "facts": {
-    "container": "app",
-    "log_status": "empty",
-    "previous_unavailable": true,
-    "since_seconds": 600,
-    "stream": "current"
-   },
-   "fingerprint": "43ab770c30f839d8b63e81c6770250ab",
-   "first_seen": "2026-10-04T13:57:23Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "log_excerpt",
-   "last_observed": "2026-10-04T13:59:14.463477Z",
-   "last_seen": "2026-10-04T13:57:23Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": true,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "trigger_fingerprint": "d98768f379cf95e6972b781d70a84d0c",
-    "trigger_signal_id": "dfdb18056b915e58f53fe4cba874cf45",
-    "trigger_source": "k8s_events",
-    "window_end": "2026-10-04T13:59:14.283599Z",
-    "window_start": "2026-10-04T13:49:14.283599Z"
-   },
-   "sample": null,
-   "severity": "info",
-   "severity_basis": "assessed",
-   "signal_ids": [
-    "ddf45c8d99c203bf48e4fe10add2d32d"
-   ],
-   "source": "k8s_logs",
-   "state": null,
-   "subject_name": "notready-599597b566-qhdb2",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "one observation of a series that began inside the window",
-     "change": 1,
-     "first": 1,
-     "key": "count",
-     "last": 1,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
-    "count": 1,
-    "message_template": "Created pod: notready-<hex>-<rand>",
-    "reason": "SuccessfulCreate",
-    "type": "Normal"
-   },
-   "fingerprint": "1d0f9d15fe474b253c8aa76d6aecbb16",
-   "first_seen": "2026-10-04T13:55:19Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201081Z",
-   "last_seen": "2026-10-04T13:55:19Z",
-   "namespace": "oncall-lab",
-   "node_name": null,
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "replicaset-controller",
-    "event_uid": "8d9450a4-8dc8-4ce1-8537-efa99277ac47",
-    "severity_basis": "cluster"
-   },
-   "sample": "Created pod: notready-599597b566-qhdb2",
-   "severity": "info",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "6778b28a8026980de103bbd6cf595500"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "notready-599597b566",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "one observation of a series that began inside the window",
-     "change": 1,
-     "first": 1,
-     "key": "count",
-     "last": 1,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
-    "count": 1,
-    "message_template": "Scaled up replica set notready-<hex> from <n> to <n>",
-    "reason": "ScalingReplicaSet",
-    "type": "Normal"
-   },
-   "fingerprint": "c55c7af2b671b040189f942b5b893231",
-   "first_seen": "2026-10-04T13:55:19Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "subject",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201136Z",
-   "last_seen": "2026-10-04T13:55:19Z",
-   "namespace": "oncall-lab",
-   "node_name": null,
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "deployment-controller",
-    "event_uid": "78acf013-7cec-4b76-bb7e-dfed0f125a40",
-    "severity_basis": "cluster"
-   },
-   "sample": "Scaled up replica set notready-599597b566 from 0 to 1",
-   "severity": "info",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "5d1029ade0bf9ec6e22567f1cdcfe013"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "notready",
-   "trends": {}
-  },
-  {
-   "blob_ids": [],
-   "deltas": [
-    {
-     "basis": "one observation of a series that began inside the window",
-     "change": 1,
-     "first": 1,
-     "key": "count",
-     "last": 1,
-     "series": 1
-    }
-   ],
-   "explains": null,
-   "facts": {
-    "api_first_timestamp": "2026-10-04T13:55:19.000000Z",
-    "count": 1,
-    "message_template": "Successfully assigned oncall-lab/notready-<hex>-<rand> to oncall-worker",
-    "reason": "Scheduled",
-    "type": "Normal"
-   },
-   "fingerprint": "13ee5eff7cd2efc3e4bf78a93d881759",
-   "first_seen": "2026-10-04T13:55:19Z",
-   "history": {
-    "first_seen_ever": null,
-    "is_new": null,
-    "watching_since": null
-   },
-   "joined_by": "owner",
-   "kind": "event",
-   "last_observed": "2026-10-04T13:59:14.201027Z",
-   "last_seen": "2026-10-04T13:55:19Z",
-   "namespace": "oncall-lab",
-   "node_name": "oncall-worker",
-   "observational": false,
-   "occurrences": 1,
-   "owner_name": "notready",
-   "partial": [],
-   "provenance": {
-    "collector_version": 2,
-    "component": "default-scheduler",
-    "event_uid": "e03c058f-13ee-40d8-87f8-bff35a9d44ce",
-    "severity_basis": "cluster"
-   },
-   "sample": "Successfully assigned oncall-lab/notready-599597b566-qhdb2 to oncall-worker",
-   "severity": "info",
-   "severity_basis": "cluster",
-   "signal_ids": [
-    "3a09dc50c50ed1a028f7030d1124d841"
-   ],
-   "source": "k8s_events",
-   "state": null,
-   "subject_name": "notready-599597b566-qhdb2",
-   "trends": {}
   }
  ],
  "losses": [],
@@ -857,71 +173,69 @@
  ],
  "omitted": [],
  "promoted": [],
- "render_bytes": 10584,
+ "render_bytes": 2745,
  "scope": {
   "found": true,
   "namespace": "oncall-lab",
-  "nodes": [
-   "oncall-worker"
-  ],
-  "owner": "notready",
+  "nodes": [],
+  "owner": null,
   "subject": "notready",
   "unscheduled": false
  },
  "sources": [
   {
-   "attempts": 5,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.213591Z",
+   "last_started": "2026-10-08T10:12:41.291817Z",
    "never_ran": false,
    "signals": 24,
    "source": "k8s_pods",
    "status": "ok"
   },
   {
-   "attempts": 5,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.253834Z",
+   "last_started": "2026-10-08T10:12:41.337433Z",
    "never_ran": false,
    "signals": 3,
    "source": "k8s_services",
    "status": "ok"
   },
   {
-   "attempts": 5,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.270408Z",
+   "last_started": "2026-10-08T10:12:41.354752Z",
    "never_ran": false,
    "signals": 12,
    "source": "k8s_nodes",
    "status": "ok"
   },
   {
-   "attempts": 5,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.091870Z",
+   "last_started": "2026-10-08T10:12:41.157239Z",
    "never_ran": false,
-   "signals": 157,
+   "signals": 191,
    "source": "k8s_events",
    "status": "ok"
   },
   {
-   "attempts": 5,
+   "attempts": 2,
    "error": null,
    "failed": 0,
-   "last_started": "2026-10-04T13:59:14.282237Z",
+   "last_started": "2026-10-08T10:12:41.366244Z",
    "never_ran": false,
-   "signals": 30,
+   "signals": 33,
    "source": "k8s_logs",
    "status": "ok"
   }
  ],
  "subject": "notready",
- "window_basis": "extended to the first occurrence of the leading finding",
- "window_end": "2026-10-04T14:03:17.694697Z",
- "window_start": "2026-10-04T11:51:59Z"
+ "window_basis": "extended to the lookback cap, which the leading finding predates",
+ "window_end": "2026-10-08T10:33:19.619020Z",
+ "window_start": "2026-10-08T04:33:19.619020Z"
 }

@@ -257,3 +257,27 @@ def test_the_scope_rule_is_part_of_the_evidence_receipt(buffer):
     b.findings[-1].joined_by = JOIN_NAMESPACE
 
     assert bundle.evidence_receipt(b) != before
+
+def test_a_service_sharing_the_workload_name_does_not_hide_its_pods(buffer):
+    """The Service in front of a Deployment usually has the Deployment's name. Written
+    last, its row anchored the scope with no owner and every pod fell out: on the
+    2026-10-08 freeze the notready bundle went from 16 findings to 3."""
+    store(pod(node="worker"), event("ReplicaSet", RS))
+    store(service(DEPLOY))
+
+    b = build(DEPLOY)
+
+    assert scope_of(b).owner == DEPLOY
+    assert joins(b) == {POD: JOIN_OWNER, RS: JOIN_OWNER, DEPLOY: JOIN_SUBJECT}
+    assert scope_of(b).nodes == ["worker"]
+
+
+def test_a_same_named_owner_elsewhere_does_not_become_the_owner(buffer):
+    """The owner is borrowed from the subject only inside the anchor's namespace."""
+    store(pod(namespace="other", node="worker"))
+    store(service(DEPLOY))
+
+    b = build(DEPLOY)
+
+    assert scope_of(b).owner is None
+    assert set(joins(b)) == {DEPLOY}

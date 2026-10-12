@@ -21,10 +21,10 @@ from typing import Any
 
 from oncall import config
 from oncall.diagnosis.guards import allowed_command_text, forbidden_flag_text, secret_rule_text
-from oncall.diagnosis.schema import tool_input_schema
+from oncall.diagnosis.schema import MAX_CITATIONS, MAX_SUMMARY_CHARS, tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "3"
+PROMPT_VERSION = "5"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
@@ -34,7 +34,7 @@ TOOL_DESCRIPTION = (
 # Bytes per token for this kind of text, used only for the estimate printed on a dry run.
 # Measured on 2026-10-04: a 27-finding bundle of 20,633 bytes plus a 2,185-byte tool schema
 # came back as 8,420 input tokens, about 2.7. Timestamps, hashes and tags tokenise far
-# more finely than prose; the common 4 underestimated by 39%. Bedrock's usage figure is
+# more finely than prose; the common 4 underestimated by 32%. Bedrock's usage figure is
 # the number that is journalled.
 _BYTES_PER_TOKEN = 2.7
 
@@ -67,7 +67,7 @@ what was observed. Never read a gap as health. When a gap matters to your answer
 so in unknowns.
 
 The diagnosis
-- summary is two or three sentences, at most 600 characters.
+- summary is two to four sentences, at most {MAX_SUMMARY_CHARS} characters.
 - Up to three hypotheses, most likely first, ranked 1, 2, 3.
 - cause_class names the cause, not where it surfaces. A rollout stuck because its new \
 pods cannot pull their image is image_pull. A Job that ran out of retries because its \
@@ -77,7 +77,9 @@ such as missing configuration (config_missing).
 fits no class.
 - supporting must cite at least one finding ID from this bundle. contradicting cites \
 findings that argue against the hypothesis. Cite only IDs that appear in the evidence, \
-and put each ID in supporting or contradicting for a hypothesis, never both.
+and put each ID in supporting or contradicting for a hypothesis, never both. Each list \
+holds at most {MAX_CITATIONS} IDs: when more findings repeat one fact, cite the most \
+direct ones.
 - Hypothesis 1 must cite at least one finding about the subject itself or the node it \
 runs on, not only findings admitted via namespace, and at least one that is evidence \
 rather than a report that a source saw nothing.

@@ -9,12 +9,15 @@ stand-in would test the stand-in.
 Store tests skip when no database is reachable, rather than fail. A skip says "not
 verified here"; a failure says "broken", and a missing dev container is not a broken
 codebase. The suite therefore stays runnable with nothing installed, which is what keeps
-the pure-mapping tests as fast as they were.
+the pure-mapping tests as fast as they were. CI is the exception: it sets
+ONCALL_REQUIRE_STORE=1, and there an unreachable store fails instead.
 
     docker compose -f oncall/dev/compose.yaml up -d
 """
 
 from __future__ import annotations
+
+import os
 
 import pytest
 
@@ -90,6 +93,11 @@ def store_db(store_available):
     ordering needs, and it is not obvious from reading either piece alone.
     """
     if not store_available:
+        # CI sets this. There the store is a service container the job declares, so an
+        # unreachable store is a broken job, and a skip would turn it into a green run
+        # that verified nothing about the journal or the shipper.
+        if os.getenv("ONCALL_REQUIRE_STORE") == "1":
+            pytest.fail("ONCALL_REQUIRE_STORE=1 but no store is reachable")
         pytest.skip("no store reachable; docker compose -f oncall/dev/compose.yaml up -d")
 
     from oncall import shipper, store

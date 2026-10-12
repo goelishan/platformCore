@@ -5,6 +5,11 @@ Freeze one bundle per golden subject, so the evaluation runs on evidence that ca
     applied, stage 5's actions included, so each subject's evidence is fresh.
   - Writes fixtures/<subject>.json in the snapshot format, and fixtures/manifest.json with
     each one's evidence receipt. run.py refuses a fixture that no longer matches it.
+  - Refuses a fixture whose evidence is stale: a source that last ran more than
+    BUNDLE_STALE_SECONDS before the freeze. A frozen fixture is replayed for months, and
+    one built over a lab that had moved on teaches the eval a cluster that no longer
+    existed (the first freeze of 2026-10-08 ran 21 minutes after its last collect, and
+    all 17 bundles said so). --allow-stale writes them anyway, for a deliberate case.
   - Refuses to write a fixture in which any redaction rule still fires. These files are
     committed, and a fixture is the one place a secret could leave the laptop in git.
     Each string value is scanned as itself, with its real line breaks. Scanning the JSON
@@ -56,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cluster", default=config.CLUSTER_NAME)
     ap.add_argument("--root", type=Path, default=cases.EVAL_DIR)
+    ap.add_argument("--allow-stale", action="store_true",
+                    help="write fixtures even when the bundle says its evidence is stale")
     args = ap.parse_args(argv)
 
     golden = cases.load(args.root / "golden.yaml")
@@ -67,6 +74,11 @@ def main(argv: list[str] | None = None) -> int:
     for case in golden:
         with lz.connect() as conn:
             b = assembler.assemble(conn, args.cluster, subject_name=cases.subject_of(case.subject))
+        stale = [n for n in b.degraded if n.startswith(assembler.STALE_NOTE_PREFIX)]
+        if stale and not args.allow_stale:
+            print(f"  REFUSED {case.subject:18} {stale[0]}; collect again, then freeze")
+            problems += 1
+            continue
         dump = b.model_dump(mode="json")
         text = json.dumps(dump, indent=1, sort_keys=True)
         fired = rules_firing(dump)

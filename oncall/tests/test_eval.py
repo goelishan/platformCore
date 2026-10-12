@@ -163,7 +163,25 @@ def test_agreement_measures_each_subject_against_its_own_modal_answer():
 
 @pytest.mark.parametrize(("hits", "baseline", "regressed"), [(10, 11, False), (9, 11, True)])
 def test_one_case_below_baseline_is_noise_and_two_is_a_regression(hits, baseline, regressed):
-    assert regression(Rate(hits, 14), baseline) is regressed
+    assert regression(Rate(hits, 14), Rate(baseline, 14)) is regressed
+
+
+@pytest.mark.parametrize(("run", "baseline", "regressed"), [
+    # A repeat-3 baseline does not condemn a plain run that is just as accurate...
+    (Rate(15, 15), Rate(44, 45), False),
+    (Rate(14, 15), Rate(44, 45), False),
+    # ...and a plain baseline does not wave through a repeat-3 run that lost a third.
+    (Rate(30, 45), Rate(15, 15), True),
+    (Rate(44, 45), Rate(15, 15), False),
+    (Rate(43, 45), Rate(15, 15), True),
+])
+def test_runs_and_baselines_of_different_sizes_compare_as_rates(run, baseline, regressed):
+    assert regression(run, baseline) is regressed
+
+
+def test_an_empty_run_or_baseline_is_not_a_regression():
+    assert regression(Rate(0, 0), Rate(15, 15)) is False
+    assert regression(Rate(10, 15), Rate(0, 0)) is False
 
 
 # ---- freeze and run --------------------------------------------------------
@@ -257,11 +275,25 @@ def test_a_run_scores_reports_and_sets_a_baseline(root):
     assert json.loads((root / "baseline.json").read_text())["top1_hits"] == 1
 
 
+def _wrong() -> dict:
+    d = tr.diagnosis()
+    d["hypotheses"][0]["cause_class"] = "oom_killed"
+    return d
+
+
 def test_check_fails_a_run_that_falls_below_the_baseline(root):
-    (root / "baseline.json").write_text(json.dumps({"top1_hits": 3}))
+    (root / "baseline.json").write_text(json.dumps({"top1_hits": 1, "scored": 1}))
+    client = tr.FakeBedrock(*[tr.answer(_wrong())] * 6)
+
+    assert run_eval.main(["--root", str(root), "--check", "--repeat", "3"], client=client) == 1
+
+
+def test_check_passes_a_plain_run_against_a_repeat_three_baseline(root):
+    """The case that used to fail: 1/1 against an accepted 3/3 is the same accuracy."""
+    (root / "baseline.json").write_text(json.dumps({"top1_hits": 3, "scored": 3}))
     client = tr.FakeBedrock(*[tr.answer(tr.diagnosis())] * 2)
 
-    assert run_eval.main(["--root", str(root), "--check"], client=client) == 1
+    assert run_eval.main(["--root", str(root), "--check"], client=client) == 0
 
 
 def test_a_fixture_edited_after_freezing_is_refused(root):
@@ -270,3 +302,17 @@ def test_a_fixture_edited_after_freezing_is_refused(root):
 
     with pytest.raises(SystemExit, match="no longer matches manifest"):
         run_eval.main(["--root", str(root)], client=tr.FakeBedrock())
+
+
+def test_freeze_refuses_stale_evidence_unless_told_otherwise(root, monkeypatch, capsys):
+    """Every source here last ran before the freeze, so a zero threshold makes all of
+    them stale. A fixture is replayed for months; one frozen over a lab that had moved
+    on teaches the eval a cluster that no longer existed."""
+    monkeypatch.setattr(config, "BUNDLE_STALE_SECONDS", 0)
+    before = (root / "fixtures" / f"{tb.POD}.json").read_text()
+
+    assert freeze.main(["--cluster", tb.CLUSTER, "--root", str(root)]) == 1
+    assert "collect again" in capsys.readouterr().out
+    assert (root / "fixtures" / f"{tb.POD}.json").read_text() == before
+
+    assert freeze.main(["--cluster", tb.CLUSTER, "--root", str(root), "--allow-stale"]) == 0

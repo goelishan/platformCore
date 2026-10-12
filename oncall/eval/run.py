@@ -29,7 +29,7 @@ from typing import Any
 from oncall import config
 from oncall.diagnosis import prompt, reasoner, snapshots
 from oncall.eval import cases
-from oncall.eval.metrics import Run, Summary, regression, summarise
+from oncall.eval.metrics import Rate, Run, Summary, regression, summarise
 from oncall.evidence import bundle as assembler
 
 
@@ -155,8 +155,9 @@ def main(argv: list[str] | None = None, client: Any = None) -> int:
 
     if args.check:
         baseline = json.loads((args.root / "baseline.json").read_text())
-        if regression(s.top1, baseline["top1_hits"]):
-            print(f"REGRESSION: top-1 {s.top1.hits} against baseline {baseline['top1_hits']}")
+        accepted = Rate(baseline["top1_hits"], baseline["scored"])
+        if regression(s.top1, accepted):
+            print(f"REGRESSION: top-1 {s.top1} against baseline {accepted}")
             return 1
     if args.accept:
         (args.root / "baseline.json").write_text(json.dumps({

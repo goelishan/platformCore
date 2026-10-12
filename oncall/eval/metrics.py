@@ -154,8 +154,15 @@ def summarise(runs: list[Run]) -> Summary:
     )
 
 
-def regression(top1: Rate, baseline_hits: int) -> bool:
-    """True when a run falls more than one case below the accepted baseline. One case of
-    slack, because a single subject flipping at temperature 0 is within the noise the
-    agreement figure measures."""
-    return top1.hits < baseline_hits - 1
+def regression(top1: Rate, baseline: Rate) -> bool:
+    """True when a run falls more than one case below the accepted baseline, measured at
+    this run's own scale. One case of slack, because a single subject flipping at
+    temperature 0 is within the noise the agreement figure measures.
+
+    Rates, not counts: a baseline accepted from --repeat 3 is out of 45 and a plain run
+    is out of 15. Comparing hits alone made every plain run after a repeat-3 accept read
+    as a regression, and let a repeat-3 run pass at 30/45 against a 15/15 baseline."""
+    if not top1.total or not baseline.total:
+        return False
+    expected = baseline.hits * top1.total / baseline.total
+    return top1.hits < expected - 1 - 1e-9

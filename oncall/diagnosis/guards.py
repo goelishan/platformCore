@@ -55,6 +55,14 @@ FORBIDDEN_FLAGS = (
 SECRET_RESOURCES = frozenset({"secret", "secrets"})
 SAFE_SECRET_OUTPUTS = frozenset({"name", "wide"})
 
+# Impersonation flags are forbidden above, with one exception: `auth can-i` asks the API
+# whether an identity may do something (a SubjectAccessReview) and changes nothing. For a
+# Job that cannot create pods, "can its ServiceAccount do this?" is the check an engineer
+# wants, and on 2026-10-08 the model proposed exactly that and lost a correct diagnosis.
+# Placed after the verb only: before it, the parser cannot tell the verb from the value.
+IMPERSONATION_FLAGS = frozenset({"--as", "--as-group", "--as-uid"})
+_CAN_I = ("auth", "can-i")
+
 # Global flags that may sit between kubectl and the verb, and take a separate value.
 _VALUE_FLAGS_BEFORE_VERB = frozenset({"-n", "--namespace"})
 
@@ -70,7 +78,11 @@ def allowed_command_text() -> str:
 
 def forbidden_flag_text() -> str:
     """The forbidden flags as the system prompt states them."""
-    return ", ".join(FORBIDDEN_FLAGS)
+    return (
+        ", ".join(FORBIDDEN_FLAGS)
+        + " (" + ", ".join(sorted(IMPERSONATION_FLAGS)) + " are allowed only after "
+        + " ".join(_CAN_I) + ")"
+    )
 
 
 def _names_secret(token: str) -> bool:
@@ -134,9 +146,15 @@ def check_command(command: str) -> str | None:
     if not tokens or tokens[0] != "kubectl":
         return "only kubectl commands are allowed"
 
+    rest = _verb_and_rest(tokens)
+    can_i = rest is not None and tuple(rest[: len(_CAN_I)]) == _CAN_I
+    after_verb = len(tokens) - len(rest) if rest is not None else len(tokens)
+
     names_secret = False
-    for token in tokens:
+    for position, token in enumerate(tokens):
         flag = token.split("=", 1)[0]
+        if flag in IMPERSONATION_FLAGS and can_i and position > after_verb:
+            continue
         # -v8 is -v with its value attached, as pflag allows for any short flag.
         if flag in FORBIDDEN_FLAGS or re.fullmatch(r"-v\d+", flag):
             return f"flag {flag} is not allowed"
@@ -148,7 +166,6 @@ def check_command(command: str) -> str | None:
         if printed:
             return f"printing Secret values (output {printed[0]}) is not allowed"
 
-    rest = _verb_and_rest(tokens)
     if rest is None:
         return "no kubectl verb"
     for allowed in ALLOWED_COMMANDS:

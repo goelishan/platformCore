@@ -14,6 +14,7 @@ from datetime import timedelta
 
 import pytest
 
+from oncall.diagnosis.schema import MAX_CITATIONS, MAX_SUMMARY_CHARS
 from oncall.diagnosis import prompt
 from oncall.envelope import Severity, SignalKind, SignalSource, partition_payload
 from oncall.evidence import bundle
@@ -151,13 +152,17 @@ def test_the_tool_carries_the_output_contract():
     assert "CauseClass" in tool["inputSchema"]["json"]["$defs"]
 
 
-def test_v3_states_every_rule_the_reasoner_enforces():
+def test_v5_states_every_rule_the_reasoner_enforces():
     """Each of these is checked in code and earns a repair. A model never told the rule
-    pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did."""
+    pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did, and on
+    8 Oct the citation cap and the can-i exception cost three more. v5 raises the citation
+    and summary bounds and keeps stating them."""
     text = prompt.SYSTEM_PROMPT
 
-    assert prompt.PROMPT_VERSION == "3"
-    assert "at most 600 characters" in text
+    assert prompt.PROMPT_VERSION == "5"
+    assert f"at most {MAX_CITATIONS} IDs" in text
+    assert "are allowed only after auth can-i" in text
+    assert f"at most {MAX_SUMMARY_CHARS} characters" in text
     assert "never both" in text
     assert "not only findings admitted via namespace" in text
     assert "saw nothing" in text

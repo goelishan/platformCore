@@ -218,3 +218,29 @@ def test_every_identity_server_and_raw_flag_stays_forbidden():
         "--client-key", "--client-certificate", "--certificate-authority",
         "--insecure-skip-tls-verify", "--raw", "-v", "--v", "--vmodule",
     }
+
+
+@pytest.mark.parametrize("command", [
+    "kubectl auth can-i create pods -n oncall-lab "
+    "--as=system:serviceaccount:oncall-lab:failingcronjob",
+    "kubectl auth can-i list jobs --as system:serviceaccount:oncall-lab:default "
+    "--as-group system:serviceaccounts",
+    "kubectl auth can-i get nodes --as-uid=1001 --as=jane",
+])
+def test_impersonation_is_allowed_to_ask_can_i(command):
+    """can-i is a SubjectAccessReview: it asks whether an identity may act and changes
+    nothing, and for a ServiceAccount that cannot create pods it is the check to run."""
+    assert guards.check_command(command) is None
+
+
+@pytest.mark.parametrize("command, flag", [
+    ("kubectl get secrets -n oncall-lab --as admin", "--as"),
+    ("kubectl describe pod web -n oncall-lab --as-uid 0", "--as-uid"),
+    ("kubectl auth whoami --as=admin", "--as"),
+    # Before the verb the parser cannot tell the identity from the verb, so the
+    # exception holds only after it.
+    ("kubectl --as admin auth can-i get pods", "--as"),
+    ("kubectl --as=admin auth can-i get pods", "--as"),
+])
+def test_impersonation_anywhere_else_is_rejected(command, flag):
+    assert guards.check_command(command) == f"flag {flag} is not allowed"

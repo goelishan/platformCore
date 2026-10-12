@@ -166,8 +166,30 @@ def test_a_buffer_from_before_outcomes_gains_the_columns_in_place(tmp_path, monk
         kept = conn.execute("SELECT * FROM diagnoses WHERE diagnosis_id = 'old'").fetchone()
 
     assert {"outcome", "attempts", "errors", "cost_usd", "insufficient_evidence",
-            "prompt_version", "stop_reason", "summary", "prompt_sha256"} <= columns
+            "prompt_version", "stop_reason", "summary", "prompt_sha256", "unknowns"} <= columns
     assert kept["outcome"] is None
+    assert kept["unknowns"] is None
+
+
+def test_unknowns_are_journalled_as_the_model_wrote_them(buffer):
+    """The diagnosis's own statement of what it could not see. Dropped, a stored answer
+    reads as more certain than the one the engineer was shown."""
+    incident = open_incident()
+    stated = DIAGNOSIS.model_copy(update={"unknowns": ["k8s_logs unavailable", "no metrics"]})
+    with lz.connect() as conn:
+        ok = journal(conn, record(incident, diagnosis=stated))
+        failed = journal(conn, record(incident, Outcome.MODEL_ERROR))
+
+    assert json.loads(row(ok)["unknowns"]) == ["k8s_logs unavailable", "no metrics"]
+    assert row(failed)["unknowns"] is None
+
+
+def test_no_unknowns_is_an_empty_list_not_a_null(buffer):
+    incident = open_incident()
+    with lz.connect() as conn:
+        did = journal(conn, record(incident))
+
+    assert json.loads(row(did)["unknowns"]) == []
 
 
 # ---- store -----------------------------------------------------------------
@@ -197,6 +219,8 @@ def test_both_outcomes_reach_the_store_and_read_back(buffer, store_db):
     assert ok["cost_usd"] == Decimal("0.044544")
     assert ok["hypotheses"][0]["cause_class"] == "image_pull"
     assert ok["prompt_version"] == "1"
+    assert ok["unknowns"] == []
+    assert failed["unknowns"] is None
     assert inc["state"] == "diagnosed"
 
 

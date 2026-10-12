@@ -101,6 +101,7 @@ _ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "summary": "TEXT",
         "errors": "TEXT",
         "insufficient_evidence": "INTEGER",
+        "unknowns": "TEXT",
     },
 }
 

@@ -43,6 +43,17 @@ class CauseClass(StrEnum):
 # A citation is only a bounded string here; whether it exists in the bundle is a guard,
 # because checking it needs the bundle and this module does not have one.
 
+# The bounds the system prompt states. Constants rather than literals in Field() because
+# a limit the model is never told costs a repair whenever an answer runs past it.
+#
+# Raised on 2026-10-12 from 10 and 600. In the prompt v3 eval, 3 of the 5 first-attempt
+# failures were these two bounds and nothing else: a CronJob bundle holds one finding per
+# Job it spawned, so 11 citations of one fact was a correct answer, and a cluster-wide
+# subject needed more than 600 characters to name what it saw. A repair re-sends the whole
+# prompt, so each one roughly doubled that diagnosis's cost and latency.
+MAX_CITATIONS = 15
+MAX_SUMMARY_CHARS = 900
+
 Text = Annotated[str, Field(min_length=1, max_length=2000)]
 CitationId = Annotated[str, Field(min_length=1, max_length=64)]
 
@@ -62,8 +73,8 @@ class Hypothesis(_Strict):
     title: Annotated[str, Field(min_length=1, max_length=120)]
     mechanism: Text
     confidence: Literal["low", "medium", "high"]
-    supporting: Annotated[list[CitationId], Field(min_length=1, max_length=10)]
-    contradicting: Annotated[list[CitationId], Field(max_length=10)] = []
+    supporting: Annotated[list[CitationId], Field(min_length=1, max_length=MAX_CITATIONS)]
+    contradicting: Annotated[list[CitationId], Field(max_length=MAX_CITATIONS)] = []
     verify: Annotated[list[Command], Field(min_length=1, max_length=3)]
 
     @model_validator(mode="after")
@@ -75,7 +86,7 @@ class Hypothesis(_Strict):
 
 
 class Diagnosis(_Strict):
-    summary: Annotated[str, Field(min_length=1, max_length=600)]
+    summary: Annotated[str, Field(min_length=1, max_length=MAX_SUMMARY_CHARS)]
     hypotheses: Annotated[list[Hypothesis], Field(max_length=3)]
     unknowns: Annotated[list[Text], Field(max_length=10)] = []
     insufficient_evidence: bool

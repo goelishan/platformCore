@@ -8,6 +8,9 @@ A DiagnosisRecord into the buffer's diagnoses table.
   - hypotheses keeps each hypothesis whole, citations as fingerprints. commands repeats
     the verify commands flat, with the rank they belong to, because "which commands did
     the model suggest" is asked across diagnoses and should not need JSON unnesting.
+  - unknowns is kept as the model wrote it. It is the diagnosis's own account of what the
+    evidence could not show, and without it a later reader sees a confident answer with
+    its stated blind spots removed.
   - The landing zone stays ignorant of the diagnosis package: it takes plain values,
     and this module is the only place that knows both shapes.
 """
@@ -49,4 +52,5 @@ def journal(conn: Connection, record: DiagnosisRecord) -> str:
         summary=d.summary if d else None,
         errors=record.errors,
         insufficient_evidence=d.insufficient_evidence if d else None,
+        unknowns=d.unknowns if d else None,
     )

@@ -303,6 +303,7 @@ def record_diagnosis(
     summary: str | None = None,
     errors: list[str] | None = None,
     insufficient_evidence: bool | None = None,
+    unknowns: list[str] | None = None,
 ) -> str:
     """Two receipts, because one hash cannot carry two promises.
 
@@ -328,8 +329,8 @@ def record_diagnosis(
         "INSERT INTO diagnoses (diagnosis_id, incident_id, created_at, model, "
         "bundle_sha256, prompt_sha256, hypotheses, commands, input_tokens, "
         "output_tokens, latency_ms, prompt_version, outcome, attempts, stop_reason, "
-        "cost_usd, summary, errors, insufficient_evidence) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "cost_usd, summary, errors, insufficient_evidence, unknowns) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             diagnosis_id,
             incident_id,
@@ -350,6 +351,7 @@ def record_diagnosis(
             summary,
             json.dumps(errors) if errors is not None else None,
             None if insufficient_evidence is None else int(insufficient_evidence),
+            json.dumps(unknowns) if unknowns is not None else None,
         ),
     )
     outbox.enqueue(conn, outbox.DIAGNOSIS, [diagnosis_id])

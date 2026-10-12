@@ -299,8 +299,9 @@ BUNDLE_STALE_SECONDS = int(os.getenv("ONCALL_BUNDLE_STALE_SECONDS", "900"))
 
 # Hard ceiling on the rendered bundle, in bytes. A model's context is what actually
 # limits the prompt, so findings are dropped lowest rank first until the render fits,
-# and each one dropped is listed in omitted. Roughly 30k tokens at the default, well
-# inside any current Bedrock Claude model and leaving room for instructions and answer.
+# and each one dropped is listed in omitted. Roughly 45k tokens at the default, at the
+# 2.7 bytes per token measured on 2026-10-04 (see prompt.py), well inside any current
+# Bedrock Claude model and leaving room for instructions and answer.
 PROMPT_MAX_BYTES = int(os.getenv("ONCALL_PROMPT_MAX_BYTES", str(120 * 1024)))
 
 
@@ -327,7 +328,11 @@ BEDROCK_GUARDRAIL_VERSION = os.getenv("ONCALL_BEDROCK_GUARDRAIL_VERSION") or Non
 BEDROCK_CONNECT_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_CONNECT_TIMEOUT", "5"))
 BEDROCK_READ_TIMEOUT = int(os.getenv("ONCALL_BEDROCK_READ_TIMEOUT", "90"))
 BEDROCK_MAX_ATTEMPTS = int(os.getenv("ONCALL_BEDROCK_MAX_ATTEMPTS", "3"))
-BEDROCK_MAX_TOKENS = int(os.getenv("ONCALL_BEDROCK_MAX_TOKENS", "2000"))
+# The answer's token budget. A truncated answer earns no repair (the same budget cuts it
+# again), so this sits well above the longest answer seen: 1,671 tokens in one attempt
+# under prompt v3, 84% of the old 2,000, before the citation and summary bounds were
+# raised. Only tokens actually generated are billed, so headroom costs nothing.
+BEDROCK_MAX_TOKENS = int(os.getenv("ONCALL_BEDROCK_MAX_TOKENS", "3000"))
 
 
 def _optional_float(name: str) -> float | None:

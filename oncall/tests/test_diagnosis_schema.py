@@ -14,6 +14,8 @@ import pytest
 from pydantic import ValidationError
 
 from oncall.diagnosis.schema import (
+    MAX_CITATIONS,
+    MAX_SUMMARY_CHARS,
     CauseClass,
     Diagnosis,
     DiagnosisRecord,
@@ -127,6 +129,49 @@ def test_verify_carries_one_to_three_commands(n):
 def test_a_field_the_model_invents_is_rejected():
     with pytest.raises(ValidationError, match="extra"):
         Diagnosis.model_validate(_with(remediation="kubectl delete pod x"))
+
+
+# The bounds were raised on 2026-10-12 because they rejected correct answers. Each is
+# pinned at its edge from both sides, so a later change in either direction fails here
+# rather than surfacing as a repair rate in the next eval.
+
+
+def test_the_raised_bounds_are_the_ones_measured():
+    assert MAX_CITATIONS == 15
+    assert MAX_SUMMARY_CHARS == 900
+
+
+def test_a_summary_at_the_bound_parses_and_one_past_it_is_rejected():
+    Diagnosis.model_validate(_with(summary="x" * MAX_SUMMARY_CHARS))
+
+    with pytest.raises(ValidationError, match="summary"):
+        Diagnosis.model_validate(_with(summary="x" * (MAX_SUMMARY_CHARS + 1)))
+
+
+@pytest.mark.parametrize("side", ["supporting", "contradicting"])
+def test_citations_at_the_bound_parse_and_one_past_it_is_rejected(side):
+    ids = [f"F{i}" for i in range(1, MAX_CITATIONS + 2)]
+    at_bound = _hypothesis(1)
+    at_bound[side] = ids[:MAX_CITATIONS]
+    if side == "contradicting":
+        at_bound["supporting"] = ["F99"]
+    Diagnosis.model_validate(_with(hypotheses=[at_bound]))
+
+    past = copy.deepcopy(at_bound)
+    past[side] = ids
+    with pytest.raises(ValidationError, match=side):
+        Diagnosis.model_validate(_with(hypotheses=[past]))
+
+
+def test_the_tool_schema_carries_the_same_bounds():
+    """Bedrock enforces the tool schema too. A bound raised in Field() but stale in the
+    schema the model is shown would be two contracts."""
+    schema = tool_input_schema()
+    hypothesis = schema["$defs"]["Hypothesis"]["properties"]
+
+    assert schema["properties"]["summary"]["maxLength"] == MAX_SUMMARY_CHARS
+    assert hypothesis["supporting"]["maxItems"] == MAX_CITATIONS
+    assert hypothesis["contradicting"]["maxItems"] == MAX_CITATIONS
 
 
 def test_the_tool_schema_offers_exactly_the_vocabulary():
