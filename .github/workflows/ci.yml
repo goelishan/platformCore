@@ -1,10 +1,13 @@
 name: CI
 
+# Agent-only changes are oncall.yml's: they must not rebuild and redeploy the app.
 on:
   pull_request:
     branches: [main]
+    paths-ignore: ["oncall/**", ".github/workflows/oncall.yml"]
   push:
     branches: [main]
+    paths-ignore: ["oncall/**", ".github/workflows/oncall.yml"]
 
 env:
   AWS_REGION: us-east-1
@@ -89,6 +92,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # allows git push back to the repo via GITHUB_TOKEN
+    concurrency:
+      group: main-tag-commits
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -106,4 +112,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add charts/platformcore/values.yaml
           git commit -m "ci: update fastapi image tag to ${{ github.sha }} [skip ci]"
-          git push
+          # Rebase first: oncall.yml may push its own tag commit from the same push.
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -29,13 +29,3 @@ store:
 # Kind has no IRSA, so no pod here has an AWS identity: Preview only, no helm test.
 bedrock:
   enabled: false
-
-# The lab's three nodes are small; the PriorityClass still applies.
-agent:
-  resources:
-    requests: {cpu: 200m, memory: 384Mi}
-    limits: {cpu: 200m, memory: 384Mi}
-ui:
-  resources:
-    requests: {cpu: 200m, memory: 640Mi}
-    limits: {cpu: 200m, memory: 640Mi}

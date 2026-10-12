@@ -57,25 +57,24 @@ def _metric_names(expr: str) -> set[str]:
     return set(re.findall(r"\b(oncall_[a-z_]+)\b", expr))
 
 
-def test_the_committed_manifests_match_a_fresh_render():
-    for path, text in _render().rendered().items():
-        assert path.exists(), f"{path.name} missing; run make -C oncall obs-render"
-        assert path.read_text() == text, f"{path.name} is stale; run make -C oncall obs-render"
+def test_the_chart_carries_exact_copies_of_the_sources():
+    copies = _render().copies()
+
+    assert len(copies) >= 2
+    for copy, source in copies.items():
+        assert copy.exists(), f"{copy.name} missing from the chart; run make -C oncall obs-render"
+        assert copy.read_bytes() == source.read_bytes(), (
+            f"{copy.name} drifted from its source; run make -C oncall obs-render")
 
 
-def test_the_prometheus_rule_carries_the_release_label_the_operator_selects():
-    manifest = yaml.safe_load(_render().prometheus_rule())
+def test_the_chart_loads_rules_as_data_not_as_a_template():
+    """The rules' annotations contain Prometheus templates ({{ $labels.instance }}). Inline in
+    a Helm template, Helm would evaluate them; read with .Files.Get, it never does."""
+    template = (OBS.parent / "deploy" / "chart" / "templates" / "monitoring.yaml").read_text()
 
-    assert manifest["metadata"]["labels"]["release"] == "kps"
-    assert manifest["spec"]["groups"] == yaml.safe_load(RULES.read_text())["groups"]
-
-
-def test_the_dashboard_configmap_is_found_by_the_grafana_sidecar():
-    manifest = yaml.safe_load(_render().dashboard_configmap())
-
-    assert manifest["metadata"]["labels"]["grafana_dashboard"] == "1"
-    assert manifest["metadata"]["namespace"] == "monitoring"
-    assert json.loads(manifest["data"]["oncall-llm.json"]) == json.loads(DASHBOARD.read_text())
+    assert '.Files.Get "files/oncall-llm.rules.yml" | fromYaml' in template
+    assert "release: {{ .Values.monitoring.release }}" in template
+    assert "grafana_dashboard: \"1\"" in template
 
 
 @pytest.mark.parametrize("source", ["rules", "dashboard"])
@@ -126,7 +125,8 @@ def test_a_rule_reads_only_series_recorded_earlier_in_its_own_group():
         seen: set[str] = set()
         for r in g["rules"]:
             reads = set(re.findall(r"\b(oncall:[a-z0-9_:]+)", r["expr"])) & recorded_anywhere
-            assert reads <= seen, f"{r.get('alert') or r.get('record')} reads {sorted(reads - seen)}"
+            name = r.get("alert") or r.get("record")
+            assert reads <= seen, f"{name} reads {sorted(reads - seen)}"
             if "record" in r:
                 seen.add(r["record"])
 

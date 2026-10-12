@@ -1,0 +1,36 @@
+{{- /*
+Alert rules and the Grafana dashboard, from the copies make -C oncall obs-render keeps in
+files/. The rules carry the release label kube-prometheus-stack selects on; the dashboard
+goes into the namespace the Grafana sidecar watches, which is not this release's.
+*/ -}}
+{{- if .Values.monitoring.rules }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: oncall-llm
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.release }}
+spec:
+  {{- $rules := .Files.Get "files/oncall-llm.rules.yml" | fromYaml }}
+  {{- if not $rules.groups }}
+  {{- fail "files/oncall-llm.rules.yml is missing or empty: run make -C oncall obs-render" }}
+  {{- end }}
+  groups:
+    {{- toYaml $rules.groups | nindent 4 }}
+{{- end }}
+{{- if .Values.monitoring.dashboard }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oncall-dashboards
+  namespace: {{ .Values.monitoring.dashboardNamespace }}
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  {{- range $path, $_ := .Files.Glob "files/*.json" }}
+  {{ base $path }}: {{ $.Files.Get $path | quote }}
+  {{- end }}
+{{- end }}

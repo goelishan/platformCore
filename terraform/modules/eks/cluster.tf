@@ -31,7 +31,9 @@ resource "aws_eks_node_group" "main" {
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = var.private_subnet_ids
 
-  instance_types = ["t3.small"]
+  # t3.medium (4 GiB). On t3.small (about 1.4 GiB allocatable) the on-call agent's
+  # Guaranteed pod and its PriorityClass would evict application pods to fit.
+  instance_types = ["t3.medium"]
 
   launch_template {
     id      = aws_launch_template.eks_nodes.id

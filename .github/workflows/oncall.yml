@@ -1,10 +1,11 @@
 name: on-call agent
 
-# Branch pushes only. The agent merges to main when it is deployable, and main's own
-# workflow builds and syncs images; nothing here deploys or calls Bedrock.
+# Tests, chart and Terraform checks on every agent change. On main it also builds the image,
+# pushes it to ECR and writes the tag into values-eks.yaml, where Argo CD picks it up.
+# Nothing here calls Bedrock.
 on:
   push:
-    branches: ["feat/oncall**"]
+    branches: ["main", "feat/oncall**"]
     paths:
       - "oncall/**"
       - "terraform/**"
@@ -17,6 +18,10 @@ on:
 permissions:
   contents: read
 
+env:
+  AWS_REGION: us-east-1
+  ONCALL_REPO: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-oncall
+
 jobs:
   test:
     name: on-call tests
@@ -25,7 +30,7 @@ jobs:
       # The store tests need a real Postgres; without one they skip, and a green run
       # that skipped them proves nothing about the journal or the shipper.
       postgres:
-        image: postgres:16   # the major the dev compose store and RDS run
+        image: postgres:17   # the major RDS runs (17.11)
         env:
           POSTGRES_USER: oncall
           POSTGRES_DB: oncall
@@ -90,3 +95,79 @@ jobs:
         run: |
           terraform -chdir=terraform init -backend=false -input=false
           terraform -chdir=terraform validate
+
+  chart:
+    name: chart lint and schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+
+      - name: Install kubeconform
+        env:
+          KUBECONFORM_VERSION: v0.7.0
+        run: |
+          curl -sSfL -o /tmp/kc.tgz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          tar -xzf /tmp/kc.tgz -C /tmp
+          echo "/tmp" >> "$GITHUB_PATH"
+
+      - name: Lint and validate both targets
+        run: make -C oncall chart-check
+
+  build-and-push:
+    name: image to ECR
+    needs: [test, chart]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      # amd64: the EKS node group. The repository is IMMUTABLE, so a re-run of the same
+      # commit fails at push rather than replacing the image a running pod was built from.
+      - name: Build and push
+        run: |
+          docker build --platform linux/amd64 -t "$ONCALL_REPO:$GITHUB_SHA" oncall/
+          docker push "$ONCALL_REPO:$GITHUB_SHA"
+
+  update-image-tag:
+    name: tag into values-eks.yaml
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: main-tag-commits
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Scoped to the tag line right after the repository line, as the app workflow does.
+      - name: Write the tag
+        run: |
+          sed -i '/platformcore-oncall$/{n;s|tag: .*|tag: "'"$GITHUB_SHA"'"|}' oncall/deploy/chart/values-eks.yaml
+          grep -A1 'platformcore-oncall$' oncall/deploy/chart/values-eks.yaml
+
+      # Rebase first: a commit touching both trees runs both workflows, and each pushes a
+      # tag commit to main.
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add oncall/deploy/chart/values-eks.yaml
+          git commit -m "ci: update oncall image tag to $GITHUB_SHA [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -1,0 +1,104 @@
+{{- /*
+The triage UI, separate from the agent so it can be evicted without stopping collection.
+
+  - It reads and writes the agent's buffer, which is on a ReadWriteOnce volume. RWO is one
+    node, not one pod, so the UI is required onto the agent's node and mounts the same claim.
+    If that node has no room the UI stays Pending; the agent keeps collecting.
+  - No PriorityClass and Burstable resources: under pressure it is the first to go.
+  - ClusterIP only. It has no authentication and can spend on Bedrock:
+    kubectl -n oncall port-forward svc/oncall-ui 8501:8501
+*/ -}}
+{{- if .Values.ui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oncall-ui
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ui
+spec:
+  replicas: 1
+  # Recreate as well: two UI pods writing one buffer during a rollout buys nothing.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "oncall.selector" . | nindent 6 }}
+      app.kubernetes.io/component: ui
+  template:
+    metadata:
+      labels:
+        {{- include "oncall.selector" . | nindent 8 }}
+        app.kubernetes.io/component: ui
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        {{- include "oncall.podSecurity" . | nindent 8 }}
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  {{- include "oncall.selector" . | nindent 18 }}
+                  app.kubernetes.io/component: agent
+      containers:
+        - name: ui
+          image: {{ include "oncall.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - streamlit
+            - run
+            - /app/oncall/ui/app.py
+            - --server.address=0.0.0.0
+            - --server.port=8501
+            - --server.headless=true
+            - --server.fileWatcherType=none
+            - --browser.gatherUsageStats=false
+            - --client.toolbarMode=minimal
+          envFrom:
+            {{- include "oncall.envFrom" . | nindent 12 }}
+          ports:
+            - {name: http, containerPort: 8501}
+          securityContext:
+            {{- include "oncall.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+          # 3 s, not the default 1 s: at a low CPU request Streamlit's health handler can miss
+          # 1 s while it starts, and three misses would restart a healthy UI.
+          readinessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/oncall}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: oncall-data
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oncall-ui
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "oncall.selector" . | nindent 4 }}
+    app.kubernetes.io/component: ui
+  ports:
+    - {name: http, port: 8501, targetPort: http}
+{{- end }}

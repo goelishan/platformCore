@@ -77,3 +77,7 @@ output "eso_role_arn" {
 output "oncall_role_arn" {
   value = module.eks.oncall_role_arn
 }
+
+output "oncall_ecr_repository_url" {
+  value = module.compute.oncall_ecr_repository_url
+}

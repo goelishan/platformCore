@@ -57,8 +57,8 @@ store:
   # Kind only: a single Postgres in this namespace, with a generated password.
   inCluster:
     enabled: false
-    # The major the dev compose store and RDS run. Kind-only, so a tag rather than a digest.
-    image: postgres:16-alpine
+    # The major RDS runs (17.11). Kind-only, so a tag rather than a digest.
+    image: postgres:17-alpine
     size: 2Gi
 
 aws:
@@ -72,18 +72,22 @@ bedrock:
   priceInputPerMTok: "3"
   priceOutputPerMTok: "15"
 
+# Guaranteed: requests equal limits. Sized from the kind deployment, where the loop ran well
+# inside 384Mi with every collector active.
 agent:
   resources:
-    requests: {cpu: 250m, memory: 512Mi}
-    limits: {cpu: 250m, memory: 512Mi}
+    requests: {cpu: 200m, memory: 384Mi}
+    limits: {cpu: 200m, memory: 384Mi}
   # The liveness probe fails once the heartbeat is older than this.
   heartbeatMaxAgeSeconds: 300
 
+# Burstable on purpose: a small request so it schedules beside the agent, a limit for
+# Streamlit and pandas when someone is actually using it.
 ui:
   enabled: true
   resources:
-    requests: {cpu: 250m, memory: 768Mi}
-    limits: {cpu: 250m, memory: 768Mi}
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 768Mi}
 
 exporter:
   enabled: true
@@ -91,8 +95,18 @@ exporter:
     requests: {cpu: 50m, memory: 128Mi}
     limits: {cpu: 50m, memory: 128Mi}
 
+# The helm test pod (in-cluster bedrock-check). Argo CD does not run Helm tests, so the
+# Application turns it off; run it with helm test after a manual install.
+tests:
+  enabled: true
+
 # ServiceMonitor for kube-prometheus-stack. The Service is named oncall-journal because the
 # alert rules match job="oncall-journal", and the operator sets job to the Service name.
 monitoring:
   serviceMonitor: false
+  # Alert rules and dashboard from files/, kept in sync by make -C oncall obs-render.
+  rules: false
+  dashboard: false
   release: kps
+  # The Grafana sidecar of kube-prometheus-stack watches its own namespace only.
+  dashboardNamespace: monitoring

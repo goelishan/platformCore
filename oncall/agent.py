@@ -38,6 +38,9 @@ class Job:
     name: str
     interval: float
     fn: Callable[[], object]
+    # Seconds after start before the first run. Shipping waits: on a fresh install the
+    # store starts with the agent and is rarely accepting connections on the first pass.
+    start_after: float = 0.0
     next_due: float = 0.0
     runs: int = 0
     failures: int = 0
@@ -52,7 +55,7 @@ class Scheduler:
         self.clock = clock
         start = clock()
         for job in self.jobs:
-            job.next_due = start
+            job.next_due = start + job.start_after
 
     def tick(self) -> float:
         """Run every due job once; return the clock value at which the next one is due."""
@@ -139,7 +142,7 @@ def jobs() -> list[Job]:
 
     out = [Job(f"collect:{s}", registry.interval_for(s), collect_job(s))
            for s in registry.COLLECTORS]
-    out.append(Job("ship", config.SHIP_INTERVAL, ship))
+    out.append(Job("ship", config.SHIP_INTERVAL, ship, start_after=config.SHIP_INTERVAL / 2))
     out.append(Job("sweep:buffer", config.BUFFER_SWEEP_INTERVAL, sweep_buffer))
     out.append(Job("sweep:store", config.STORE_SWEEP_INTERVAL, sweep_store))
     return out

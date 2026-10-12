@@ -3,7 +3,7 @@ helm test oncall: the in-cluster Bedrock linkage check. From inside the cluster 
 the IRSA role, the VPC endpoint's private addresses and one successful call; the same
 script on a laptop proves only that credentials and the model work.
 */ -}}
-{{- if .Values.bedrock.enabled }}
+{{- if and .Values.bedrock.enabled .Values.tests.enabled }}
 apiVersion: v1
 kind: Pod
 metadata:

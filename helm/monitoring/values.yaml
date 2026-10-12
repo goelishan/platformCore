@@ -36,8 +36,11 @@ prometheus:
         memory: 800Mi
 
 
-alertManager:
-  alertManagerSpec:
+# alertmanager / alertmanagerSpec, lower case: the chart's keys. The block was spelled
+# alertManager before 2026-10-12, an unknown key Helm accepted in silence, so none of it
+# ever applied (no PVC, no resources). Requests sit above the chart default of 200Mi.
+alertmanager:
+  alertmanagerSpec:
     replicas: 1
 
     storage: 
@@ -52,9 +55,20 @@ alertManager:
     resources:
       requests:
         cpu: 50m
-        memory: 64Mi
+        memory: 256Mi
       limits:
-        memory: 128Mi
+        memory: 256Mi
+
+
+# EKS runs the control plane; there is nothing to scrape, and the default rules would fire
+# KubeControllerManagerDown and KubeSchedulerDown permanently. kube-proxy is a real
+# DaemonSet on EKS and stays enabled.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
 
 
 grafana:

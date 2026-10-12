@@ -145,3 +145,25 @@ def test_time_spent_inside_a_job_does_not_stretch_its_cadence():
         clock.t = s.tick()
 
     assert started == [0, 30, 60]
+
+
+def test_a_job_can_wait_before_its_first_run():
+    clock, calls = Clock(), []
+    jobs = [job("events", 100, calls), agent.Job("ship", 120, lambda: calls.append("ship"),
+                                                 start_after=60)]
+    s = agent.Scheduler(jobs, clock)
+
+    s.tick()
+    clock.t = 59
+    s.tick()
+    assert calls == ["events"]
+
+    clock.t = 60
+    s.tick()
+    assert calls == ["events", "ship"]
+
+
+def test_shipping_does_not_race_the_store_on_a_fresh_start():
+    ship = next(j for j in agent.jobs() if j.name == "ship")
+
+    assert ship.start_after > 0

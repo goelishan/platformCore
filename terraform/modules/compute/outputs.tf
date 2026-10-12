@@ -19,3 +19,7 @@ output "iam_role_arn" {
 output "ecr_repository_url" {
   value = aws_ecr_repository.app.repository_url
 }
+
+output "oncall_ecr_repository_url" {
+  value = aws_ecr_repository.oncall.repository_url
+}

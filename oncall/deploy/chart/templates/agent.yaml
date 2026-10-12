@@ -1,10 +1,11 @@
 {{- /*
-The agent pod: the collection loop and the triage UI, sharing the buffer on one RWO volume.
+The agent pod: the collection loop, sole owner of the buffer volume's lifecycle.
 
   - One replica and Recreate: SQLite has a single writer and an RWO volume attaches to one
     node, so a rolling update would start a second pod that can never mount the disk.
-  - Guaranteed QoS (requests equal limits on every container) and a high PriorityClass: the
-    agent must still be running when the cluster it diagnoses is short of memory.
+  - Guaranteed QoS (requests equal limits) and a high PriorityClass: the agent must still be
+    running when the cluster it diagnoses is short of memory. The UI is a separate
+    Deployment without either, so evicting it never stops collection.
   - Liveness reads the heartbeat file the loop touches on every pass. A dead API server is
     reported as unavailable sources, not fixed by a restart, so it does not fail the probe.
 */ -}}
@@ -27,8 +28,10 @@ metadata:
   labels:
     {{- include "oncall.labels" . | nindent 4 }}
   annotations:
-    # Uninstalling the release keeps the buffer: it may hold rows the store never received.
+    # Removing the release keeps the buffer: it may hold rows the store never received.
+    # Helm honours the first annotation, Argo CD the second.
     helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   accessModes: ["ReadWriteOnce"]
   {{- with .Values.persistence.storageClassName }}
@@ -94,43 +97,6 @@ spec:
           volumeMounts:
             - {name: data, mountPath: /var/lib/oncall}
             - {name: tmp, mountPath: /tmp}
-        {{- if .Values.ui.enabled }}
-        - name: ui
-          image: {{ include "oncall.image" . }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
-            - streamlit
-            - run
-            - /app/oncall/ui/app.py
-            - --server.address=0.0.0.0
-            - --server.port=8501
-            - --server.headless=true
-            - --server.fileWatcherType=none
-            - --browser.gatherUsageStats=false
-            - --client.toolbarMode=minimal
-          envFrom:
-            {{- include "oncall.envFrom" . | nindent 12 }}
-          ports:
-            - {name: http, containerPort: 8501}
-          securityContext:
-            {{- include "oncall.containerSecurity" . | nindent 12 }}
-          resources:
-            {{- toYaml .Values.ui.resources | nindent 12 }}
-          # 3 s, not the default 1 s: at a 200m CPU limit Streamlit's health handler can
-          # miss 1 s while it starts, and three misses would restart a healthy UI.
-          readinessProbe:
-            httpGet: {path: /_stcore/health, port: http}
-            periodSeconds: 10
-            timeoutSeconds: 3
-          livenessProbe:
-            httpGet: {path: /_stcore/health, port: http}
-            initialDelaySeconds: 20
-            periodSeconds: 30
-            timeoutSeconds: 3
-          volumeMounts:
-            - {name: data, mountPath: /var/lib/oncall}
-            - {name: tmp, mountPath: /tmp}
-        {{- end }}
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -138,21 +104,3 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: 256Mi
-{{- if .Values.ui.enabled }}
----
-# ClusterIP only. The UI has no authentication and can spend on Bedrock:
-# kubectl -n oncall port-forward svc/oncall-ui 8501:8501
-apiVersion: v1
-kind: Service
-metadata:
-  name: oncall-ui
-  labels:
-    {{- include "oncall.labels" . | nindent 4 }}
-spec:
-  type: ClusterIP
-  selector:
-    {{- include "oncall.selector" . | nindent 4 }}
-    app.kubernetes.io/component: agent
-  ports:
-    - {name: http, port: 8501, targetPort: http}
-{{- end }}

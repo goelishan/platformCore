@@ -1,0 +1,47 @@
+#--------------------------------------------------------------------------------------------------------
+# ARGO CD APPLICATION - ON-CALL AGENT
+#--------------------------------------------------------------------------------------------------------
+#
+#   - syncs oncall/deploy/chart from main with values-eks.yaml, into namespace oncall
+#
+#   - image.tag in values-eks.yaml is written by the oncall CI workflow, as for the app
+#
+#   - the Helm test pod is off here; run helm test after a manual install instead
+#
+#   - the dashboard ConfigMap lands in monitoring, created by kube-prometheus-stack first
+#
+#   kubectl apply -f argocd/oncall.yaml
+#
+
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oncall
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/goelishan/platformCore
+    targetRevision: HEAD
+    path: oncall/deploy/chart
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-eks.yaml
+      parameters:
+        - name: tests.enabled
+          value: "false"
+
+  destination:
+    server: https://kubernetes.default.svc
+    # Must be oncall: the agent excludes that namespace from its own collection.
+    namespace: oncall
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

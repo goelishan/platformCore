@@ -6,10 +6,21 @@
 #
 #   - store is RDS as the oncall IAM-auth user, verify-full against the baked CA bundle
 #
-#   - set at install: image.repository, image.tag, serviceAccount.roleArn, store.host
+#   - every value Argo CD needs is committed: names derived from Terraform, none secret
+#
+#   - image.tag is written by CI on each build, the way charts/platformcore's is
 #
 
 
+
+image:
+  # terraform output oncall_ecr_repository_url
+  repository: 316053082971.dkr.ecr.us-east-1.amazonaws.com/platformcore-oncall
+  tag: ""
+
+serviceAccount:
+  # terraform output oncall_role_arn; the role name is fixed in irsa_oncall.tf
+  roleArn: arn:aws:iam::316053082971:role/platformcore-oncall-agent
 
 clusterName: platformcore
 env: prod
@@ -18,6 +29,8 @@ persistence:
   storageClassName: gp3-delete
 
 store:
+  # terraform output rds_host; the same endpoint charts/platformcore commits
+  host: platformcore-db.c4f6ckwcwtll.us-east-1.rds.amazonaws.com
   sslmode: verify-full
   iamAuth: true
   database: oncall
@@ -28,4 +41,6 @@ bedrock:
 
 monitoring:
   serviceMonitor: true
+  rules: true
+  dashboard: true
   release: kps
