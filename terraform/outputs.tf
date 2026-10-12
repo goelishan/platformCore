@@ -73,3 +73,7 @@ output "rds_host" {
 output "eso_role_arn" {
   value = module.eks.eso_role_arn
 }
+
+output "oncall_role_arn" {
+  value = module.eks.oncall_role_arn
+}

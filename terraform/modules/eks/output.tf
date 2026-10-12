@@ -46,3 +46,8 @@ output "eso_role_arn" {
   description = "IRSA role ARN for the External Secrets Operator controller SA."
   value       = aws_iam_role.eso.arn
 }
+
+output "oncall_role_arn" {
+  description = "IRSA role ARN for the on-call agent's ServiceAccount annotation."
+  value       = aws_iam_role.oncall.arn
+}

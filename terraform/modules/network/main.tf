@@ -386,3 +386,27 @@ resource "aws_route" "private_default" {
   nat_gateway_id         = aws_nat_gateway.main.id
 }
 
+#--------------------------------------------------------------------------------------------------------
+# VPC ENDPOINT - BEDROCK RUNTIME
+#--------------------------------------------------------------------------------------------------------
+#
+# The on-call agent's model calls. Prompts carry redacted cluster evidence, so they go
+# to Bedrock over the VPC rather than out through the NAT gateway. Reachable from EKS
+# nodes through the existing endpoints_from_eks rule; no new security group edge.
+# Interface endpoints bill per hour per AZ, so this is a teardown target like the rest.
+
+
+
+resource "aws_vpc_endpoint" "bedrock_runtime" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.bedrock-runtime"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.endpoints_sg.id]
+  private_dns_enabled = true
+
+  tags = {
+    Name        = "${var.project_name}-bedrock-runtime-endpoint"
+    Environment = var.environment
+  }
+}
