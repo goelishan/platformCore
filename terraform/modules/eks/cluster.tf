@@ -98,6 +98,10 @@ resource "aws_launch_template" "eks_nodes" {
 # ACCESS ENTRIES - CONSOLE/CLI ADMIN
 #--------------------------------------------------------------------------------------------------------
 #
+# The association reads principal_arn from the entry, not from the variable. With the
+# variable, nothing orders the two, Terraform creates them in parallel, and the
+# association loses the race with a 404 ResourceNotFoundException (hit on 2026-10-13).
+# The attribute reference is the dependency.
 
 resource "aws_eks_access_entry" "console_admin" {
   cluster_name  = aws_eks_cluster.main.name
@@ -107,7 +111,7 @@ resource "aws_eks_access_entry" "console_admin" {
 
 resource "aws_eks_access_policy_association" "console_admin" {
   cluster_name  = aws_eks_cluster.main.name
-  principal_arn = var.admin_iam_arn
+  principal_arn = aws_eks_access_entry.console_admin.principal_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {

@@ -214,9 +214,11 @@ resource "aws_cloudwatch_log_group" "app" {
 # behind the scenes - that's why a private-subnet pull needs three endpoints
 # (ecr.api control + ecr.dkr data + s3 gateway for blobs).
 #
-# image_tag_mutability = MUTABLE for dev iteration; production flips to
-# IMMUTABLE so :latest and :v2 cannot be silently overwritten (supply-chain
-# hygiene). scan_on_push runs the AWS-curated CVE scan against every push.
+# image_tag_mutability = IMMUTABLE so a pushed tag can never be overwritten
+# (supply-chain hygiene). CI only pushes the commit SHA, so nothing here ever
+# needs to move a tag. Same policy as the oncall repo; the live repo had already
+# been flipped outside Terraform, and the code now matches it.
+# scan_on_push runs the AWS-curated CVE scan against every push.
 # Lifecycle policy uses camelCase keys (ECR native schema, against
 # Terraform's snake_case convention - easy gotcha).
 
@@ -224,7 +226,7 @@ resource "aws_cloudwatch_log_group" "app" {
 
 resource "aws_ecr_repository" "app" {
   name                 = "${var.project_name}-app"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
   force_delete         = true # allows destroy even when tagged images are present
 
   image_scanning_configuration {
