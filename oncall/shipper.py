@@ -32,10 +32,14 @@ _IN_CHUNK = 500
 # Migrations run once per process, latched only on success — the same shape, and the
 # same reasoning, as auth loading in the Kubernetes client. Latching before the call
 # would let one bad startup leave the process permanently unable to ship.
+#
+# Public because the shipper is not the only job that reaches the store. The agent's
+# store sweep calls it too: on a fresh install the sweep runs on the first pass, before
+# the first ship, and would otherwise find no tables.
 _schema_ready = False
 
 
-def _ensure_schema() -> None:
+def ensure_schema() -> None:
     global _schema_ready
     if _schema_ready:
         return
@@ -92,7 +96,7 @@ def ship_once(batch_size: int | None = None) -> tuple[SourceStatus, int]:
             signals = _fetch(conn, "signals", "signal_id", batch.get("signal", []))
             diagnoses = _fetch(conn, "diagnoses", "diagnosis_id", batch.get("diagnosis", []))
 
-        _ensure_schema()
+        ensure_schema()
 
         # Incidents first: signals and diagnoses both carry a foreign key to them. The
         # outbox is read as a prefix in seq order, and an incident is always enqueued

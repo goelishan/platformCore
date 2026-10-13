@@ -9,6 +9,7 @@ The agent's scheduler: cadence per job, isolation between jobs, no catch-up burs
 
 from __future__ import annotations
 
+import os
 import threading
 
 import pytest
@@ -129,6 +130,41 @@ def test_the_buffer_sweep_runs_against_a_real_buffer(buffer, name):
     job = next(j for j in agent.jobs() if j.name == name)
 
     assert isinstance(job.fn(), dict)
+
+
+@pytest.fixture()
+def fresh_store(store_available, monkeypatch):
+    """A database nothing has migrated yet: what the agent meets on a fresh install."""
+    if not store_available:
+        if os.getenv("ONCALL_REQUIRE_STORE") == "1":
+            pytest.fail("ONCALL_REQUIRE_STORE=1 but no store is reachable")
+        pytest.skip("no store reachable; docker compose -f oncall/dev/compose.yaml up -d")
+
+    import psycopg
+    from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+    from oncall import shipper
+    from oncall.store import connection
+
+    base = config.STORE_DSN
+    fresh = f"{conninfo_to_dict(base).get('dbname', 'oncall')}_fresh"
+    connection.close()
+    with psycopg.connect(base, autocommit=True, **connection._pool_kwargs()) as conn:
+        conn.execute(f'DROP DATABASE IF EXISTS "{fresh}" WITH (FORCE)')
+        conn.execute(f'CREATE DATABASE "{fresh}"')
+    monkeypatch.setattr(config, "STORE_DSN", make_conninfo(base, dbname=fresh))
+    monkeypatch.setattr(shipper, "_schema_ready", False)
+    yield
+    connection.close()
+
+
+def test_the_store_sweep_works_before_anything_has_shipped(fresh_store):
+    """The sweep runs on the first pass and the first ship waits SHIP_INTERVAL/2, so on a
+    fresh install the sweep is the first job to reach the store. Without migrating first
+    it fails on tables that do not exist yet, then waits an hour to try again."""
+    job = next(j for j in agent.jobs() if j.name == "sweep:store")
+
+    assert job.fn() == {"partitions_dropped": [], "rows_deleted": 0}
 
 
 def test_time_spent_inside_a_job_does_not_stretch_its_cadence():

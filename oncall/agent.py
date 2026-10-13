@@ -126,8 +126,11 @@ def sweep_buffer() -> object:
 
 
 def sweep_store() -> object:
-    from oncall import store
+    """Runs on the first pass, before the first ship has migrated a fresh store, so it
+    migrates first itself. Already migrated, the call is a latch check and costs nothing."""
+    from oncall import shipper, store
 
+    shipper.ensure_schema()
     with store.connect() as conn:
         result = store.sweep(conn)
     log.info("store sweep: %s", result)
