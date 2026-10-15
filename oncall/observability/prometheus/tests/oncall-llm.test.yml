@@ -69,6 +69,28 @@ tests:
               summary: "The exporter cannot read the diagnosis journal."
               description: "a has reported oncall_journal_up 0 for 10 minutes. The store is unreachable or the query timed out; diagnoses keep journalling to the local buffer and ship once the store returns."
 
+  # The D3 shape: the journal stays readable through pooled sessions while new logins fail.
+  - name: a failing fresh login fires even while the journal reads fine
+    interval: 1m
+    input_series:
+      - series: 'oncall_store_login_up{job="oncall-journal", instance="a"}'
+        values: '0x10'
+      - series: 'oncall_journal_up{job="oncall-journal", instance="a"}'
+        values: '1x10'
+      - series: 'oncall_store_login_up{job="oncall-journal", instance="b"}'
+        values: '1 0 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: OncallStoreLoginFailing
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: OncallStoreLoginFailing
+        exp_alerts:
+          - exp_labels: {severity: critical, component: oncall-agent, job: oncall-journal, instance: a}
+            exp_annotations:
+              summary: "New connections to the store cannot authenticate."
+              description: "a has failed a fresh store login for 2 minutes. Sessions opened earlier may still work, so oncall_journal_up can stay 1, but the agent stops shipping at its next reconnect. Check the oncall-store IAM policy and the database user's rds_iam grant."
+
   #------------------------------------------------------------------------------------------------
   # LATENCY
   #------------------------------------------------------------------------------------------------

@@ -173,10 +173,41 @@ def test_an_unreachable_store_is_down_and_never_reads_as_zero_failures(monkeypat
         raise ConnectionError("connection refused")
 
     monkeypatch.setattr(exporter.connection, "connect", refuse)
+    monkeypatch.setattr(exporter.connection, "fresh_login", refuse)
     samples = scrape()
 
     assert value(samples, "oncall_journal_up") == 0
-    assert names(samples) == {"oncall_journal_up", "oncall_journal_read_duration_seconds"}
+    assert value(samples, "oncall_store_login_up") == 0
+    assert names(samples) == {"oncall_journal_up", "oncall_journal_read_duration_seconds",
+                              "oncall_store_login_up", "oncall_store_login_duration_seconds"}
+
+
+def test_a_store_that_accepts_new_logins_reports_login_up(store_db):
+    assert value(scrape(), "oncall_store_login_up") == 1
+
+
+def test_a_failed_login_is_reported_while_pooled_reads_still_work(journalled, monkeypatch):
+    """Drill D3, 2026-10-13: the store login was revoked, every pooled session kept
+    working, journal_up stayed 1, and only new connections failed."""
+    def revoked():
+        raise RuntimeError('FATAL:  PAM authentication failed for user "oncall"')
+
+    monkeypatch.setattr(exporter.connection, "fresh_login", revoked)
+    samples = scrape()
+
+    assert value(samples, "oncall_journal_up") == 1
+    assert value(samples, "oncall_store_login_up") == 0
+
+
+def test_the_login_probe_never_borrows_from_the_pool(store_db):
+    """A probe that took a pooled session would answer with a login made long ago."""
+    from oncall.store import connection
+
+    connection.close()
+    pid = connection.fresh_login()
+
+    assert pid > 0
+    assert connection._pool is None
 
 
 def test_the_bucket_bounds_are_the_ones_documented():

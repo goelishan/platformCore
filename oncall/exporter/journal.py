@@ -14,6 +14,11 @@ Prometheus exporter over the diagnosis journal.
     occurred, and so is every series for the configured model and the current prompt
     version before any row exists. increase() ignores a series' first sample, so a
     series that first appears at 1 hides the diagnosis that created it.
+  - oncall_store_login_up opens a new connection on every scrape, outside the pool.
+    journal_up reads through pooled sessions, which survive a revoked login; drill D3
+    (2026-10-13) revoked it and journal_up stayed 1 while every new connection failed.
+    The two gauges answer different questions: can the journal be read now, and will
+    the next reconnect succeed.
   - Totals move when a row reaches the store, not when the diagnosis was made. A
     diagnosis journalled while Postgres was down arrives with the next shipping cycle
     and counts then.
@@ -111,6 +116,7 @@ class JournalCollector(Collector):
     """Runs both queries per scrape. A failed read yields only the health gauges."""
 
     def collect(self) -> Iterator[Metric]:
+        yield from login_families()
         started = time.monotonic()
         try:
             outcomes, calls = self._read()
@@ -132,6 +138,22 @@ class JournalCollector(Collector):
                 connection.fetch_all(conn, _OUTCOMES_SQL),
                 connection.fetch_all(conn, _CALLS_SQL),
             )
+
+
+def login_families() -> Iterator[Metric]:
+    """A fresh login, reported whether or not the journal read below succeeds."""
+    started = time.monotonic()
+    try:
+        connection.fresh_login()
+        up = 1
+    except Exception as exc:  # noqa: BLE001 - any failure is reported, never raised
+        log.warning("fresh store login failed: %s", exc)
+        up = 0
+    yield _gauge("oncall_store_login_up",
+                 "1 when a new connection could authenticate to the store on this scrape.", up)
+    yield _gauge("oncall_store_login_duration_seconds",
+                 "Time spent opening and authenticating that connection.",
+                 time.monotonic() - started)
 
 
 def _seed() -> tuple[str, str] | None:

@@ -9,6 +9,12 @@
 #
 #   - rds-db:connect as the oncall IAM-auth database user only
 #
+# Two policies on one role, one per dependency. With a single policy, detaching it to cut
+# Bedrock off also revoked the store login (drill D3, 2026-10-13): new connections failed
+# with "PAM authentication failed" while sessions opened earlier kept working, so nothing
+# noticed. Separate policies keep one dependency's incident from silently becoming two,
+# and let each be revoked, audited and drilled on its own.
+#
 # Converse is authorised as bedrock:InvokeModel. A cross-region profile needs both ARNs:
 # the profile is what the agent calls, and each request is executed against the
 # foundation model in whichever of the profile's regions Bedrock picks, so a policy
@@ -64,7 +70,7 @@ data "aws_iam_policy_document" "oncall_trust" {
   }
 }
 
-data "aws_iam_policy_document" "oncall" {
+data "aws_iam_policy_document" "oncall_bedrock" {
   statement {
     sid       = "InvokeOneModelThroughOneProfile"
     actions   = ["bedrock:InvokeModel"]
@@ -85,7 +91,9 @@ data "aws_iam_policy_document" "oncall" {
       resources = [statement.value]
     }
   }
+}
 
+data "aws_iam_policy_document" "oncall_store" {
   statement {
     sid     = "ConnectAsOncallDatabaseUser"
     actions = ["rds-db:connect"]
@@ -95,10 +103,16 @@ data "aws_iam_policy_document" "oncall" {
   }
 }
 
-resource "aws_iam_policy" "oncall" {
-  name        = "${var.project_name}-oncall-agent"
-  description = "On-call agent: one Bedrock inference profile, and RDS as the oncall IAM-auth user"
-  policy      = data.aws_iam_policy_document.oncall.json
+resource "aws_iam_policy" "oncall_bedrock" {
+  name        = "${var.project_name}-oncall-bedrock"
+  description = "On-call agent: one Bedrock inference profile and the models it routes to"
+  policy      = data.aws_iam_policy_document.oncall_bedrock.json
+}
+
+resource "aws_iam_policy" "oncall_store" {
+  name        = "${var.project_name}-oncall-store"
+  description = "On-call agent: RDS IAM authentication as the oncall database user"
+  policy      = data.aws_iam_policy_document.oncall_store.json
 }
 
 resource "aws_iam_role" "oncall" {
@@ -106,7 +120,12 @@ resource "aws_iam_role" "oncall" {
   assume_role_policy = data.aws_iam_policy_document.oncall_trust.json
 }
 
-resource "aws_iam_role_policy_attachment" "oncall" {
+resource "aws_iam_role_policy_attachment" "oncall_bedrock" {
   role       = aws_iam_role.oncall.name
-  policy_arn = aws_iam_policy.oncall.arn
+  policy_arn = aws_iam_policy.oncall_bedrock.arn
+}
+
+resource "aws_iam_role_policy_attachment" "oncall_store" {
+  role       = aws_iam_role.oncall.name
+  policy_arn = aws_iam_policy.oncall_store.arn
 }

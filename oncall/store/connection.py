@@ -130,6 +130,20 @@ def reachable() -> bool:
         return False
 
 
+def fresh_login() -> int:
+    """Open a new connection outside the pool, authenticate, and return its backend pid.
+
+    The pool keeps sessions for the life of the process, and Postgres never re-checks an
+    authenticated session. When the store login was revoked (drill D3, 2026-10-13), every
+    pooled session kept working and only new connections failed, so a health signal built
+    on pooled reads stayed green until the next reconnect, which is the moment shipping
+    stops. This asks the question the next reconnect will ask, before it has to.
+    """
+    cls = _IamAuthConnection if config.STORE_IAM_AUTH else Connection
+    with cls.connect(config.STORE_DSN, **_pool_kwargs()) as conn:
+        return conn.execute("SELECT pg_backend_pid() AS pid").fetchone()["pid"]
+
+
 def fetch_all(conn: Connection, sql: str, params: Any = ()) -> list[dict[str, Any]]:
     """psycopg is cursor-based where sqlite3 is connection-based. Rather than sprinkle
     cursor handling through every query, the two helpers here restore the shape the
