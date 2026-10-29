@@ -340,8 +340,8 @@ def test_remedy_commands_off_the_allowlist_are_named_with_a_reason(command, reas
     assert found is not None and reason in found
 
 
-def test_the_prompt_states_the_remedy_allowlist_the_guard_enforces():
-    text = prompt.SYSTEM_PROMPT
+def test_the_remedy_prompt_states_the_allowlist_the_guard_enforces():
+    text = prompt.REMEDY_SYSTEM_PROMPT
 
     assert guards.remedy_text() in text
     for verb, _ in guards.REMEDY_COMMANDS:

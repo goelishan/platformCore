@@ -24,8 +24,12 @@ diagnosis it or a person makes.
 - **New sources.** `prometheus` polls firing alerts (set `sources.prometheus.url`), and is
   the one source that keeps kube-system, so cluster DNS failures are visible. `argocd`
   reads Applications, so the evidence shows what is deployed from git.
-- **Remedies** (prompt v6). Each hypothesis carries one to three steps with a risk of low,
-  medium or high and an undo. A command is held to a remedy allowlist with a risk floor per
+- **Remedies** (prompt v9, a second call). Each hypothesis carries one to three steps with
+  a risk of low, medium or high and an undo. They are asked for only after the diagnosis
+  has passed every check, with the hypotheses handed over as data: asked for in the same
+  call, they moved the leading cause (unschedulable led with a cordon 3/3 with remedies in
+  the prompt, with the CPU shortage 3/3 without). A remedy failure never costs the
+  diagnosis; the cost is a second, smaller call per diagnosis. A command is held to a remedy allowlist with a risk floor per
   verb (`drain` is high; `delete` may name only pods and Jobs). The agent runs none of them.
   For an Argo CD managed workload the step says the fix belongs in git.
 - **Every diagnosis is evaluated** (`eval/online.py`, agent job `evaluate`):

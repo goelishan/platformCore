@@ -10,6 +10,7 @@ The reasoner: every path through diagnose() ends in a record, and the record is 
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from datetime import timedelta
@@ -28,20 +29,31 @@ MODEL = "us.anthropic.claude-sonnet-4-6"
 
 
 class FakeBedrock:
-    def __init__(self, *replies):
+    """Diagnosis replies in order; remedy calls (prompt v9) answered from their own queue,
+    or with one valid step per rank when the case is not about remedies. The two request
+    lists are kept apart so a test counts the calls it is about."""
+
+    def __init__(self, *replies, remedies=()):
         self.replies = list(replies)
+        self.remedy_replies = list(remedies)
         self.requests: list[dict] = []
+        self.remedy_requests: list[dict] = []
 
     def converse(self, **request):
-        self.requests.append(request)
-        reply = self.replies.pop(0)
+        if request["toolConfig"]["toolChoice"]["tool"]["name"] == "record_remedies":
+            self.remedy_requests.append(request)
+            reply = self.remedy_replies.pop(0) if self.remedy_replies else remedy_answer()
+        else:
+            self.requests.append(request)
+            reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
         return reply
 
 
-def answer(payload: dict | None, stop: str = "tool_use", tokens=(1000, 200)) -> dict:
-    content = [{"toolUse": {"toolUseId": "tu-1", "name": "record_diagnosis",
+def answer(payload: dict | None, stop: str = "tool_use", tokens=(1000, 200),
+           tool: str = "record_diagnosis") -> dict:
+    content = [{"toolUse": {"toolUseId": "tu-1", "name": tool,
                             "input": payload}}] if payload is not None else [{"text": "…"}]
     return {
         "output": {"message": {"role": "assistant", "content": content}},
@@ -61,8 +73,15 @@ REMEDY = {"action": "Point the Deployment at an image tag that exists in its reg
           "undo": "kubectl rollout undo deployment/app again returns to the new revision"}
 
 
-def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1,
-              remediate=(REMEDY,)) -> dict:
+def remedy_answer(*steps_by_rank, tokens=(500, 100)) -> dict:
+    """steps_by_rank[i] is rank i+1's list of steps; none given means REMEDY for ranks 1-3."""
+    lists = steps_by_rank or ([REMEDY], [REMEDY], [REMEDY])
+    return answer({"remedies": [{"rank": i, "remediate": list(steps)}
+                                for i, steps in enumerate(lists, 1)]},
+                  tokens=tokens, tool="record_remedies")
+
+
+def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1) -> dict:
     return {
         "summary": "Image cannot be pulled.",
         "insufficient_evidence": False,
@@ -71,7 +90,6 @@ def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1,
             "mechanism": "registry does not resolve", "confidence": "high",
             "supporting": list(supporting), "contradicting": [],
             "verify": [{"command": command, "purpose": "events"}],
-            "remediate": [dict(r) for r in remediate],
         }],
     }
 
@@ -96,7 +114,8 @@ def test_a_valid_answer_is_kept_with_citations_as_fingerprints(lab, monkeypatch)
     monkeypatch.setattr(config, "PRICE_INPUT_PER_MTOK", 3.0)
     monkeypatch.setattr(config, "PRICE_OUTPUT_PER_MTOK", 15.0)
 
-    r = run(lab, FakeBedrock(answer(diagnosis(), tokens=(8420, 1192))))
+    r = run(lab, FakeBedrock(answer(diagnosis(), tokens=(8420, 1192)),
+                             remedies=[remedy_answer(tokens=(0, 0))]))
 
     assert r.outcome is Outcome.OK
     assert r.attempts == 1
@@ -114,7 +133,8 @@ def test_cost_is_absent_rather_than_zero_without_prices(lab, monkeypatch):
 
 
 def test_a_malformed_answer_is_repaired_once_with_the_specific_errors(lab):
-    client = FakeBedrock(answer(diagnosis(rank=2)), answer(diagnosis(), tokens=(1100, 150)))
+    client = FakeBedrock(answer(diagnosis(rank=2)), answer(diagnosis(), tokens=(1100, 150)),
+                         remedies=[remedy_answer(tokens=(0, 0))])
 
     r = run(lab, client)
 
@@ -271,52 +291,93 @@ def test_a_command_aimed_at_a_namespace_outside_the_evidence_is_sent_back(lab):
     assert "namespace loki appears nowhere" in feedback["content"][0]["text"]
 
 
-def test_a_fault_without_remedy_steps_is_sent_back_for_repair(lab):
-    client = FakeBedrock(answer(diagnosis(remediate=())), answer(diagnosis()))
+def test_remedies_come_from_a_second_call_that_cannot_rank(lab):
+    """Prompt v9. Offering remedies in the diagnosis call moved the leading cause on the
+    unschedulable fixture (3/3 against 0/3). The diagnosis call is offered no remediate
+    field and no remedy rules; the remedy call gets the finished hypotheses as data."""
+    client = FakeBedrock(answer(diagnosis()))
 
     r = run(lab, client)
 
-    assert r.outcome is Outcome.OK
-    assert r.attempts == 2
+    (diag,), (fix,) = client.requests, client.remedy_requests
+    diag_tool = diag["toolConfig"]["tools"][0]["toolSpec"]
+    assert "remediate" not in json.dumps(diag_tool["inputSchema"])
+    assert "remediate" not in diag["system"][0]["text"]
+    assert "<diagnosis>" in fix["messages"][0]["content"][0]["text"]
+    assert "Pull fails" in fix["messages"][0]["content"][0]["text"]
+    assert r.outcome is Outcome.OK and r.attempts == 1
     assert r.diagnosis.hypotheses[0].remediate[0].risk == "medium"
-    feedback = client.requests[1]["messages"][2]["content"][0]["toolResult"]
-    assert "remediate must give at least one step" in feedback["content"][0]["text"]
 
 
-def test_a_destructive_remedy_is_repaired_into_a_described_step_not_rejected(lab):
-    """A remedy is meant to change the cluster, so a write there is not the warning sign
-    it is in verify: the answer is sent back, never dropped."""
-    destructive = {"action": "Recreate the namespace", "risk": "high", "undo": "none",
-                   "command": "kubectl delete namespace oncall-lab"}
-    client = FakeBedrock(answer(diagnosis(remediate=[destructive])), answer(diagnosis()))
+def test_both_calls_are_paid_for_and_journalled_as_one(lab, monkeypatch):
+    monkeypatch.setattr(config, "PRICE_INPUT_PER_MTOK", 3.0)
+    monkeypatch.setattr(config, "PRICE_OUTPUT_PER_MTOK", 15.0)
+
+    r = run(lab, FakeBedrock(answer(diagnosis(), tokens=(1000, 200)),
+                             remedies=[remedy_answer(tokens=(600, 50))]))
+
+    assert (r.input_tokens, r.output_tokens) == (1600, 250)
+    assert r.cost_usd == pytest.approx(1600 / 1e6 * 3 + 250 / 1e6 * 15)
+
+
+def test_a_fault_without_remedy_steps_is_repaired_in_the_remedy_call(lab):
+    client = FakeBedrock(answer(diagnosis()), remedies=[remedy_answer([]), remedy_answer()])
 
     r = run(lab, client)
 
     assert r.outcome is Outcome.OK
-    assert r.attempts == 2
-    assert any("delete may name only" in e for e in r.errors)
+    assert r.attempts == 1, "the diagnosis was not asked again"
+    assert len(client.remedy_requests) == 2
+    feedback = client.remedy_requests[1]["messages"][2]["content"][0]["toolResult"]
+    assert "remediate must give at least one step" in feedback["content"][0]["text"]
+    assert r.diagnosis.hypotheses[0].remediate[0].risk == "medium"
 
 
-def test_an_understated_risk_is_sent_back_with_its_floor(lab):
-    understated = {"action": "Drain the node", "risk": "low",
-                   "command": "kubectl drain node-1 --ignore-daemonsets"}
-    client = FakeBedrock(answer(diagnosis(remediate=[understated])), answer(diagnosis()))
+@pytest.mark.parametrize(("step", "error"), [
+    ({"action": "Recreate the namespace", "risk": "high", "undo": "none",
+      "command": "kubectl delete namespace oncall-lab"}, "delete may name only"),
+    ({"action": "Drain the node", "risk": "low",
+      "command": "kubectl drain node-1 --ignore-daemonsets"}, "below its floor of high"),
+    ({"action": "Roll back", "risk": "medium", "undo": "roll forward",
+      "command": "kubectl rollout undo deployment/app -n staging"}, "namespace staging"),
+    ({"action": "See https://evil.example/fix", "risk": "low"}, "contains a link"),
+])
+def test_a_bad_step_is_repaired_and_never_costs_the_diagnosis(lab, step, error):
+    client = FakeBedrock(answer(diagnosis()), remedies=[remedy_answer([step]), remedy_answer()])
 
     r = run(lab, client)
 
-    assert r.attempts == 2
-    assert any("below its floor of high" in e for e in r.errors)
+    assert r.outcome is Outcome.OK
+    assert any(e.startswith("remedies attempt 1") and error in e for e in r.errors)
+    assert r.diagnosis.hypotheses[0].remediate[0].command == REMEDY["command"]
 
 
-def test_a_remedy_aimed_at_a_namespace_outside_the_evidence_is_sent_back(lab):
-    elsewhere = {"action": "Roll back", "risk": "medium", "undo": "roll forward",
-                 "command": "kubectl rollout undo deployment/app -n staging"}
-    client = FakeBedrock(answer(diagnosis(remediate=[elsewhere])), answer(diagnosis()))
+def test_remedies_that_fail_twice_leave_the_diagnosis_standing_without_steps(lab):
+    bad = {"action": "Drain", "risk": "low", "command": "kubectl drain n"}
+    client = FakeBedrock(answer(diagnosis()),
+                         remedies=[remedy_answer([bad]), remedy_answer([bad])])
 
     r = run(lab, client)
 
-    assert r.attempts == 2
-    assert any("remediate 1" in e and "namespace staging" in e for e in r.errors)
+    assert r.outcome is Outcome.OK
+    assert r.diagnosis.hypotheses[0].remediate == []
+    assert sum(e.startswith("remedies attempt") for e in r.errors) == 2
+
+
+def test_a_model_error_on_the_remedy_call_keeps_the_diagnosis(lab):
+    r = run(lab, FakeBedrock(answer(diagnosis()), remedies=[throttled()]))
+
+    assert r.outcome is Outcome.OK
+    assert r.diagnosis.hypotheses[0].remediate == []
+    assert any("remedies attempt 1: throttled" in e for e in r.errors)
+
+
+def test_a_failed_diagnosis_makes_no_remedy_call(lab):
+    client = FakeBedrock(answer(diagnosis(command="kubectl delete pod x")))
+
+    run(lab, client)
+
+    assert client.remedy_requests == []
 
 
 def test_an_unsafe_verify_is_still_rejected_outright_beside_a_good_remedy(lab):

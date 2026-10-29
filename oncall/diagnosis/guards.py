@@ -344,7 +344,9 @@ REMEDY_COMMANDS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("label",), "low"),
     (("annotate",), "low"),
     (("uncordon",), "low"),
-    (("cordon",), "medium"),
+    # Stops new pods landing; evicts nothing and uncordon undoes it. Medium until the
+    # v7 eval, where the model labelled it low and was right.
+    (("cordon",), "low"),
     (("taint",), "medium"),
     (("drain",), "high"),
     # Additive: a new object nothing referenced before, undone by deleting it.
@@ -468,7 +470,10 @@ def check_remedies(diagnosis: Diagnosis) -> list[str]:
                     )
             if step.risk != "low" and not step.undo:
                 problems.append(f"{at}: a {step.risk} risk step must say how to undo it")
-            fired = rules_fired(" ".join(filter(None, (step.action, step.command, step.undo))))
+            # Command and undo, which are pasted into a shell. Not the action: evidence is
+            # redacted before the model sees it, and prose like "the password: field of
+            # the Secret" tripped the assignment rule on a correct step (v7, crashloop).
+            fired = rules_fired(" ".join(filter(None, (step.command, step.undo))))
             if fired:
                 problems.append(
                     f"{at}: looks like it carries a credential ({', '.join(fired)}); "

@@ -223,14 +223,14 @@ def test_a_failed_record_never_carries_a_diagnosis(outcome):
     r = DiagnosisRecord.model_validate(_record(outcome=outcome, diagnosis=None, errors=["x"]))
     assert r.diagnosis is None
 
-def test_the_tool_schema_requires_remedies_while_old_rows_still_read_back():
-    """Bedrock enforces the tool schema, so a key it marks required is always present.
-    The Python default exists only for journal rows written before prompt v6."""
-    required = tool_input_schema()["$defs"]["Hypothesis"]["required"]
+def test_the_diagnosis_tool_offers_no_remedies_and_old_rows_still_read_back():
+    """Remedies come from their own call (prompt v9). Hypothesis keeps the field so the
+    merged answer and rows from before v6 both validate."""
+    hypothesis = tool_input_schema()["$defs"]["Hypothesis"]
     old_row = _with()
 
-    assert "remediate" in required
-    assert "remediate" not in old_row["hypotheses"][0]
+    assert "remediate" not in hypothesis["properties"]
+    assert "remediate" not in hypothesis.get("required", [])
     assert Diagnosis.model_validate(old_row).hypotheses[0].remediate == []
 
 

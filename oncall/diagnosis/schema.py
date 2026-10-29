@@ -93,8 +93,8 @@ class Hypothesis(_Strict):
     supporting: Annotated[list[CitationId], Field(min_length=1, max_length=MAX_CITATIONS)]
     contradicting: Annotated[list[CitationId], Field(max_length=MAX_CITATIONS)] = []
     verify: Annotated[list[Command], Field(min_length=1, max_length=3)]
-    # Required in the tool schema, defaulted here: journal rows from before prompt v6
-    # carry no remedies and must still read back. See tool_input_schema().
+    # Filled by the remedy call (prompt v9), never by the diagnosis call; defaulted so
+    # journal rows from before v6 read back. See tool_input_schema().
     remediate: Annotated[list[RemedyStep], Field(max_length=3)] = []
 
     @model_validator(mode="after")
@@ -129,12 +129,30 @@ class Diagnosis(_Strict):
 def tool_input_schema() -> dict[str, Any]:
     """The record_diagnosis tool's inputSchema: shape only, see the module docstring.
 
-    remediate is marked required here although the model defaults it: a key the model
-    may omit is a key it will omit, and the default exists only for old journal rows."""
+    Without remediate. Remedies come from a second call made after the diagnosis is
+    fixed (prompt v9); offering the field here changed which cause the model ranked first.
+    The field stays on Hypothesis, where the second call's steps are merged and journalled."""
     schema = Diagnosis.model_json_schema()
     hypothesis = schema["$defs"]["Hypothesis"]
-    hypothesis["required"] = sorted({*hypothesis.get("required", []), "remediate"})
+    hypothesis["properties"].pop("remediate", None)
+    hypothesis["required"] = [r for r in hypothesis.get("required", []) if r != "remediate"]
+    schema["$defs"].pop("RemedyStep", None)
     return schema
+
+
+class HypothesisRemedies(_Strict):
+    rank: Annotated[int, Field(ge=1, le=3)]
+    remediate: Annotated[list[RemedyStep], Field(max_length=3)]
+
+
+class Remedies(_Strict):
+    """What the record_remedies tool returns: steps per hypothesis rank."""
+
+    remedies: Annotated[list[HypothesisRemedies], Field(max_length=3)]
+
+
+def remedy_tool_schema() -> dict[str, Any]:
+    return Remedies.model_json_schema()
 
 
 # ---- journal record --------------------------------------------------------

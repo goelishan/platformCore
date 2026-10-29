@@ -54,9 +54,10 @@ def lab(buffer):
     return buffer
 
 
-def diagnose(*replies, trigger="manual"):
+def diagnose(*replies, trigger="manual", remedies=()):
     b = service.assemble(tb.CLUSTER, tb.POD)
-    return service.diagnose(b, tb.CLUSTER, tb.POD, client=tr.FakeBedrock(*replies),
+    return service.diagnose(b, tb.CLUSTER, tb.POD,
+                            client=tr.FakeBedrock(*replies, remedies=remedies),
                             trigger=trigger)
 
 
@@ -85,17 +86,21 @@ def test_a_failed_call_is_checked_as_a_fail_with_score_zero(lab):
     assert (c["verdict"], c["score"], c["details"]["flags"]) == ("fail", 0.0, ["no_diagnosis"])
 
 
-@pytest.mark.parametrize(("changes", "flag"), [
-    ({"supporting": ["F2"]}, "worst_evidence_uncited"),
-    ({"unknowns": []}, "gaps_unacknowledged"),
-    ({"confidence": "high"}, "high_confidence_while_blind"),
-    ({"remediate": [
-        {"action": "drain", "command": "kubectl drain node-1", "risk": "high", "undo": "u"},
-        {"action": "restart", "command": "kubectl rollout restart deployment/app",
-         "risk": "medium", "undo": "u"}]}, "riskiest_step_first"),
+RISKY_FIRST = [
+    {"action": "drain", "command": "kubectl drain node-1", "risk": "high", "undo": "u"},
+    {"action": "restart", "command": "kubectl rollout restart deployment/app",
+     "risk": "medium", "undo": "u"}]
+
+
+@pytest.mark.parametrize(("changes", "steps", "flag"), [
+    ({"supporting": ["F2"]}, None, "worst_evidence_uncited"),
+    ({"unknowns": []}, None, "gaps_unacknowledged"),
+    ({"confidence": "high"}, None, "high_confidence_while_blind"),
+    ({}, RISKY_FIRST, "riskiest_step_first"),
 ])
-def test_each_check_raises_its_flag_and_only_that_one(lab, changes, flag):
-    d = diagnose(tr.answer(good(**changes)))
+def test_each_check_raises_its_flag_and_only_that_one(lab, changes, steps, flag):
+    remedies = [tr.remedy_answer(steps)] if steps else ()
+    d = diagnose(tr.answer(good(**changes)), remedies=remedies)
 
     c = checks_of(d.record.diagnosis_id)
 
@@ -112,7 +117,7 @@ def test_a_repaired_answer_is_flagged(lab):
 
 def test_checks_that_need_the_snapshot_do_not_apply_without_it_and_do_not_count():
     row = {"diagnosis_id": "d", "outcome": "ok", "attempts": 1,
-           "hypotheses": good()["hypotheses"], "unknowns": []}
+           "hypotheses": good(remediate=[tr.REMEDY])["hypotheses"], "unknowns": []}
 
     e = online.checks(row, None)
 

@@ -9,10 +9,11 @@ One bundle in, one journal record out, whatever the model does.
     prose, a command aimed at a namespace the evidence never names, or a leading hypothesis that rests only on namespace neighbours or on blind
     sources earns one repair attempt, with the specific errors sent back as the tool
     result. All are mistakes the model can correct from that feedback.
-  - A remedy step that is off its allowlist, labelled below its risk floor, missing an
-    undo, carrying a credential or aimed outside the evidence's namespaces earns a
-    repair too. Remedies are meant to change the cluster, so a write there is not the
-    warning sign it is in verify; only honesty about the step is checked.
+  - Remedies come from a second call, after the diagnosis has passed every check, with
+    the hypotheses handed over as data (prompt v9). A step off its allowlist, below its
+    risk floor, missing an undo, carrying a credential or aimed outside the evidence's
+    namespaces earns that call one repair. If it still fails, the diagnosis stands with
+    no steps and the reason in errors: a fix is worth less than the diagnosis it serves.
   - An unsafe verify command earns none. A model that proposes a write to the cluster has
     told us something about its reading of the incident, and asking it to try again only
     teaches it to hide that. The diagnosis is dropped and the record kept.
@@ -24,6 +25,7 @@ One bundle in, one journal record out, whatever the model does.
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
@@ -32,7 +34,7 @@ from pydantic import ValidationError
 from oncall import config
 from oncall.diagnosis import bedrock, guards
 from oncall.diagnosis import prompt as prompts
-from oncall.diagnosis.schema import Diagnosis, DiagnosisRecord, Outcome
+from oncall.diagnosis.schema import Diagnosis, DiagnosisRecord, Outcome, Remedies
 from oncall.evidence.bundle import Bundle, evidence_receipt
 
 MAX_ATTEMPTS = 2
@@ -66,6 +68,77 @@ def _to_fingerprints(diagnosis: Diagnosis, labels: dict[str, str]) -> Diagnosis:
     return Diagnosis.model_validate(data)
 
 
+# ---- remedies, a second call -------------------------------------------------------
+# Made only once the diagnosis has passed every check, with the ranking handed over as
+# data. In one call, asking for fixes moved which cause led (prompt v9 notes in prompt.py).
+# A remedy failure never costs the diagnosis: the engineer gets the hypotheses with no
+# steps and the reason in errors, which the journal and the checks evaluator both see.
+
+REMEDY_ERROR = "remedies"
+
+
+@dataclass
+class Fixes:
+    by_rank: dict[int, list[Any]] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: int = 0
+
+
+def _merged(diagnosis: Diagnosis, by_rank: dict[int, list[Any]]) -> Diagnosis:
+    data = diagnosis.model_dump(mode="json")
+    for h in data["hypotheses"]:
+        h["remediate"] = [s.model_dump(mode="json") for s in by_rank.get(h["rank"], [])]
+    return Diagnosis.model_validate(data)
+
+
+def _remediate(bundle: Bundle, p: prompts.Prompt, diagnosis: Diagnosis, client: Any,
+               model: str) -> Fixes:
+    fixes = Fixes()
+    if not diagnosis.hypotheses:
+        return fixes
+    rp = prompts.build_remedy(p, diagnosis)
+    messages = bedrock.first_message(rp)
+    ranks = {h.rank for h in diagnosis.hypotheses}
+    namespaces = evidence_namespaces(bundle)
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            reply = bedrock.converse(rp, messages, client=client, model_id=model or None)
+        except bedrock.ModelError as e:
+            fixes.errors.append(f"{REMEDY_ERROR} attempt {attempt}: {e}")
+            return Fixes(errors=fixes.errors, input_tokens=fixes.input_tokens,
+                         output_tokens=fixes.output_tokens, latency_ms=fixes.latency_ms)
+        fixes.input_tokens += reply.input_tokens
+        fixes.output_tokens += reply.output_tokens
+        fixes.latency_ms += reply.latency_ms
+        if reply.tool_input is None:
+            fixes.errors.append(f"{REMEDY_ERROR} attempt {attempt}: no {prompts.REMEDY_TOOL_NAME}"
+                                f" call (stop_reason {reply.stop_reason})")
+            break
+        try:
+            parsed = Remedies.model_validate(reply.tool_input)
+        except ValidationError as e:
+            problems = _validation_problems(e)
+        else:
+            by_rank = {r.rank: list(r.remediate) for r in parsed.remedies if r.rank in ranks}
+            merged = _merged(diagnosis, by_rank)
+            problems = guards.check_remedies(merged)
+            problems += guards.check_remedy_namespaces(merged, namespaces)
+            problems += [q for q in guards.check_prose(merged) if "remediate" in q]
+            if not problems:
+                fixes.by_rank = by_rank
+                return fixes
+        fixes.errors += [f"{REMEDY_ERROR} attempt {attempt}: {q}" for q in problems]
+        if reply.stop_reason == "max_tokens":
+            break
+        messages = messages + _repair_turn(reply, problems, prompts.REMEDY_TOOL_NAME)
+    # Nothing usable: by_rank was never set, so the diagnosis stands without steps and
+    # errors say why.
+    return fixes
+
+
 def evidence_namespaces(bundle: Bundle) -> set[str]:
     """Every namespace the model was shown: the subject's and each finding's."""
     found = {f.namespace for f in bundle.findings if f.namespace}
@@ -74,11 +147,13 @@ def evidence_namespaces(bundle: Bundle) -> set[str]:
     return found
 
 
-def _repair_turn(reply: bedrock.Reply, problems: list[str]) -> list[dict[str, Any]]:
+def _repair_turn(reply: bedrock.Reply, problems: list[str],
+                 tool: str = prompts.TOOL_NAME) -> list[dict[str, Any]]:
+    what = "diagnosis" if tool == prompts.TOOL_NAME else "set of remedies"
     feedback = (
-        f"The {prompts.TOOL_NAME} input was rejected:\n"
+        f"The {tool} input was rejected:\n"
         + "\n".join(f"- {p}" for p in problems)
-        + f"\nCall {prompts.TOOL_NAME} again with a corrected diagnosis."
+        + f"\nCall {tool} again with a corrected {what}."
     )
     return [
         reply.message,
@@ -160,12 +235,8 @@ def diagnose(
             problems = [f"{c} is not a finding ID in this bundle" for c in unknown]
             problems += guards.check_prose(diagnosis)
             problems += guards.check_grounding(diagnosis, by_label)
-            namespaces = evidence_namespaces(bundle)
-            problems += guards.check_namespaces(diagnosis, namespaces)
-            problems += guards.check_remedies(diagnosis)
-            problems += guards.check_remedy_namespaces(diagnosis, namespaces)
+            problems += guards.check_namespaces(diagnosis, evidence_namespaces(bundle))
             if not problems:
-                kept = _to_fingerprints(diagnosis, p.labels)
                 outcome = Outcome.OK
                 break
 
@@ -173,6 +244,14 @@ def diagnose(
         if stop_reason == "max_tokens":
             break
         messages = messages + _repair_turn(reply, problems)
+
+    if outcome == Outcome.OK:
+        fixes = _remediate(bundle, p, diagnosis, client, model)
+        input_tokens += fixes.input_tokens
+        output_tokens += fixes.output_tokens
+        latency_ms += fixes.latency_ms
+        errors += fixes.errors
+        kept = _to_fingerprints(_merged(diagnosis, fixes.by_rank), p.labels)
 
     return DiagnosisRecord(
         diagnosis_id=uuid.uuid4().hex,

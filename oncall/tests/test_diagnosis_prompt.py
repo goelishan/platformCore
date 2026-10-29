@@ -10,6 +10,8 @@ The prompt: the evidence as the model reads it, and the receipts that pin it.
 
 from __future__ import annotations
 
+import json
+
 from datetime import timedelta
 
 import pytest
@@ -152,21 +154,17 @@ def test_the_tool_carries_the_output_contract():
     assert "CauseClass" in tool["inputSchema"]["json"]["$defs"]
 
 
-def test_v8_states_every_rule_the_reasoner_enforces():
+def test_v9_states_every_rule_the_reasoner_enforces():
     """Each of these is checked in code and earns a repair. A model never told the rule
     pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did, and on
     8 Oct the citation cap and the can-i exception cost three more. v5 raised the citation
     and summary bounds; v6 added the namespace rule (F4, drill 2026-10-13); v7 recalibrates remedy floors
     and allows placeholders in remedies, after the v6 eval spent 10 of 17 on repairs; v8
-    adds the timeline ranking rule, after v6 and v7 led unschedulable with a cordon that
-    came three days after the pods were already Pending (0/3 on repeat)."""
+    adds the timeline ranking rule; v9 moves remedies to their own call (see the next test)."""
     text = prompt.SYSTEM_PROMPT
 
-    assert prompt.PROMPT_VERSION == "8"
+    assert prompt.PROMPT_VERSION == "9"
     assert "Rank by cause, using the timeline" in text
-    assert "Never rank a hypothesis higher because its remedy is easier" in text
-    assert "placeholder in angle brackets" in text
-    assert "every verify command must run exactly as written" in text
     assert "must be one that appears in the evidence" in text
     assert f"at most {MAX_CITATIONS} IDs" in text
     assert "are allowed only after auth can-i" in text
@@ -177,3 +175,20 @@ def test_v8_states_every_rule_the_reasoner_enforces():
     assert "no links or URLs" in text
     assert '"recorded N times" counts distinct observations' in text
     assert "seen in N polls" not in text
+
+
+def test_v9_asks_for_remedies_only_after_the_diagnosis_is_made():
+    """Ablation, 2026-10-30, unschedulable fixture, 3 runs each: with remedies in the
+    diagnosis call the cordon led 3/3; without them the CPU shortage led 3/3. The
+    diagnosis call is offered nothing about remedies; the remedy call states every
+    remedy rule the guards enforce."""
+    from oncall.diagnosis import guards
+
+    diagnosis_text = prompt.SYSTEM_PROMPT + json.dumps(prompt.tool_definition())
+    remedy_text = prompt.REMEDY_SYSTEM_PROMPT
+
+    assert "remediate" not in diagnosis_text and "remed" not in prompt.SYSTEM_PROMPT
+    assert guards.remedy_text() in remedy_text
+    assert "placeholder in angle brackets" in remedy_text
+    assert "You do not change, re-rank or argue with the diagnosis" in remedy_text
+    assert "managed by Argo CD" in remedy_text
