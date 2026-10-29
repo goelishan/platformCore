@@ -76,7 +76,9 @@ class RemedyStep(_Strict):
     to fill the field would be worse than an honest sentence.
     """
 
-    action: Annotated[str, Field(min_length=1, max_length=300)]
+    # 500, not 300: in the v6 eval a correct GitOps action ("change the image in the chart
+    # values, let Argo CD sync, then...") ran past 300 and cost badimage its only answer.
+    action: Annotated[str, Field(min_length=1, max_length=500)]
     command: Annotated[str, Field(min_length=1, max_length=300)] | None = None
     risk: Literal["low", "medium", "high"]
     undo: Annotated[str, Field(min_length=1, max_length=300)] | None = None

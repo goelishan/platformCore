@@ -29,7 +29,7 @@ from oncall.diagnosis.guards import (
 from oncall.diagnosis.schema import MAX_CITATIONS, MAX_SUMMARY_CHARS, tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "6"
+PROMPT_VERSION = "7"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
@@ -103,7 +103,8 @@ words, a risk of low, medium or high, and for medium or high an undo that says h
 reverse it. The engineer decides and runs every step; nothing runs on its own.
 - A step may carry one kubectl command from this list, labelled no lower than the risk \
 shown: {remedy_text()}. The same flag, namespace and Secret rules as verify apply. When \
-the fix belongs outside kubectl, or a value is unknown, give the action without a command.
+the fix belongs outside kubectl, give the action without a command. Placeholders belong \
+in remedy commands only; every verify command must run exactly as written.
 - When the evidence shows a workload is managed by Argo CD, Helm or an operator, a change \
 to its spec made with kubectl is reverted or drifts. Then say in the action that the change \
 belongs in the source it is deployed from, and keep kubectl to steps that do not fight \

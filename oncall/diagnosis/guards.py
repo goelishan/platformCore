@@ -347,8 +347,13 @@ REMEDY_COMMANDS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("cordon",), "medium"),
     (("taint",), "medium"),
     (("drain",), "high"),
-    (("create", "configmap"), "medium"),
-    (("delete",), "medium"),
+    # Additive: a new object nothing referenced before, undone by deleting it.
+    (("create", "configmap"), "low"),
+    # One named pod or Job: its controller recreates it, or it is disposable by design.
+    # Raised to high below for a forced delete or one that matches many objects. Medium
+    # until the v6 eval of 2026-10-29, where the model labelled a single pod delete low
+    # on 4 of 17 bundles and was right each time.
+    (("delete",), "low"),
 )
 
 # What delete may name. A pod or a Job is recreated by its owner or is disposable by
@@ -392,13 +397,27 @@ def remedy_text() -> str:
     return (
         "; ".join(parts)
         + f". delete may name only {', '.join(sorted(DELETABLE))}; a forced delete "
-        "(--force, --grace-period=0) or one by selector or --all is high"
+        "(--force, --grace-period=0) or one by selector or --all is high. A value the "
+        "evidence does not show may be a placeholder in angle brackets, such as <tag>"
     )
+
+
+# A value the evidence does not show, written for the engineer to fill in: <tag>,
+# <registry-host>, <pod-name>. Allowed in remedy commands only. A remedy is read and typed
+# by a person, so a placeholder is more honest than a guessed image tag; a verify command
+# is run as written, so it stays strict. In the v6 eval, 4 of 17 bundles lost a repair to
+# a placeholder rejected as shell redirection.
+PLACEHOLDER = re.compile(r"<[a-z][a-z0-9-]{0,40}>")
+_PLACEHOLDER_STAND_IN = "PLACEHOLDER"
+
+
+def is_placeholder(token: str) -> bool:
+    return bool(PLACEHOLDER.fullmatch(token))
 
 
 def check_remedy_command(command: str) -> tuple[str | None, str]:
     """(reason it is not allowed or None, the lowest risk it may be labelled)."""
-    reason, tokens, rest = _screen(command)
+    reason, tokens, rest = _screen(PLACEHOLDER.sub(_PLACEHOLDER_STAND_IN, command))
     if reason or rest is None:
         return reason, "high"
     for verb, floor in REMEDY_COMMANDS:
@@ -467,5 +486,6 @@ def check_remedy_namespaces(diagnosis: Diagnosis, namespaces: Collection[str]) -
         "nowhere in the evidence"
         for h in diagnosis.hypotheses
         for i, step in enumerate(h.remediate, 1) if step.command
-        for ns in namespaces_in(step.command) if ns not in allowed
+        for ns in namespaces_in(step.command)
+        if ns not in allowed and not is_placeholder(ns)
     ]

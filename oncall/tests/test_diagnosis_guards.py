@@ -305,14 +305,14 @@ def _with_remedy(*steps, cause="image_pull") -> Diagnosis:
     ("kubectl rollout restart deployment web", "medium"),
     ("kubectl -n oncall-lab scale deployment web --replicas=2", "medium"),
     ("kubectl set image deployment/web app=nginx:1.27", "medium"),
-    ("kubectl create configmap app-config -n oncall-lab --from-literal=LEVEL=info", "medium"),
+    ("kubectl create configmap app-config -n oncall-lab --from-literal=LEVEL=info", "low"),
     ("kubectl uncordon oncall-worker2", "low"),
     ("kubectl label pod x tier=web", "low"),
     ("kubectl drain node-1 --ignore-daemonsets", "high"),
-    ("kubectl delete pod crashloop-abc -n oncall-lab", "medium"),
-    ("kubectl -n oncall-lab delete pod crashloop-abc", "medium"),
-    ("kubectl delete -n oncall-lab pod crashloop-abc", "medium"),
-    ("kubectl delete job/nightly-export", "medium"),
+    ("kubectl delete pod crashloop-abc -n oncall-lab", "low"),
+    ("kubectl -n oncall-lab delete pod crashloop-abc", "low"),
+    ("kubectl delete -n oncall-lab pod crashloop-abc", "low"),
+    ("kubectl delete job/nightly-export", "low"),
     ("kubectl delete pod stuck-0 --grace-period=0 --force", "high"),
     ("kubectl delete pods -l app=web", "high"),
     ("kubectl delete pods --all -n oncall-lab", "high"),
@@ -402,3 +402,40 @@ def test_a_remedy_aimed_outside_the_evidence_namespaces_is_sent_back():
 
     assert guards.check_remedy_namespaces(d, {"oncall-lab"}) != []
     assert guards.check_remedy_namespaces(d, {"prod"}) == []
+
+
+# ---- placeholders (prompt v7) -------------------------------------------------------
+
+
+@pytest.mark.parametrize(("command", "floor"), [
+    ("kubectl set image deployment/badimage app=<registry>/<image>:<tag> -n oncall-lab",
+     "medium"),
+    ("kubectl delete pod <pod-name> -n oncall-lab", "low"),
+    ("kubectl delete pods -l app=<app-label> -n oncall-lab", "high"),
+])
+def test_a_placeholder_is_a_value_to_fill_in_not_shell_redirection(command, floor):
+    """v6 eval, 2026-10-29: four bundles lost a repair to <tag> read as '>'."""
+    assert guards.check_remedy_command(command) == (None, floor)
+
+
+@pytest.mark.parametrize("command", [
+    "kubectl rollout restart deployment/web > out.txt",
+    "kubectl set image deployment/web app=<Image> -n x",
+    "kubectl delete pod x < input",
+])
+def test_redirection_and_anything_not_a_placeholder_is_still_refused(command):
+    reason, _ = guards.check_remedy_command(command)
+
+    assert reason is not None and "shell syntax" in reason
+
+
+def test_a_placeholder_never_passes_in_a_verify_command():
+    assert guards.check_command("kubectl describe pod <pod-name> -n oncall-lab") is not None
+
+
+def test_a_placeholder_namespace_in_a_remedy_is_not_a_guessed_one():
+    d = _with_remedy({"command": "kubectl delete pod <pod-name> -n <namespace>",
+                      "risk": "low", "undo": None})
+
+    assert guards.check_remedy_namespaces(d, {"oncall-lab"}) == []
+    assert guards.check_remedies(d) == []
