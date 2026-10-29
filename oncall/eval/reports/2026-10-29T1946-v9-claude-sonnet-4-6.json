@@ -1,0 +1,597 @@
+{
+ "meta": {
+  "date": "2026-10-29 19:46 UTC",
+  "model": "us.anthropic.claude-sonnet-4-6",
+  "prompt_version": "9",
+  "prompt_sha256": "718aa549dada0fa0c650049e86c3290f9c76bbff3ea9fb93fdc611d003008a53",
+  "runs": 3,
+  "fixtures": 1,
+  "repeat": 3
+ },
+ "summary": {
+  "top1": {
+   "hits": 3,
+   "total": 3
+  },
+  "top3": {
+   "hits": 3,
+   "total": 3
+  },
+  "citation_validity": {
+   "hits": 3,
+   "total": 3
+  },
+  "command_safety": {
+   "hits": 3,
+   "total": 3
+  },
+  "insufficient_evidence": {
+   "hits": 0,
+   "total": 3
+  },
+  "first_attempt_valid": {
+   "hits": 3,
+   "total": 3
+  },
+  "outcomes": {
+   "ok": 3
+  },
+  "latency_p50_ms": 29752,
+  "latency_p95_ms": 33244,
+  "mean_input_tokens": 29885.0,
+  "mean_output_tokens": 2851.6666666666665,
+  "mean_cost_usd": 0.13243000000000002,
+  "total_cost_usd": 0.39729000000000003,
+  "agreement": {
+   "hits": 3,
+   "total": 3
+  },
+  "remedy_relevance": {
+   "hits": 3,
+   "total": 3
+  },
+  "remedy_actionable": {
+   "hits": 3,
+   "total": 3
+  },
+  "extra": {}
+ },
+ "runs": [
+  {
+   "subject": "unschedulable",
+   "expected": "unschedulable_resources",
+   "scored": true,
+   "top1": true,
+   "top3": true,
+   "remedy_relevant": true,
+   "record": {
+    "diagnosis_id": "d78d6f9c0f31444497068d8d7ee70dfb",
+    "incident_id": "eval-unschedulable",
+    "created_at": "2026-10-29T19:45:06.637510Z",
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "prompt_version": "9",
+    "bundle_sha256": "6bd261db635fbdaba8a40b23de50e6528859ec2cd61c5d1bbf10812428b03864",
+    "prompt_sha256": "718aa549dada0fa0c650049e86c3290f9c76bbff3ea9fb93fdc611d003008a53",
+    "outcome": "ok",
+    "attempts": 1,
+    "stop_reason": "tool_use",
+    "input_tokens": 33868,
+    "output_tokens": 3103,
+    "latency_ms": 33244,
+    "cost_usd": 0.148149,
+    "diagnosis": {
+     "summary": "Two pods of the `unschedulable` deployment (replicas -rw5pd and -ldzhw) have been stuck in Pending/Unschedulable since 2026-10-04. The scheduler reports 0/3 nodes available: the control-plane node has an untolerated taint, oncall-worker2 carries the `node.kubernetes.io/unschedulable:NoSchedule` taint (cordoned), and oncall-worker has insufficient CPU. With two of three worker-eligible nodes either cordoned or CPU-exhausted, there is no node that can accept the pods' CPU requests. The control-plane node is also unreachable (kubelet stopped posting status), further reducing the schedulable pool.",
+     "hypotheses": [
+      {
+       "rank": 1,
+       "cause_class": "unschedulable_resources",
+       "title": "oncall-worker2 is cordoned and oncall-worker has insufficient CPU, leaving no schedulable node",
+       "mechanism": "The cluster has 3 nodes. The control-plane node carries a NoSchedule taint that the pods do not tolerate (F2, F3). oncall-worker2 is explicitly cordoned (unschedulable=True, taint node.kubernetes.io/unschedulable:NoSchedule) since at least 2026-10-04 (F16, F20-F22), so it also rejects new pods. oncall-worker is Ready and schedulable but the scheduler reports 'Insufficient cpu' for it (F2, F3, F8, F9), meaning the pod's CPU request exceeds what remains allocatable on that node. With all three nodes blocked for different reasons, both pending pods cannot be placed and remain Unschedulable.",
+       "confidence": "high",
+       "supporting": [
+        "9a8603547bcdd2e37cb661d1a39cc4e6",
+        "239a281079e4b549fcf3172cce338a98",
+        "0d736f9c28289f9c6113879456a92587",
+        "9bc4aaae26c1a3e7d8f9e3bfe2689512",
+        "a67157da495e127e47603e2edd0e5a6e",
+        "7ca995f25c1a390952321cf6b3a212ea",
+        "cfcdbaf4cf8b76770b30f7848bc30b05"
+       ],
+       "contradicting": [
+        "4aff5020f51835d6424ca3d21a3b775f"
+       ],
+       "verify": [
+        {
+         "command": "kubectl describe node oncall-worker2 -n oncall-lab",
+         "purpose": "Confirm oncall-worker2 is still cordoned (unschedulable taint present) and check its allocatable CPU."
+        },
+        {
+         "command": "kubectl top node oncall-worker",
+         "purpose": "Check current CPU utilisation on oncall-worker to confirm it is exhausted relative to the pod's CPU request."
+        },
+        {
+         "command": "kubectl describe pod unschedulable-5ddcff94bf-rw5pd -n oncall-lab",
+         "purpose": "Confirm the pod's CPU request and the latest FailedScheduling message detailing which nodes are blocked and why."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 so it can accept new pods, then verify the pending pods schedule onto it (assuming its CPU is sufficient for the requests).",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "Inspect the CPU requests set on the unschedulable deployment and compare against what is allocatable on oncall-worker. If the requests are too high, reduce them in the deployment's source manifest (Git/Helm/Argo CD) so the scheduler can fit the pods on the available worker node.",
+         "command": null,
+         "risk": "medium",
+         "undo": "Revert the CPU request change in the source manifest and re-sync or re-apply."
+        },
+        {
+         "action": "If the workload legitimately needs more CPU than a single worker can provide, add a new worker node to the cluster through the cluster's node-provisioning process (cloud console, autoscaler config, or IaC) to increase total allocatable CPU.",
+         "command": null,
+         "risk": "low",
+         "undo": null
+        }
+       ]
+      },
+      {
+       "rank": 2,
+       "cause_class": "node_unschedulable",
+       "title": "oncall-worker2 was cordoned and never uncordoned, halving available worker capacity",
+       "mechanism": "oncall-worker2 has carried the node.kubernetes.io/unschedulable:NoSchedule taint since before the observation window began (F16, F20-F22). Both worker nodes rebooted at 2026-10-08T10:00 (F12, F13), but oncall-worker2 came back still cordoned (F16, F30). If oncall-worker2 were uncordoned and had sufficient CPU, the pods could potentially be scheduled there, making the cordon the primary capacity bottleneck alongside the CPU shortage on oncall-worker.",
+       "confidence": "medium",
+       "supporting": [
+        "a67157da495e127e47603e2edd0e5a6e",
+        "1002a59db56d49e74570e1bce55520de",
+        "1ccb306d93a3689d474bf3f6e51495e4",
+        "f81903d9832efacbf7826998e85f5cba",
+        "bad701a346ce6afb019eba01d1629e94",
+        "63341035cda19e7294a4923cda548eec"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl get node oncall-worker2 -o wide",
+         "purpose": "Verify the current schedulability status and taint of oncall-worker2."
+        },
+        {
+         "command": "kubectl describe node oncall-worker -n oncall-lab",
+         "purpose": "Check allocated CPU requests on oncall-worker to quantify how much CPU is already consumed vs allocatable."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 to restore it to the schedulable pool. Confirm it was intentionally cordoned before doing so; if a maintenance or drain operation left it cordoned, it is safe to uncordon once the node is verified healthy.",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "After uncordoning, verify that oncall-worker2 has no remaining taints that would block the pending pods by running 'kubectl get node oncall-worker2 -o wide' and inspecting the node's taint list via the API or cluster UI.",
+         "command": null,
+         "risk": "low",
+         "undo": null
+        }
+       ]
+      },
+      {
+       "rank": 3,
+       "cause_class": "other",
+       "title": "Control-plane node is unreachable (kubelet stopped posting status), adding node.kubernetes.io/unreachable taint",
+       "mechanism": "oncall-control-plane has been in NodeStatusUnknown since 2026-10-05T07:43:41Z with the kubelet stopped posting status (F1, F5, F6, F7). This adds the node.kubernetes.io/unreachable:NoSchedule taint automatically, making it count as 'unschedulable' in the scheduler message. While the control-plane node would normally be excluded by its control-plane taint anyway, its unreachable state contributes to the '1 node(s) were unschedulable' count in the scheduler error and indicates broader cluster health issues.",
+       "confidence": "medium",
+       "supporting": [
+        "04050537306942fca92ddd748223eb60",
+        "c20ba6fb495bb02897b3c95174deec04",
+        "f144fe78c501dcdf76718f8e60fb4a65",
+        "ab38d2acde8e85164aa250dcde2c2cf5",
+        "9a8603547bcdd2e37cb661d1a39cc4e6",
+        "239a281079e4b549fcf3172cce338a98"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl describe node oncall-control-plane",
+         "purpose": "Confirm the unreachable taint and NodeStatusUnknown condition are still present on the control-plane node."
+        },
+        {
+         "command": "kubectl get events -n oncall-lab --field-selector reason=NodeNotReady",
+         "purpose": "Check for recent NodeNotReady events related to the control-plane node to understand when it became unreachable."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "SSH into oncall-control-plane (or use the cloud provider console) and restart the kubelet service to restore node status reporting: run 'sudo systemctl restart kubelet' on the node itself. This is outside kubectl's reach.",
+         "command": null,
+         "risk": "medium",
+         "undo": "If the restart causes instability, stop the kubelet with 'sudo systemctl stop kubelet' and investigate logs via 'journalctl -u kubelet' before restarting again."
+        },
+        {
+         "action": "If the kubelet cannot be recovered (e.g. the VM is truly unreachable), investigate the control-plane node's health via the cloud provider console or hypervisor. Reboot or replace the node following the cluster's control-plane recovery runbook.",
+         "command": null,
+         "risk": "high",
+         "undo": "Restoring a replaced control-plane node requires re-joining it to the cluster using kubeadm or the equivalent tool for this cluster's provisioner; follow the cluster's documented recovery procedure."
+        }
+       ]
+      }
+     ],
+     "unknowns": [
+      "The exact CPU request set on the unschedulable pods is not shown in the evidence; it is needed to confirm whether oncall-worker truly cannot fit even one pod.",
+      "Current CPU allocation on oncall-worker is unknown (k8s_top data not collected); the 'Insufficient cpu' finding may have changed since the last run (evidence may be stale).",
+      "Why oncall-worker2 is cordoned and whether it was intentional or forgotten is not explained in the evidence.",
+      "The control-plane node (oncall-control-plane) has been unreachable since 2026-10-05; the root cause of the kubelet outage is unknown and may affect cluster control-plane availability.",
+      "Evidence may be stale: all sources last ran >20 minutes before assembly, so the ONGOING states (pods Pending, node cordoned, control-plane unreachable) may have changed."
+     ],
+     "insufficient_evidence": false
+    },
+    "errors": [
+     "remedies attempt 1: hypothesis 2 remediate 2: 'kubectl describe node oncall-worker2': 'describe node' is not on the remedy allowlist; describe the step as an action without a command"
+    ],
+    "requested_by": null
+   }
+  },
+  {
+   "subject": "unschedulable",
+   "expected": "unschedulable_resources",
+   "scored": true,
+   "top1": true,
+   "top3": true,
+   "remedy_relevant": true,
+   "record": {
+    "diagnosis_id": "c1ff91da159d4baa8101f16760f695a5",
+    "incident_id": "eval-unschedulable",
+    "created_at": "2026-10-29T19:45:33.258817Z",
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "prompt_version": "9",
+    "bundle_sha256": "6bd261db635fbdaba8a40b23de50e6528859ec2cd61c5d1bbf10812428b03864",
+    "prompt_sha256": "718aa549dada0fa0c650049e86c3290f9c76bbff3ea9fb93fdc611d003008a53",
+    "outcome": "ok",
+    "attempts": 1,
+    "stop_reason": "tool_use",
+    "input_tokens": 21975,
+    "output_tokens": 2416,
+    "latency_ms": 26594,
+    "cost_usd": 0.102165,
+    "diagnosis": {
+     "summary": "Two pods of the `unschedulable` deployment (replicas -rw5pd and -ldzhw) have been stuck in Pending/Unschedulable since 2026-10-04. The scheduler reports 0/3 nodes available: the control-plane node has an untolerated NoSchedule taint, oncall-worker2 carries the `node.kubernetes.io/unschedulable:NoSchedule` taint (cordoned), and oncall-worker has insufficient CPU to satisfy the pod's requests. With all three nodes effectively unavailable for different reasons, no scheduling is possible and preemption cannot help.",
+     "hypotheses": [
+      {
+       "rank": 1,
+       "cause_class": "unschedulable_resources",
+       "title": "Pods unschedulable: one worker cordoned, one worker has insufficient CPU, control-plane tainted",
+       "mechanism": "The cluster has 3 nodes. oncall-control-plane carries the built-in control-plane NoSchedule taint (F1), so workload pods cannot land there. oncall-worker2 has been marked unschedulable (cordoned) and carries the node.kubernetes.io/unschedulable:NoSchedule taint (F16, F20-F22), removing it from the schedulable pool. oncall-worker is Ready (F15) but the scheduler consistently reports 'Insufficient cpu' for it (F2, F3, F8, F9, F10, F11), meaning the pod's CPU request exceeds what is currently free on that node. With all three nodes blocked for different reasons, the scheduler cannot place either pod and they remain Pending indefinitely.",
+       "confidence": "high",
+       "supporting": [
+        "9a8603547bcdd2e37cb661d1a39cc4e6",
+        "239a281079e4b549fcf3172cce338a98",
+        "0d736f9c28289f9c6113879456a92587",
+        "9bc4aaae26c1a3e7d8f9e3bfe2689512",
+        "7ca995f25c1a390952321cf6b3a212ea",
+        "cfcdbaf4cf8b76770b30f7848bc30b05",
+        "a67157da495e127e47603e2edd0e5a6e",
+        "04050537306942fca92ddd748223eb60"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl get nodes -o wide -n oncall-lab",
+         "purpose": "Confirm current node status, taints, and schedulability for all three nodes."
+        },
+        {
+         "command": "kubectl describe node oncall-worker",
+         "purpose": "Check allocated vs allocatable CPU on oncall-worker to confirm insufficient CPU for the pending pods."
+        },
+        {
+         "command": "kubectl describe pod unschedulable-5ddcff94bf-rw5pd -n oncall-lab",
+         "purpose": "Confirm the pod's CPU request and the latest FailedScheduling reason."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 so it rejoins the schedulable pool and the pending pods have a second worker node available (see rank-2 remedy for full detail).",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "Reduce the CPU request of the unschedulable deployment so its pods fit on the remaining schedulable worker (oncall-worker). If the workload is managed by Argo CD, Helm, or an operator, make this change in the source repository and let it sync; do not patch directly.",
+         "command": null,
+         "risk": "medium",
+         "undo": "Revert the CPU request change in the source repository and re-sync, or run kubectl rollout undo on the deployment if patched directly."
+        },
+        {
+         "action": "If the CPU request is correct and the node is genuinely overcommitted, evict or reschedule lower-priority pods on oncall-worker to free CPU headroom, or add a new worker node to the cluster to expand capacity.",
+         "command": null,
+         "risk": "medium",
+         "undo": "Reschedule evicted pods back to the node, or remove the newly added node if it is no longer needed."
+        }
+       ]
+      },
+      {
+       "rank": 2,
+       "cause_class": "node_unschedulable",
+       "title": "oncall-worker2 cordoned, reducing schedulable capacity to a single overcommitted node",
+       "mechanism": "oncall-worker2 has unschedulable=True and the node.kubernetes.io/unschedulable:NoSchedule taint (F16), consistent with a kubectl cordon operation. This halved the available worker capacity. Even though oncall-worker is Ready (F15), it alone cannot absorb the CPU demand of the pending pods, making the cordon the proximate capacity bottleneck. The node was rebooted at 2026-10-08T10:00:19Z (F13) but came back still cordoned.",
+       "confidence": "high",
+       "supporting": [
+        "a67157da495e127e47603e2edd0e5a6e",
+        "1002a59db56d49e74570e1bce55520de",
+        "1ccb306d93a3689d474bf3f6e51495e4",
+        "f81903d9832efacbf7826998e85f5cba",
+        "bad701a346ce6afb019eba01d1629e94",
+        "97342bac56bcb4737398e4a2ac3a656c",
+        "63341035cda19e7294a4923cda548eec"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl get node oncall-worker2 -o wide",
+         "purpose": "Confirm oncall-worker2 is still cordoned/unschedulable after its reboot."
+        },
+        {
+         "command": "kubectl describe node oncall-worker2",
+         "purpose": "Review taints, conditions, and events to understand why it remains cordoned."
+        },
+        {
+         "command": "kubectl top node oncall-worker",
+         "purpose": "Check actual CPU utilisation on oncall-worker to understand how much headroom remains."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 to remove the node.kubernetes.io/unschedulable:NoSchedule taint and allow the scheduler to place pods on it again. Verify the node is healthy before doing so (check kubectl describe node oncall-worker2 for any remaining issues).",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "After uncordoning, confirm the pending pods are scheduled by checking their status. If they remain Pending, investigate whether CPU requests still exceed combined free capacity across both workers.",
+         "command": null,
+         "risk": "low",
+         "undo": null
+        }
+       ]
+      },
+      {
+       "rank": 3,
+       "cause_class": "other",
+       "title": "oncall-control-plane kubelet unreachable, adding a third unavailable node",
+       "mechanism": "oncall-control-plane has condition Ready=Unknown with reason NodeStatusUnknown and the node.kubernetes.io/unreachable:NoSchedule taint (F1, F5, F6, F7), meaning the kubelet stopped posting status since 2026-10-05T07:43:41Z. While the control-plane node would normally be excluded by its role taint anyway, its unreachable state is reported as one of the three unavailable nodes in every FailedScheduling message, confirming it contributes to the 0/3 count.",
+       "confidence": "medium",
+       "supporting": [
+        "04050537306942fca92ddd748223eb60",
+        "c20ba6fb495bb02897b3c95174deec04",
+        "f144fe78c501dcdf76718f8e60fb4a65",
+        "ab38d2acde8e85164aa250dcde2c2cf5",
+        "9a8603547bcdd2e37cb661d1a39cc4e6",
+        "0d736f9c28289f9c6113879456a92587"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl describe node oncall-control-plane",
+         "purpose": "Confirm the control-plane node's current conditions, taints, and last heartbeat time."
+        },
+        {
+         "command": "kubectl get events -n oncall-lab --field-selector involvedObject.name=oncall-control-plane",
+         "purpose": "Look for recent events explaining why the kubelet stopped posting status."
+        },
+        {
+         "command": "kubectl rollout status deployment/unschedulable -n oncall-lab",
+         "purpose": "Confirm the deployment rollout is still blocked with no available replicas."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "SSH into oncall-control-plane (or access it via the cloud provider console) and inspect the kubelet service: run 'systemctl status kubelet' and 'journalctl -u kubelet --since \"2026-10-05T07:43:00Z\"' to determine why it stopped posting status. Restart the kubelet with 'systemctl restart kubelet' if it has crashed or stalled.",
+         "command": null,
+         "risk": "medium",
+         "undo": "If restarting the kubelet causes instability, stop it again with 'systemctl stop kubelet' and escalate to the infrastructure team."
+        },
+        {
+         "action": "If the control-plane node is unrecoverable (e.g. the VM is terminated or permanently unreachable), follow the cluster's documented control-plane recovery or node replacement procedure to restore etcd quorum and API server availability.",
+         "command": null,
+         "risk": "high",
+         "undo": "Control-plane replacement is not easily reversible; ensure etcd backups are available before proceeding."
+        }
+       ]
+      }
+     ],
+     "unknowns": [
+      "The exact CPU request set on the unschedulable pods is not shown in the evidence; it is needed to determine whether uncordoning oncall-worker2 alone would be sufficient or whether the request also needs to be reduced.",
+      "Why oncall-worker2 was cordoned is not recorded \u2014 whether it was intentional maintenance or an accidental cordon that was never undone.",
+      "Why the oncall-control-plane kubelet stopped posting status since 2026-10-05 is not explained in the evidence.",
+      "Evidence may be stale (last collected >20 min before assembly); current node and pod states may have changed since the last observation."
+     ],
+     "insufficient_evidence": false
+    },
+    "errors": [],
+    "requested_by": null
+   }
+  },
+  {
+   "subject": "unschedulable",
+   "expected": "unschedulable_resources",
+   "scored": true,
+   "top1": true,
+   "top3": true,
+   "remedy_relevant": true,
+   "record": {
+    "diagnosis_id": "ea78566179394c0dbaac2be8af9d57fa",
+    "incident_id": "eval-unschedulable",
+    "created_at": "2026-10-29T19:46:03.041368Z",
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "prompt_version": "9",
+    "bundle_sha256": "6bd261db635fbdaba8a40b23de50e6528859ec2cd61c5d1bbf10812428b03864",
+    "prompt_sha256": "718aa549dada0fa0c650049e86c3290f9c76bbff3ea9fb93fdc611d003008a53",
+    "outcome": "ok",
+    "attempts": 1,
+    "stop_reason": "tool_use",
+    "input_tokens": 33812,
+    "output_tokens": 3036,
+    "latency_ms": 29752,
+    "cost_usd": 0.146976,
+    "diagnosis": {
+     "summary": "Two pods of the `unschedulable` deployment (replicas -rw5pd and -ldzhw) have been stuck in Pending/Unschedulable since 2026-10-04. The scheduler reports 0/3 nodes available: the control-plane node has an untolerated NoSchedule taint, oncall-worker2 carries the `node.kubernetes.io/unschedulable:NoSchedule` taint (cordoned), and oncall-worker has insufficient CPU to satisfy the pod's requests. With all three nodes effectively unavailable for different reasons, no scheduling is possible and preemption cannot help.",
+     "hypotheses": [
+      {
+       "rank": 1,
+       "cause_class": "unschedulable_resources",
+       "title": "oncall-worker2 is cordoned and oncall-worker has insufficient CPU, leaving no schedulable node",
+       "mechanism": "The cluster has three nodes. The control-plane node always carries node-role.kubernetes.io/control-plane:NoSchedule so workloads without a matching toleration cannot land there. oncall-worker2 has unschedulable=True and the taint node.kubernetes.io/unschedulable:NoSchedule (i.e. it has been cordoned via kubectl cordon), making it unavailable for new pods. oncall-worker is Ready and not cordoned, but the scheduler reports 'Insufficient cpu' for it, meaning the pod's CPU request exceeds what is currently free on that node. With all three nodes blocked for different reasons, both pending pods cannot be scheduled and remain in Pending indefinitely.",
+       "confidence": "high",
+       "supporting": [
+        "9a8603547bcdd2e37cb661d1a39cc4e6",
+        "239a281079e4b549fcf3172cce338a98",
+        "0d736f9c28289f9c6113879456a92587",
+        "9bc4aaae26c1a3e7d8f9e3bfe2689512",
+        "7ca995f25c1a390952321cf6b3a212ea",
+        "cfcdbaf4cf8b76770b30f7848bc30b05",
+        "a67157da495e127e47603e2edd0e5a6e",
+        "1002a59db56d49e74570e1bce55520de",
+        "1ccb306d93a3689d474bf3f6e51495e4",
+        "f81903d9832efacbf7826998e85f5cba",
+        "4aff5020f51835d6424ca3d21a3b775f"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl get nodes -o wide -n oncall-lab",
+         "purpose": "Confirm current node status, taints, and schedulability for all three nodes."
+        },
+        {
+         "command": "kubectl describe node oncall-worker2",
+         "purpose": "Verify the cordon taint and check allocated vs allocatable CPU/memory on oncall-worker2."
+        },
+        {
+         "command": "kubectl describe node oncall-worker",
+         "purpose": "Check allocated CPU vs allocatable on oncall-worker to confirm the Insufficient cpu condition and identify which pods are consuming the capacity."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 so it becomes schedulable again, giving the pending pods a second candidate node.",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "Check how much CPU is currently requested on oncall-worker by reviewing the node's Allocated resources (via the cloud provider console, monitoring dashboards, or kubectl top) to understand available headroom before deciding whether to reduce the workload's CPU request or add capacity.",
+         "command": null,
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "If the pod's CPU request is too high relative to available node capacity, lower the CPU request in the workload's source manifest (git / Helm values / Argo CD application) and let it sync, or patch the Deployment directly if it is not GitOps-managed.",
+         "command": "kubectl set resources deployment unschedulable --requests=cpu=<reduced-cpu-value> -n oncall-lab",
+         "risk": "medium",
+         "undo": "kubectl set resources deployment unschedulable --requests=cpu=<original-cpu-value> -n oncall-lab"
+        }
+       ]
+      },
+      {
+       "rank": 2,
+       "cause_class": "node_unschedulable",
+       "title": "oncall-worker2 was cordoned (marked unschedulable) and never uncordoned",
+       "mechanism": "oncall-worker2 has unschedulable=True and the taint node.kubernetes.io/unschedulable:NoSchedule present since at least 2026-10-04. Both worker nodes rebooted around 2026-10-08T10:00, but oncall-worker2 came back still cordoned. If oncall-worker2 were uncordoned and had sufficient CPU, the pending pods could be scheduled there, resolving the incident without needing to free CPU on oncall-worker.",
+       "confidence": "medium",
+       "supporting": [
+        "a67157da495e127e47603e2edd0e5a6e",
+        "1002a59db56d49e74570e1bce55520de",
+        "1ccb306d93a3689d474bf3f6e51495e4",
+        "f81903d9832efacbf7826998e85f5cba",
+        "bad701a346ce6afb019eba01d1629e94",
+        "97342bac56bcb4737398e4a2ac3a656c",
+        "63341035cda19e7294a4923cda548eec"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl get node oncall-worker2 -o wide",
+         "purpose": "Confirm the node is still marked SchedulingDisabled (cordoned) after the reboot."
+        },
+        {
+         "command": "kubectl describe node oncall-worker2",
+         "purpose": "Review taints, conditions, and allocated resources to determine if uncordoning alone would allow scheduling."
+        },
+        {
+         "command": "kubectl get pods -n oncall-lab -o wide",
+         "purpose": "See which pods are currently running on each node and confirm the two pending pods are still unscheduled."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "Uncordon oncall-worker2 to remove the node.kubernetes.io/unschedulable:NoSchedule taint and allow the scheduler to place pods on it.",
+         "command": "kubectl uncordon oncall-worker2",
+         "risk": "low",
+         "undo": null
+        },
+        {
+         "action": "Verify that oncall-worker2 is now fully Ready and has no remaining unschedulable taint by checking node status via your monitoring dashboard or cloud provider console before relying on it to accept new pods.",
+         "command": null,
+         "risk": "low",
+         "undo": null
+        }
+       ]
+      },
+      {
+       "rank": 3,
+       "cause_class": "other",
+       "title": "oncall-control-plane kubelet is unreachable, adding a third unavailable node",
+       "mechanism": "The control-plane node's kubelet stopped posting status (NodeStatusUnknown since 2026-10-05T07:43:41Z) and has acquired the node.kubernetes.io/unreachable:NoSchedule taint in addition to the existing control-plane taint. While the control-plane taint already prevents normal workloads from landing there, the unreachable state means the node cannot be used even if a toleration were added, further reducing the effective cluster capacity.",
+       "confidence": "medium",
+       "supporting": [
+        "04050537306942fca92ddd748223eb60",
+        "c20ba6fb495bb02897b3c95174deec04",
+        "f144fe78c501dcdf76718f8e60fb4a65",
+        "ab38d2acde8e85164aa250dcde2c2cf5"
+       ],
+       "contradicting": [],
+       "verify": [
+        {
+         "command": "kubectl describe node oncall-control-plane",
+         "purpose": "Confirm the kubelet unreachable condition and the full set of taints currently applied to the control-plane node."
+        },
+        {
+         "command": "kubectl get events -n oncall-lab --field-selector involvedObject.name=oncall-control-plane",
+         "purpose": "Check for any recent events indicating recovery or further degradation of the control-plane node."
+        },
+        {
+         "command": "kubectl rollout status deployment/unschedulable -n oncall-lab",
+         "purpose": "Confirm the deployment is still stalled with pending replicas."
+        }
+       ],
+       "remediate": [
+        {
+         "action": "SSH into the oncall-control-plane node (or use the cloud provider console) and restart the kubelet service to restore node status reporting: run 'sudo systemctl restart kubelet' on the node itself.",
+         "command": null,
+         "risk": "medium",
+         "undo": "If the restart makes the node worse, stop the kubelet with 'sudo systemctl stop kubelet' and investigate logs via 'sudo journalctl -u kubelet' before re-enabling."
+        },
+        {
+         "action": "If the control-plane node is unrecoverable, drain it to migrate any remaining workloads, then replace or re-provision the node through your infrastructure tooling (cloud provider, kubeadm, or cluster-API).",
+         "command": "kubectl drain oncall-control-plane --ignore-daemonsets --delete-emptydir-data",
+         "risk": "high",
+         "undo": "kubectl uncordon oncall-control-plane (only useful if the node is recovered; otherwise replace the node)"
+        }
+       ]
+      }
+     ],
+     "unknowns": [
+      "The exact CPU request set on the unschedulable deployment pods is not shown in the evidence; it is unknown whether freeing CPU on oncall-worker alone (without uncordoning oncall-worker2) would be sufficient.",
+      "It is unknown what caused oncall-worker2 to be cordoned or whether it was intentional (e.g. maintenance).",
+      "Evidence may be stale (last collected 20+ minutes before assembly); the current state of all nodes and pods may have changed since the last observation.",
+      "The control-plane kubelet has been unreachable since 2026-10-05; the root cause of that outage is not captured in the evidence."
+     ],
+     "insufficient_evidence": false
+    },
+    "errors": [
+     "remedies attempt 1: hypothesis 1 remediate 2: 'kubectl describe node oncall-worker': 'describe node' is not on the remedy allowlist; describe the step as an action without a command",
+     "remedies attempt 1: hypothesis 2 remediate 2: 'kubectl describe node oncall-worker2': 'describe node' is not on the remedy allowlist; describe the step as an action without a command"
+    ],
+    "requested_by": null
+   }
+  }
+ ]
+}
