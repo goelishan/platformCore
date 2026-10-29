@@ -152,15 +152,19 @@ def test_the_tool_carries_the_output_contract():
     assert "CauseClass" in tool["inputSchema"]["json"]["$defs"]
 
 
-def test_v7_states_every_rule_the_reasoner_enforces():
+def test_v8_states_every_rule_the_reasoner_enforces():
     """Each of these is checked in code and earns a repair. A model never told the rule
     pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did, and on
     8 Oct the citation cap and the can-i exception cost three more. v5 raised the citation
     and summary bounds; v6 added the namespace rule (F4, drill 2026-10-13); v7 recalibrates remedy floors
-    and allows placeholders in remedies, after the v6 eval spent 10 of 17 on repairs."""
+    and allows placeholders in remedies, after the v6 eval spent 10 of 17 on repairs; v8
+    adds the timeline ranking rule, after v6 and v7 led unschedulable with a cordon that
+    came three days after the pods were already Pending (0/3 on repeat)."""
     text = prompt.SYSTEM_PROMPT
 
-    assert prompt.PROMPT_VERSION == "7"
+    assert prompt.PROMPT_VERSION == "8"
+    assert "Rank by cause, using the timeline" in text
+    assert "Never rank a hypothesis higher because its remedy is easier" in text
     assert "placeholder in angle brackets" in text
     assert "every verify command must run exactly as written" in text
     assert "must be one that appears in the evidence" in text

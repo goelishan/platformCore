@@ -29,7 +29,7 @@ from oncall.diagnosis.guards import (
 from oncall.diagnosis.schema import MAX_CITATIONS, MAX_SUMMARY_CHARS, tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "7"
+PROMPT_VERSION = "8"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
@@ -90,6 +90,10 @@ runs on, not only findings admitted via namespace, and at least one that is evid
 rather than a report that a source saw nothing.
 - mechanism says what is happening and why, from the evidence. Confidence is high only \
 when the evidence states the cause directly.
+- Rank by cause, using the timeline. A factor that appeared after the failure began, or \
+that was absent while the failure was already happening, contributes but is not the cause: \
+rank the factor present throughout first. Never rank a hypothesis higher because its \
+remedy is easier or safer to run.
 - verify gives one to three commands the engineer can run to confirm the hypothesis. \
 Each must be a single kubectl command using only: {allowed_command_text()}. No pipes, \
 redirects, command substitution, credential or server flags, or changes to the cluster \
