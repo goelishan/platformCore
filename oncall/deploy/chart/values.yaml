@@ -72,6 +72,16 @@ bedrock:
   priceInputPerMTok: "3"
   priceOutputPerMTok: "15"
 
+# The agent diagnoses failing subjects on its own and closes incidents that go quiet.
+# Needs bedrock.enabled; the caps bound spend at roughly $0.30 an hour at worst.
+triage:
+  enabled: true
+  intervalSeconds: 120
+  minSeverity: error
+  maxPerHour: 6
+  maxPerTick: 2
+  resolveQuietSeconds: 900
+
 # Guaranteed: requests equal limits. Sized from the kind deployment, where the loop ran well
 # inside 384Mi with every collector active.
 agent:

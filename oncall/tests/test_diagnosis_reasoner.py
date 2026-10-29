@@ -56,7 +56,13 @@ def throttled() -> ClientError:
                        "Converse")
 
 
-def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1) -> dict:
+REMEDY = {"action": "Point the Deployment at an image tag that exists in its registry",
+          "command": "kubectl rollout undo deployment/app", "risk": "medium",
+          "undo": "kubectl rollout undo deployment/app again returns to the new revision"}
+
+
+def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1,
+              remediate=(REMEDY,)) -> dict:
     return {
         "summary": "Image cannot be pulled.",
         "insufficient_evidence": False,
@@ -65,6 +71,7 @@ def diagnosis(supporting=("F1",), command="kubectl describe pod x", rank=1) -> d
             "mechanism": "registry does not resolve", "confidence": "high",
             "supporting": list(supporting), "contradicting": [],
             "verify": [{"command": command, "purpose": "events"}],
+            "remediate": [dict(r) for r in remediate],
         }],
     }
 
@@ -248,6 +255,77 @@ def test_a_link_in_the_prose_is_sent_back_for_repair(lab):
     assert r.attempts == 2
     feedback = client.requests[1]["messages"][2]["content"][0]["toolResult"]
     assert "summary: contains a link" in feedback["content"][0]["text"]
+
+
+def test_a_command_aimed_at_a_namespace_outside_the_evidence_is_sent_back(lab):
+    """F4: the guard is wired into the repair loop, not only defined."""
+    present = sorted(reasoner.evidence_namespaces(lab))
+    client = FakeBedrock(answer(diagnosis(command="kubectl get pods -n loki")),
+                         answer(diagnosis(command=f"kubectl get pods -n {present[0]}")))
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.OK
+    assert r.attempts == 2
+    feedback = client.requests[1]["messages"][2]["content"][0]["toolResult"]
+    assert "namespace loki appears nowhere" in feedback["content"][0]["text"]
+
+
+def test_a_fault_without_remedy_steps_is_sent_back_for_repair(lab):
+    client = FakeBedrock(answer(diagnosis(remediate=())), answer(diagnosis()))
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.OK
+    assert r.attempts == 2
+    assert r.diagnosis.hypotheses[0].remediate[0].risk == "medium"
+    feedback = client.requests[1]["messages"][2]["content"][0]["toolResult"]
+    assert "remediate must give at least one step" in feedback["content"][0]["text"]
+
+
+def test_a_destructive_remedy_is_repaired_into_a_described_step_not_rejected(lab):
+    """A remedy is meant to change the cluster, so a write there is not the warning sign
+    it is in verify: the answer is sent back, never dropped."""
+    destructive = {"action": "Recreate the namespace", "risk": "high", "undo": "none",
+                   "command": "kubectl delete namespace oncall-lab"}
+    client = FakeBedrock(answer(diagnosis(remediate=[destructive])), answer(diagnosis()))
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.OK
+    assert r.attempts == 2
+    assert any("delete may name only" in e for e in r.errors)
+
+
+def test_an_understated_risk_is_sent_back_with_its_floor(lab):
+    understated = {"action": "Drain the node", "risk": "low",
+                   "command": "kubectl drain node-1 --ignore-daemonsets"}
+    client = FakeBedrock(answer(diagnosis(remediate=[understated])), answer(diagnosis()))
+
+    r = run(lab, client)
+
+    assert r.attempts == 2
+    assert any("below its floor of high" in e for e in r.errors)
+
+
+def test_a_remedy_aimed_at_a_namespace_outside_the_evidence_is_sent_back(lab):
+    elsewhere = {"action": "Roll back", "risk": "medium", "undo": "roll forward",
+                 "command": "kubectl rollout undo deployment/app -n staging"}
+    client = FakeBedrock(answer(diagnosis(remediate=[elsewhere])), answer(diagnosis()))
+
+    r = run(lab, client)
+
+    assert r.attempts == 2
+    assert any("remediate 1" in e and "namespace staging" in e for e in r.errors)
+
+
+def test_an_unsafe_verify_is_still_rejected_outright_beside_a_good_remedy(lab):
+    client = FakeBedrock(answer(diagnosis(command="kubectl delete pod x")))
+
+    r = run(lab, client)
+
+    assert r.outcome is Outcome.GUARD_REJECTED
+    assert r.attempts == 1
 
 
 @pytest.fixture

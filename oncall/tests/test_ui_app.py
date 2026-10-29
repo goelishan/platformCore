@@ -94,6 +94,10 @@ def test_diagnose_shows_the_first_command_and_journals_it(lab, monkeypatch):
     assert "kubectl describe pod x" in codes(at)
     assert any(m.value == "**Run first**" for m in at.markdown)
     assert [r["outcome"] for r in service.recent()] == ["ok"]
+    # The remedy is shown with its risk first, its command to copy and its undo.
+    assert tr.REMEDY["command"] in codes(at)
+    assert any(w.value.startswith("medium risk: ") for w in at.warning)
+    assert any(c.value.startswith("Undo: ") for c in at.caption)
 
 
 def test_an_unsafe_answer_is_a_banner_not_a_diagnosis(lab, monkeypatch):

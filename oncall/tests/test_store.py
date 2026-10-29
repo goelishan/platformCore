@@ -317,3 +317,49 @@ def test_row_level_expiry_runs_inside_live_partitions(store_db):
         kinds = [r["kind"] for r in store_db.fetch_all(conn, "SELECT kind FROM signals")]
 
     assert kinds == ["pod_state"]
+
+
+def test_watching_since_is_the_first_contact_and_a_reupsert_cannot_move_it(store_db):
+    """F5, drill 2026-10-13. collected_at is rewritten each time a still-changing row is
+    upserted; when the horizon was MIN(collected_at), re-observing every early row moved
+    it to the latest poll and blinded every bundle's newness claims."""
+    first = make_signal().model_copy(update={"collected_at": T0})
+    again = first.model_copy(update={"collected_at": T0 + timedelta(hours=3)})
+
+    with store_db.connect() as conn:
+        store_db.upsert_signals(conn, [as_store_row(first)])
+        store_db.upsert_signals(conn, [as_store_row(again)])
+        since = store_db.watching_since(conn, CLUSTER)
+        stored = store_db.fetch_one(conn, "SELECT collected_at FROM signals")
+
+    assert stored["collected_at"] == T0 + timedelta(hours=3)
+    assert since == T0
+
+
+def test_first_contact_is_the_earliest_row_of_the_first_batch_per_cluster(store_db):
+    late = make_signal(key="a").model_copy(update={"collected_at": T0 + timedelta(minutes=9)})
+    early = make_signal(key="b").model_copy(update={"collected_at": T0})
+    other = make_signal(key="c").model_copy(update={"cluster": "other",
+                                                    "collected_at": T0 + timedelta(days=1)})
+
+    with store_db.connect() as conn:
+        store_db.upsert_signals(conn, [as_store_row(s) for s in (late, early, other)])
+        assert store_db.watching_since(conn, CLUSTER) == T0
+        assert store_db.watching_since(conn, "other") == T0 + timedelta(days=1)
+        assert store_db.watching_since(conn, "never-seen") is None
+
+
+def test_the_migration_backfills_first_contact_from_surviving_rows(store_db):
+    """A store from before 0006 gets the earliest collected_at it still holds, which can
+    only be later than the truth: it errs towards "cannot tell", never towards "new"."""
+    from oncall.store.migrate import MIGRATIONS_DIR
+
+    rows = [make_signal(key=k).model_copy(update={"collected_at": T0 + timedelta(hours=h)})
+            for k, h in (("a", 2), ("b", 1))]
+    with store_db.connect() as conn:
+        store_db.upsert_signals(conn, [as_store_row(s) for s in rows])
+        conn.execute("DELETE FROM cluster_watch")
+        conn.execute((MIGRATIONS_DIR / "0006_cluster_watch.sql").read_text())
+        since = store_db.watching_since(conn, CLUSTER)
+
+    assert since == T0 + timedelta(hours=1)

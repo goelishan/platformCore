@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from oncall import config
 from oncall.diagnosis.schema import DiagnosisRecord
 from oncall.evidence.bundle import Bundle, Finding
 
@@ -35,13 +36,29 @@ _BANNERS: dict[str, tuple[str, str]] = {
     ),
     "model_error": (
         "error",
-        "No diagnosis: the Bedrock call failed. make bedrock-check names the cause.",
+        "No diagnosis: the Bedrock call failed. {bedrock_check} names the cause.",
     ),
     "prompt_too_large": (
         "error",
         "No diagnosis: the evidence exceeded the prompt cap, so nothing was sent.",
     ),
 }
+
+
+# The Bedrock preflight as the reader can run it where this UI is running: a make target
+# in a checkout, the chart's test hook in the cluster, where there is no Makefile.
+_BEDROCK_CHECK = {
+    "local": "make -C oncall bedrock-check",
+    "kubernetes": "helm test oncall -n oncall --logs",
+}
+
+
+def banner_for(outcome: str) -> tuple[str, str] | None:
+    found = _BANNERS.get(outcome)
+    if found is None:
+        return None
+    level, text = found
+    return level, text.format(bedrock_check=_BEDROCK_CHECK[config.RUNTIME])
 
 
 @dataclass(frozen=True)
@@ -70,6 +87,8 @@ class HypothesisView:
     supporting: list[Evidence]
     contradicting: list[Evidence]
     verify: list[dict[str, str]]
+    # Empty for no_fault and for journal rows from before prompt v6.
+    remediate: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -125,6 +144,7 @@ def row_from_record(record: DiagnosisRecord) -> dict[str, Any]:
         "unknowns": list(d.unknowns) if d else None,
         "insufficient_evidence": d.insufficient_evidence if d else None,
         "errors": list(record.errors),
+        "requested_by": record.requested_by,
     }
 
 
@@ -145,11 +165,12 @@ def build(row: dict[str, Any], bundle: Bundle | None, labels: dict[str, str]) ->
             supporting=[evidence(fp) for fp in h.get("supporting", [])],
             contradicting=[evidence(fp) for fp in h.get("contradicting", [])],
             verify=list(h.get("verify", [])),
+            remediate=list(h.get("remediate") or []),
         )
         for h in row.get("hypotheses") or []
     ]
 
-    banner = _BANNERS.get(outcome)
+    banner = banner_for(outcome)
     if banner is None and row.get("insufficient_evidence"):
         banner = ("warning", "The model declined to name a cause; unknowns says what it lacked.")
 
@@ -164,6 +185,14 @@ def build(row: dict[str, Any], bundle: Bundle | None, labels: dict[str, str]) ->
         warnings=warnings(bundle) if bundle else [NO_SNAPSHOT],
         receipt=receipt(row),
     )
+
+
+RISK_LEVEL = {"low": "info", "medium": "warning", "high": "error"}
+
+
+def remedy_heading(step: dict[str, Any]) -> str:
+    """'medium risk: <action>', with the risk first so it is read before the action."""
+    return f"{step.get('risk', 'unrated')} risk: {step.get('action', '')}"
 
 
 def _evidence(fp: str, label: str, f: Finding | None, excerpt: str) -> Evidence:
@@ -213,6 +242,7 @@ def receipt(row: dict[str, Any]) -> dict[str, str]:
         "model": str(row.get("model") or "-"),
         "prompt": f"v{row.get('prompt_version') or '-'}",
         "attempts": str(row.get("attempts") if row.get("attempts") is not None else "-"),
+        "requested by": str(row.get("requested_by") or "-"),
         "latency": f"{(row.get('latency_ms') or 0) / 1000:.1f} s",
         "tokens in/out": f"{row.get('input_tokens') or 0:,} / {row.get('output_tokens') or 0:,}",
         "cost": f"${cost:.4f}" if cost is not None else "not priced",

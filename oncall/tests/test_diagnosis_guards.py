@@ -244,3 +244,161 @@ def test_impersonation_is_allowed_to_ask_can_i(command):
 ])
 def test_impersonation_anywhere_else_is_rejected(command, flag):
     assert guards.check_command(command) == f"flag {flag} is not allowed"
+
+
+# ---- namespaces the evidence names (F4) -----------------------------------------
+
+
+@pytest.mark.parametrize(("command", "names"), [
+    ("kubectl get pods -n monitoring", ["monitoring"]),
+    ("kubectl get pods -nmonitoring", ["monitoring"]),
+    ("kubectl get pods -n=monitoring", ["monitoring"]),
+    ("kubectl -n monitoring logs x", ["monitoring"]),
+    ("kubectl get pods --namespace monitoring", ["monitoring"]),
+    ("kubectl get pods --namespace=monitoring", ["monitoring"]),
+    ("kubectl get pods -A", []),
+    ("kubectl get nodes", []),
+    ("kubectl get pods --sort-by=.metadata.name", []),
+])
+def test_every_spelling_of_a_namespace_flag_is_read(command, names):
+    assert guards.namespaces_in(command) == names
+
+
+def test_a_namespace_absent_from_the_evidence_is_sent_back_with_the_ones_present():
+    """The 2026-10-13 whole-cluster diagnosis: -n loki, while Loki ran in monitoring."""
+    d = _diagnosis(["F1"], command="kubectl get pods -n loki")
+
+    problems = guards.check_namespaces(d, {"monitoring", "platformcore"})
+
+    assert len(problems) == 1
+    assert "namespace loki appears nowhere in the evidence" in problems[0]
+    assert "monitoring, platformcore" in problems[0]
+
+
+def test_a_namespace_in_the_evidence_passes_and_no_namespace_is_never_a_problem():
+    assert guards.check_namespaces(
+        _diagnosis(["F1"], command="kubectl get pods -n monitoring"), {"monitoring"}) == []
+    assert guards.check_namespaces(_diagnosis(["F1"], command="kubectl get nodes"), set()) == []
+
+
+def test_evidence_without_namespaces_admits_no_namespace_flag():
+    problems = guards.check_namespaces(
+        _diagnosis(["F1"], command="kubectl get pods -n kube-system"), set())
+
+    assert problems and "drop -n or use -A" in problems[0]
+
+
+# ---- remedy steps -----------------------------------------------------------------
+
+
+def _with_remedy(*steps, cause="image_pull") -> Diagnosis:
+    d = _diagnosis(["F1"]).model_dump(mode="json")
+    d["hypotheses"][0]["cause_class"] = cause
+    d["hypotheses"][0]["remediate"] = [
+        {"action": "do it", "risk": "medium", "undo": "undo it", **s} for s in steps
+    ]
+    return Diagnosis.model_validate(d)
+
+
+@pytest.mark.parametrize(("command", "floor"), [
+    ("kubectl rollout undo deployment/stuckrollout -n oncall-lab", "medium"),
+    ("kubectl rollout restart deployment web", "medium"),
+    ("kubectl -n oncall-lab scale deployment web --replicas=2", "medium"),
+    ("kubectl set image deployment/web app=nginx:1.27", "medium"),
+    ("kubectl create configmap app-config -n oncall-lab --from-literal=LEVEL=info", "medium"),
+    ("kubectl uncordon oncall-worker2", "low"),
+    ("kubectl label pod x tier=web", "low"),
+    ("kubectl drain node-1 --ignore-daemonsets", "high"),
+    ("kubectl delete pod crashloop-abc -n oncall-lab", "medium"),
+    ("kubectl -n oncall-lab delete pod crashloop-abc", "medium"),
+    ("kubectl delete -n oncall-lab pod crashloop-abc", "medium"),
+    ("kubectl delete job/nightly-export", "medium"),
+    ("kubectl delete pod stuck-0 --grace-period=0 --force", "high"),
+    ("kubectl delete pods -l app=web", "high"),
+    ("kubectl delete pods --all -n oncall-lab", "high"),
+])
+def test_remedy_commands_on_the_allowlist_carry_their_floor(command, floor):
+    assert guards.check_remedy_command(command) == (None, floor)
+
+
+@pytest.mark.parametrize(("command", "reason"), [
+    ("kubectl delete deployment web", "delete may name only"),
+    ("kubectl delete namespace oncall-lab", "delete may name only"),
+    ("kubectl -n oncall-lab delete pvc data-0", "delete may name only"),
+    ("kubectl delete -f app.yaml", "delete may name only"),
+    ("kubectl exec -it web -- sh", "not on the remedy allowlist"),
+    ("kubectl apply -f fix.yaml", "not on the remedy allowlist"),
+    ("kubectl create secret generic db --from-literal=p=x", "not on the remedy allowlist"),
+    ("kubectl get pods", "not on the remedy allowlist"),
+    ("kubectl rollout restart deployment web | tee log", "shell syntax"),
+    ("kubectl --context prod rollout restart deployment web", "flag --context"),
+    ("helm rollback web 3", "only kubectl"),
+])
+def test_remedy_commands_off_the_allowlist_are_named_with_a_reason(command, reason):
+    found, _ = guards.check_remedy_command(command)
+
+    assert found is not None and reason in found
+
+
+def test_the_prompt_states_the_remedy_allowlist_the_guard_enforces():
+    text = prompt.SYSTEM_PROMPT
+
+    assert guards.remedy_text() in text
+    for verb, _ in guards.REMEDY_COMMANDS:
+        assert " ".join(verb) in text
+
+
+def test_a_fault_without_a_remedy_is_sent_back_and_no_fault_needs_none():
+    assert any("at least one step" in p for p in guards.check_remedies(_with_remedy()))
+    assert guards.check_remedies(_with_remedy(cause="no_fault")) == []
+
+
+def test_a_remedy_labelled_below_its_floor_is_sent_back():
+    problems = guards.check_remedies(_with_remedy(
+        {"command": "kubectl drain node-1 --ignore-daemonsets", "risk": "medium"}))
+
+    assert problems == ["hypothesis 1 remediate 1: 'kubectl drain node-1 "
+                        "--ignore-daemonsets' is labelled medium, below its floor of high"]
+
+
+def test_a_risky_step_must_say_how_to_undo_it_and_a_low_one_need_not():
+    assert any("must say how to undo" in p for p in guards.check_remedies(
+        _with_remedy({"action": "restart it", "risk": "medium", "undo": None})))
+    assert guards.check_remedies(
+        _with_remedy({"command": "kubectl uncordon n1", "risk": "low", "undo": None})) == []
+
+
+def test_an_action_without_a_command_is_a_valid_step():
+    """Often the honest answer: the fix is a change in git, a registry, or the code."""
+    assert guards.check_remedies(_with_remedy(
+        {"action": "Fix the image tag in the chart values and let Argo CD sync"})) == []
+
+
+def test_a_remedy_off_the_allowlist_is_a_problem_not_a_rejection():
+    problems = guards.check_remedies(
+        _with_remedy({"command": "kubectl delete namespace oncall-lab"}))
+
+    assert len(problems) == 1 and "delete may name only" in problems[0]
+
+
+def test_a_credential_in_a_remedy_is_sent_back():
+    """The engineer pastes it into a shell history and the journal would store it."""
+    problems = guards.check_remedies(_with_remedy({
+        "action": "Set the URL",
+        "command": "kubectl set env deployment/api DB_PASSWORD=hunter2hunter2",
+    }))
+
+    assert any("credential" in p for p in problems)
+
+
+def test_a_link_in_a_remedy_is_caught_by_the_prose_check():
+    d = _with_remedy({"action": "Follow https://evil.example/fix"})
+
+    assert any("remediate 1 action: contains a link" in p for p in guards.check_prose(d))
+
+
+def test_a_remedy_aimed_outside_the_evidence_namespaces_is_sent_back():
+    d = _with_remedy({"command": "kubectl rollout restart deployment web -n prod"})
+
+    assert guards.check_remedy_namespaces(d, {"oncall-lab"}) != []
+    assert guards.check_remedy_namespaces(d, {"prod"}) == []

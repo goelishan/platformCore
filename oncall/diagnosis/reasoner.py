@@ -6,9 +6,13 @@ One bundle in, one journal record out, whatever the model does.
     an outcome and the errors that produced it, because the journal measures failure
     rates and cannot measure what it never received.
   - A malformed answer, a citation to a finding that is not in the bundle, a link in the
-    prose, or a leading hypothesis that rests only on namespace neighbours or on blind
+    prose, a command aimed at a namespace the evidence never names, or a leading hypothesis that rests only on namespace neighbours or on blind
     sources earns one repair attempt, with the specific errors sent back as the tool
     result. All are mistakes the model can correct from that feedback.
+  - A remedy step that is off its allowlist, labelled below its risk floor, missing an
+    undo, carrying a credential or aimed outside the evidence's namespaces earns a
+    repair too. Remedies are meant to change the cluster, so a write there is not the
+    warning sign it is in verify; only honesty about the step is checked.
   - An unsafe verify command earns none. A model that proposes a write to the cluster has
     told us something about its reading of the incident, and asking it to try again only
     teaches it to hide that. The diagnosis is dropped and the record kept.
@@ -60,6 +64,14 @@ def _to_fingerprints(diagnosis: Diagnosis, labels: dict[str, str]) -> Diagnosis:
         h["supporting"] = [labels[c] for c in h["supporting"]]
         h["contradicting"] = [labels[c] for c in h["contradicting"]]
     return Diagnosis.model_validate(data)
+
+
+def evidence_namespaces(bundle: Bundle) -> set[str]:
+    """Every namespace the model was shown: the subject's and each finding's."""
+    found = {f.namespace for f in bundle.findings if f.namespace}
+    if bundle.scope and bundle.scope.namespace:
+        found.add(bundle.scope.namespace)
+    return found
 
 
 def _repair_turn(reply: bedrock.Reply, problems: list[str]) -> list[dict[str, Any]]:
@@ -148,6 +160,10 @@ def diagnose(
             problems = [f"{c} is not a finding ID in this bundle" for c in unknown]
             problems += guards.check_prose(diagnosis)
             problems += guards.check_grounding(diagnosis, by_label)
+            namespaces = evidence_namespaces(bundle)
+            problems += guards.check_namespaces(diagnosis, namespaces)
+            problems += guards.check_remedies(diagnosis)
+            problems += guards.check_remedy_namespaces(diagnosis, namespaces)
             if not problems:
                 kept = _to_fingerprints(diagnosis, p.labels)
                 outcome = Outcome.OK

@@ -85,6 +85,7 @@ DIAGNOSIS_COLUMNS = (
     "errors",
     "insufficient_evidence",
     "unknowns",
+    "requested_by",
 )
 
 

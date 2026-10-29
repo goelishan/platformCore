@@ -1,5 +1,5 @@
 """
-The long-running agent: collection, shipping and retention on their own cadence.
+The long-running agent: collection, shipping, retention and triage on their own cadence.
 
   - One thread, one job at a time. Every job writes the same SQLite buffer, which has
     one writer at a time anyway, and sequential jobs keep a slow API server from
@@ -12,6 +12,8 @@ The long-running agent: collection, shipping and retention on their own cadence.
   - The heartbeat file is touched after every pass of the loop, so the liveness probe
     tests that the scheduler is moving, not that the cluster is healthy. A dead API
     server is reported as unavailable sources; restarting the agent would not fix it.
+  - Triage (oncall/triage.py) runs last in each cycle: it reads what the collectors just
+    wrote, diagnoses what has been failing long enough, and closes what has gone quiet.
   - SIGTERM stops between jobs. A job in progress finishes, so no run row is left open
     by a deliberate shutdown.
 
@@ -137,6 +139,18 @@ def sweep_store() -> object:
     return result
 
 
+def triage() -> object:
+    from oncall import triage as t
+
+    report = t.run_once()
+    log.info(
+        "triage: diagnosed %s; resolved %d; skipped %d%s",
+        report.diagnosed or "none", len(report.resolved), len(report.skipped),
+        f"; witnesses blind: {', '.join(report.blind)}" if report.blind else "",
+    )
+    return report
+
+
 def jobs() -> list[Job]:
     """Collectors first, in registry order, which is least recoverable first: events are
     garbage-collected by the API server and lost if missed, so they run before anything
@@ -148,6 +162,11 @@ def jobs() -> list[Job]:
     out.append(Job("ship", config.SHIP_INTERVAL, ship, start_after=config.SHIP_INTERVAL / 2))
     out.append(Job("sweep:buffer", config.BUFFER_SWEEP_INTERVAL, sweep_buffer))
     out.append(Job("sweep:store", config.STORE_SWEEP_INTERVAL, sweep_store))
+    # Last, so a pass reads what this cycle's collectors have just written. Only where a
+    # diagnosis can be made at all: on kind there is no AWS identity to make one with.
+    if config.TRIAGE_ENABLED and config.DIAGNOSE_ENABLED:
+        out.append(Job("triage", config.TRIAGE_INTERVAL, triage,
+                       start_after=config.TRIAGE_START_AFTER))
     return out
 
 

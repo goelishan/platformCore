@@ -5,7 +5,8 @@ On-call triage UI: pick a subject, see the evidence, get ranked hypotheses to ve
     and every value shown is shaped by ui/view.py, which is tested without Streamlit.
   - Reads the buffer, and the store for history the buffer has swept. Collect now runs
     the registered collectors; nothing else here reaches the cluster.
-  - Diagnose-only. Commands are shown to copy and run, never executed.
+  - Diagnose-only. Commands are shown to copy and run, never executed, remedies included:
+    each is labelled with its risk and how to undo it, and the engineer decides.
   - Optimised for time to a credible hypothesis: evidence gaps, then the first command to
     run, then the hypotheses, before anything else.
 
@@ -66,6 +67,15 @@ def show_diagnosis(v: view.DiagnosisView) -> None:
             for c in h.verify:
                 st.code(c["command"], language="bash")
                 st.caption(c["purpose"])
+            if h.remediate:
+                st.markdown("**If confirmed, to fix** (nothing here runs on its own)")
+                for step in h.remediate:
+                    level = view.RISK_LEVEL.get(step.get("risk"), "warning")
+                    getattr(st, level)(view.remedy_heading(step))
+                    if step.get("command"):
+                        st.code(step["command"], language="bash")
+                    if step.get("undo"):
+                        st.caption(f"Undo: {step['undo']}")
             label = f"Evidence: {len(h.supporting)} supporting, {len(h.contradicting)} against"
             with st.expander(label):
                 for side, items in (("supports", h.supporting), ("against", h.contradicting)):

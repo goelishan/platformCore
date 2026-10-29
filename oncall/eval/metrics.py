@@ -29,6 +29,27 @@ class Case:
     also_accept: tuple[str, ...] = ()
     scored: bool = True
     rationale: str = ""
+    # Words a fix for this fault has to name: the missing setting, the probe, the node.
+    # Matched case-insensitively against the rank-1 remedies. A crude test, and on
+    # purpose: it cannot say a remedy is good, only that one which names none of these
+    # is not about this fault.
+    remedy_terms: tuple[str, ...] = ()
+
+
+def remedy_text(hypothesis: Any) -> str:
+    """Everything a hypothesis's remedies say, lowercased, for term matching."""
+    steps = getattr(hypothesis, "remediate", None)
+    if steps is None:
+        steps = hypothesis.get("remediate") or []
+    parts = []
+    for step in steps:
+        get = step.get if isinstance(step, dict) else lambda k, st=step: getattr(st, k)
+        parts += [get("action") or "", get("command") or "", get("undo") or ""]
+    return " ".join(parts).lower()
+
+
+def names_any(text: str, terms: tuple[str, ...]) -> bool:
+    return any(t.lower() in text for t in terms)
 
 
 @dataclass
@@ -53,6 +74,22 @@ class Run:
     def top3(self) -> bool:
         accepted = {self.case.expected, *self.case.also_accept}
         return bool(accepted & set(self.causes))
+
+    @property
+    def leading(self) -> Any:
+        d = self.record.diagnosis
+        return d.hypotheses[0] if d and d.hypotheses else None
+
+    @property
+    def remedy_relevant(self) -> bool:
+        """The rank-1 remedies name something this fault's fix must touch."""
+        return self.leading is not None and names_any(
+            remedy_text(self.leading), self.case.remedy_terms)
+
+    @property
+    def remedy_actionable(self) -> bool:
+        """At least one rank-1 remedy carries a command the engineer can paste."""
+        return self.leading is not None and any(s.command for s in self.leading.remediate)
 
 
 @dataclass
@@ -112,6 +149,8 @@ class Summary:
     mean_cost_usd: float | None
     total_cost_usd: float | None
     agreement: Rate
+    remedy_relevance: Rate = field(default_factory=lambda: Rate(0, 0))
+    remedy_actionable: Rate = field(default_factory=lambda: Rate(0, 0))
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -151,6 +190,16 @@ def summarise(runs: list[Run]) -> Summary:
         mean_cost_usd=statistics.fmean(costs) if priced else None,
         total_cost_usd=sum(costs) if priced else None,
         agreement=agreement(runs),
+        # Over every run of a case with terms, failures included, as accuracy counts them.
+        remedy_relevance=Rate(
+            sum(r.remedy_relevant for r in runs if r.case.remedy_terms),
+            sum(1 for r in runs if r.case.remedy_terms),
+        ),
+        # Over runs whose leading cause is a fault; no_fault has nothing to fix.
+        remedy_actionable=Rate(
+            sum(r.remedy_actionable for r in ok if r.top and r.top != "no_fault"),
+            sum(1 for r in ok if r.top and r.top != "no_fault"),
+        ),
     )
 
 

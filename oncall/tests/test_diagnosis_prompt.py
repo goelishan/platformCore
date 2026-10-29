@@ -152,14 +152,15 @@ def test_the_tool_carries_the_output_contract():
     assert "CauseClass" in tool["inputSchema"]["json"]["$defs"]
 
 
-def test_v5_states_every_rule_the_reasoner_enforces():
+def test_v6_states_every_rule_the_reasoner_enforces():
     """Each of these is checked in code and earns a repair. A model never told the rule
     pays for the repair on every bundle where it matters; on 4 Oct, 5 of 17 did, and on
-    8 Oct the citation cap and the can-i exception cost three more. v5 raises the citation
-    and summary bounds and keeps stating them."""
+    8 Oct the citation cap and the can-i exception cost three more. v5 raised the citation
+    and summary bounds; v6 adds the namespace rule (F4, drill 2026-10-13)."""
     text = prompt.SYSTEM_PROMPT
 
-    assert prompt.PROMPT_VERSION == "5"
+    assert prompt.PROMPT_VERSION == "6"
+    assert "must be one that appears in the evidence" in text
     assert f"at most {MAX_CITATIONS} IDs" in text
     assert "are allowed only after auth can-i" in text
     assert f"at most {MAX_SUMMARY_CHARS} characters" in text

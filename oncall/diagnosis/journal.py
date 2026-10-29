@@ -53,4 +53,5 @@ def journal(conn: Connection, record: DiagnosisRecord) -> str:
         errors=record.errors,
         insufficient_evidence=d.insufficient_evidence if d else None,
         unknowns=d.unknowns if d else None,
+        requested_by=record.requested_by,
     )

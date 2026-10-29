@@ -67,6 +67,21 @@ class Command(_Strict):
     purpose: Annotated[str, Field(min_length=1, max_length=300)]
 
 
+class RemedyStep(_Strict):
+    """One thing the engineer can do to fix the cause, once it is confirmed.
+
+    Never run by the agent, which has no write path to the cluster. The command is
+    optional because the right fix is often outside kubectl's reach (a change in git
+    that Argo CD will sync, a registry credential, a code fix), and a command invented
+    to fill the field would be worse than an honest sentence.
+    """
+
+    action: Annotated[str, Field(min_length=1, max_length=300)]
+    command: Annotated[str, Field(min_length=1, max_length=300)] | None = None
+    risk: Literal["low", "medium", "high"]
+    undo: Annotated[str, Field(min_length=1, max_length=300)] | None = None
+
+
 class Hypothesis(_Strict):
     rank: Annotated[int, Field(ge=1, le=3)]
     cause_class: CauseClass
@@ -76,6 +91,9 @@ class Hypothesis(_Strict):
     supporting: Annotated[list[CitationId], Field(min_length=1, max_length=MAX_CITATIONS)]
     contradicting: Annotated[list[CitationId], Field(max_length=MAX_CITATIONS)] = []
     verify: Annotated[list[Command], Field(min_length=1, max_length=3)]
+    # Required in the tool schema, defaulted here: journal rows from before prompt v6
+    # carry no remedies and must still read back. See tool_input_schema().
+    remediate: Annotated[list[RemedyStep], Field(max_length=3)] = []
 
     @model_validator(mode="after")
     def _one_side_per_citation(self) -> Hypothesis:
@@ -107,8 +125,14 @@ class Diagnosis(_Strict):
 
 
 def tool_input_schema() -> dict[str, Any]:
-    """The record_diagnosis tool's inputSchema: shape only, see the module docstring."""
-    return Diagnosis.model_json_schema()
+    """The record_diagnosis tool's inputSchema: shape only, see the module docstring.
+
+    remediate is marked required here although the model defaults it: a key the model
+    may omit is a key it will omit, and the default exists only for old journal rows."""
+    schema = Diagnosis.model_json_schema()
+    hypothesis = schema["$defs"]["Hypothesis"]
+    hypothesis["required"] = sorted({*hypothesis.get("required", []), "remediate"})
+    return schema
 
 
 # ---- journal record --------------------------------------------------------
@@ -143,6 +167,9 @@ class DiagnosisRecord(BaseModel):
     cost_usd: float | None = None
     diagnosis: Diagnosis | None = None
     errors: list[str] = []
+    # manual or auto. Set by diagnosis.service, which knows who asked; the reasoner
+    # does not, and an eval run is neither.
+    requested_by: str | None = None
 
     @model_validator(mode="after")
     def _diagnosis_only_when_ok(self) -> DiagnosisRecord:

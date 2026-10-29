@@ -91,19 +91,23 @@ def preview(b: assembler.Bundle) -> Preview:
 
 
 def diagnose(b: assembler.Bundle, cluster: str, subject: str | None,
-             client: Any = None) -> Diagnosed:
+             client: Any = None, trigger: str = "manual") -> Diagnosed:
+    """trigger names who asked: manual from the UI or make diagnose, auto from the
+    agent's triage loop. It is recorded on a new incident only; a reused incident keeps
+    the trigger it was opened with."""
     with lz.connect() as conn:
         incident = lz.unresolved_incident(conn, cluster, subject)
         reused = incident is not None
         if incident is None:
             incident = lz.open_incident(
                 conn, cluster, b.scope.namespace if b.scope else None,
-                trigger="manual", title=subject,
+                trigger=trigger, title=subject,
             )
         attached = lz.attach_signal_ids(conn, incident, b.candidate_signal_ids)
 
     snapshots.save(b)
     record = reasoner.diagnose(b, incident_id=incident, client=client)
+    record = record.model_copy(update={"requested_by": trigger})
     with lz.connect() as conn:
         journal(conn, record)
     return Diagnosed(record, b, incident, reused, attached, labels(b))
@@ -115,6 +119,7 @@ def replay(diagnosis_id: str, client: Any = None) -> Replayed:
         raise LookupError(f"no diagnosis {diagnosis_id} in the buffer or the store")
     b = snapshots.load(old["bundle_sha256"])
     new = reasoner.diagnose(b, incident_id=old["incident_id"], client=client)
+    new = new.model_copy(update={"requested_by": "manual"})
     with lz.connect() as conn:
         journal(conn, new)
     return Replayed(old, new, b)

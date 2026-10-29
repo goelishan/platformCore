@@ -49,14 +49,17 @@ def watching_since(conn: Connection, cluster: str) -> datetime | None:
     "no earlier row" describes where the store's memory begins, and a problem weeks old
     reads as new: found live on 2026-09-29, a pod on its 270th restart labelled NEW.
 
-    collected_at rather than event_time. An event can carry a timestamp from long
-    before anyone was watching, and the horizon is when watching began.
+    Read from cluster_watch, the first-contact row the writer records once per cluster
+    and never moves. It used to be MIN(collected_at) over signals, which drifted forward
+    because collected_at is rewritten on every upsert (F5, drill 2026-10-13). A horizon,
+    not an event time: an event can carry a timestamp from long before anyone watched.
 
-    Unindexed, so a scan across every partition. Asked once per bundle.
+    Retention is not reflected here. A problem whose rows expired before it recurred
+    reads as new; its rows are only kept beyond retention when attached to an incident.
     """
     row = fetch_one(
         conn,
-        "SELECT MIN(collected_at) AS since FROM signals WHERE cluster = %s",
+        "SELECT first_contact_at AS since FROM cluster_watch WHERE cluster = %s",
         (cluster,),
     )
     return row["since"] if row else None

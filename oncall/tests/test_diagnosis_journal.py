@@ -284,3 +284,39 @@ def test_a_prompt_too_large_record_ships_with_no_prompt_receipt(buffer, store_db
     assert dict(diag) == {"outcome": "prompt_too_large", "prompt_sha256": None,
                           "attempts": 0, "cost_usd": None}
     assert inc["state"] != "diagnosed"
+
+
+def test_remedy_steps_are_journalled_inside_their_hypothesis(buffer):
+    """Kept whole with the hypothesis they fix, never flattened beside verify: commands
+    stays the list of what was suggested to confirm, which nothing here changes."""
+    data = DIAGNOSIS.model_dump(mode="json")
+    data["hypotheses"][0]["remediate"] = [{
+        "action": "Roll back to the last revision that pulled",
+        "command": "kubectl rollout undo deployment/x", "risk": "medium",
+        "undo": "kubectl rollout undo deployment/x",
+    }]
+    incident = open_incident()
+    with lz.connect() as conn:
+        journal(conn, record(incident, diagnosis=Diagnosis.model_validate(data)))
+        found = conn.execute("SELECT hypotheses, commands FROM diagnoses").fetchone()
+
+    hypotheses, commands = json.loads(found["hypotheses"]), json.loads(found["commands"])
+    assert hypotheses[0]["remediate"][0]["command"] == "kubectl rollout undo deployment/x"
+    assert [c["command"] for c in commands] == [
+        "kubectl describe pod x", "kubectl rollout history deployment/x"]
+
+
+def test_who_asked_is_journalled_and_reaches_the_store(buffer, store_db):
+    """requested_by is what the triage loop's spend cap counts, and what the evaluation
+    splits by. Lost in shipping, both would read only the buffer's two days."""
+    from oncall import shipper
+
+    incident = open_incident()
+    with lz.connect() as conn:
+        journal(conn, record(incident, requested_by="auto"))
+    shipper.ship_all()
+
+    with store_db.connect() as conn:
+        found = store_db.fetch_one(conn, "SELECT requested_by FROM diagnoses")
+
+    assert found["requested_by"] == "auto"

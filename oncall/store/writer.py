@@ -65,6 +65,24 @@ def ensure_partitions(conn: Connection, rows: list[dict[str, Any]]) -> set[str]:
     return created
 
 
+# DO NOTHING, never DO UPDATE: the first contact is the one fact about a cluster that a
+# later write must not be able to move. See migration 0006.
+_FIRST_CONTACT = (
+    "INSERT INTO cluster_watch (cluster, first_contact_at) VALUES (%(cluster)s, %(at)s) "
+    "ON CONFLICT (cluster) DO NOTHING"
+)
+
+
+def first_contacts(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The earliest collected_at per cluster in one batch."""
+    earliest: dict[str, Any] = {}
+    for r in rows:
+        at = r.get("collected_at")
+        if at is not None and (r["cluster"] not in earliest or at < earliest[r["cluster"]]):
+            earliest[r["cluster"]] = at
+    return [{"cluster": c, "at": at} for c, at in sorted(earliest.items())]
+
+
 def upsert_signals(conn: Connection, rows: list[dict[str, Any]]) -> int:
     if not rows:
         return 0
@@ -72,6 +90,7 @@ def upsert_signals(conn: Connection, rows: list[dict[str, Any]]) -> int:
     ensure_partitions(conn, rows)
     with conn.cursor() as cur:
         cur.executemany(_UPSERT_SIGNAL, rows)
+        cur.executemany(_FIRST_CONTACT, first_contacts(rows))
     return len(rows)
 
 

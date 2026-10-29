@@ -13,6 +13,7 @@ metadata:
     {{- include "oncall.labels" . | nindent 4 }}
 data:
   ONCALL_ENV: {{ .Values.env | quote }}
+  ONCALL_RUNTIME: "kubernetes"
   ONCALL_CLUSTER: {{ .Values.clusterName | quote }}
   ONCALL_NAMESPACES: {{ join "," .Values.namespaces | quote }}
   {{- if .Values.store.inCluster.enabled }}
@@ -29,6 +30,12 @@ data:
   ONCALL_BEDROCK_REGION: {{ .Values.aws.region | quote }}
   ONCALL_BEDROCK_MODEL_ID: {{ .Values.bedrock.modelId | quote }}
   ONCALL_DIAGNOSE_ENABLED: {{ .Values.bedrock.enabled | quote }}
+  ONCALL_TRIAGE_ENABLED: {{ .Values.triage.enabled | quote }}
+  ONCALL_TRIAGE_INTERVAL: {{ .Values.triage.intervalSeconds | quote }}
+  ONCALL_TRIAGE_MIN_SEVERITY: {{ .Values.triage.minSeverity | quote }}
+  ONCALL_TRIAGE_MAX_PER_HOUR: {{ .Values.triage.maxPerHour | quote }}
+  ONCALL_TRIAGE_MAX_PER_TICK: {{ .Values.triage.maxPerTick | quote }}
+  ONCALL_TRIAGE_RESOLVE_QUIET_SECONDS: {{ .Values.triage.resolveQuietSeconds | quote }}
   ONCALL_PRICE_INPUT_PER_MTOK: {{ .Values.bedrock.priceInputPerMTok | quote }}
   ONCALL_PRICE_OUTPUT_PER_MTOK: {{ .Values.bedrock.priceOutputPerMTok | quote }}
 {{- if .Values.store.inCluster.enabled }}

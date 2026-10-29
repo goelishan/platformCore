@@ -1,4 +1,4 @@
-.PHONY: up down down-all rebuild status logs curl helm-relock helm-pins lock-python
+.PHONY: up down down-all predestroy sweep rebuild status logs curl helm-relock helm-pins lock-python
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -147,7 +147,34 @@ up:
 # Teardown order: eks (children first, OIDC last) -> edge -> compute ->
 # data -> network endpoints -> network NAT (route first, then GW, then
 # EIP - reverse of creation order so each dependency unblocks the next).
-down:
+#--------------------------------------------------------------------------------------------------------
+# TEARDOWN GUARDS
+#--------------------------------------------------------------------------------------------------------
+#
+# Both destroy targets run predestroy first and sweep last (F7, drill 2026-10-13). Before,
+# they were three commands to remember, and the one teardown that skipped them (U1, a
+# network drop mid down-all) left ALBs and volumes billing and the VPC undeletable.
+#
+#   predestroy  the cluster exists: scripts/predestroy.sh must succeed or nothing is
+#               destroyed. The cluster is gone: nothing left to empty, carry on.
+#   sweep       after terraform destroy, deletes whatever the in-cluster controllers
+#               created and could no longer clean up. It refuses while a cluster exists,
+#               so it can only ever run on orphans.
+
+CLUSTER_EXISTS = aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1
+
+predestroy:
+	@if $(CLUSTER_EXISTS); then \
+	  scripts/predestroy.sh; \
+	else \
+	  echo "==> Cluster not found: nothing to empty before destroy."; \
+	fi
+
+sweep:
+	scripts/sweep-orphans.sh --delete
+
+
+down: predestroy
 	@echo "==> Pre-destroy: removing Helm releases so the ALB controller cleans up its ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
@@ -205,9 +232,11 @@ down:
 	  -target=module.network.aws_vpc_endpoint.secretsmanager \
 	  -target=module.network.aws_vpc_endpoint.ec2 \
 	  -target=module.network.aws_vpc_endpoint.sts \
+	  -target=module.network.aws_vpc_endpoint.bedrock_runtime \
 	  -target=module.network.aws_route.private_default \
 	  -target=module.network.aws_nat_gateway.main \
 	  -target=module.network.aws_eip.nat
+	scripts/sweep-orphans.sh --delete
 
 
 # Full destroy: everything, including ECR repo + images and the free VPC
@@ -223,7 +252,7 @@ down:
 #   anything) -> terraform destroy.
 #   ECR images are handled by force_delete=true on the aws_ecr_repository
 #   resource (no longer needs manual image deletion before destroy).
-down-all:
+down-all: predestroy
 	@echo "==> Pre-destroy: removing Helm releases and waiting for ALB controller to clean up the ALB..."
 	@if aws eks describe-cluster --name platformcore --region us-east-1 --no-cli-pager >/dev/null 2>&1; then \
 	  aws eks update-kubeconfig --name platformcore --region us-east-1 --no-cli-pager 2>/dev/null || true; \
@@ -245,6 +274,7 @@ down-all:
 	  echo "  Cluster not found - skipping Helm cleanup."; \
 	fi
 	cd terraform && terraform destroy -auto-approve
+	scripts/sweep-orphans.sh --delete
 
 
 

@@ -9,44 +9,56 @@
 #
 #   - scored: false keeps a case in the report and out of accuracy, with the reason here
 #
+#   - remedy_terms: words the rank-1 remedy has to name for this fault (any one, case
+#     insensitive). It cannot prove a remedy good, only catch one about something else
+#
 # Labels checked against oncall/dev/broken-workloads.yaml on 2026-10-04.
 
 crashloop:
   expected: config_missing
   also_accept: [app_crash]
   rationale: 'exits 1 after logging "FATAL: DATABASE_URL not set"; the missing setting is the cause'
+  remedy_terms: ["DATABASE_URL"]
 
 oomkill:
   expected: oom_killed
   rationale: 'allocates past its limit; terminated OOMKilled, exit 137'
+  remedy_terms: ["memory"]
 
 badimage:
   expected: image_pull
   rationale: 'registry.invalid does not resolve; ErrImagePull then ImagePullBackOff'
+  remedy_terms: ["image"]
 
 configerror:
   expected: config_missing
   rationale: 'references a key in a ConfigMap that does not exist; CreateContainerConfigError'
+  remedy_terms: ["configmap", "config map"]
 
 unschedulable:
   expected: unschedulable_resources
   rationale: 'requests more CPU than any node has; FailedScheduling, never placed'
+  remedy_terms: ["cpu", "request"]
 
 unboundpvc:
   expected: pvc_unbound
   rationale: 'its PVC names a class no provisioner serves; Pending on storage, not capacity'
+  remedy_terms: ["storageclass", "storage class", "storageClassName"]
 
 probefail:
   expected: liveness_probe
   rationale: 'healthy process killed by a failing liveness probe on a fixed interval'
+  remedy_terms: ["liveness"]
 
 notready:
   expected: readiness_probe
   rationale: 'runs but never passes readiness; the Service of the same name has 0 ready endpoints'
+  remedy_terms: ["readiness"]
 
 noendpoints:
   expected: selector_mismatch
   rationale: 'the Service selects app=noendpoint, one character short of its healthy pods'
+  remedy_terms: ["selector"]
 
 healthy:
   expected: no_fault
@@ -55,10 +67,12 @@ healthy:
 failingjob:
   expected: app_crash
   rationale: 'every attempt exits 1 ("migration failed"); the Job''s backoff is the consequence'
+  remedy_terms: ["migration"]
 
 failingcronjob:
   expected: app_crash
   rationale: 'each scheduled run exits 1 ("nightly export: connection refused")'
+  remedy_terms: ["connection", "export"]
 
 leakylogger:
   expected: app_crash
@@ -67,10 +81,12 @@ leakylogger:
 stuckrollout:
   expected: image_pull
   rationale: 'stage 5; the new ReplicaSet cannot pull registry.invalid/app:v2 while old pods serve'
+  remedy_terms: ["rollout undo", "image"]
 
 oncall-worker2:
   expected: node_unschedulable
   rationale: 'stage 5; the node cordoned by `kubectl cordon $(kubectl get nodes -o name | tail -1)`'
+  remedy_terms: ["uncordon"]
 
 stuckterminating:
   expected: termination_stuck

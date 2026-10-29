@@ -222,3 +222,23 @@ def test_a_failed_record_never_carries_a_diagnosis(outcome):
 
     r = DiagnosisRecord.model_validate(_record(outcome=outcome, diagnosis=None, errors=["x"]))
     assert r.diagnosis is None
+
+def test_the_tool_schema_requires_remedies_while_old_rows_still_read_back():
+    """Bedrock enforces the tool schema, so a key it marks required is always present.
+    The Python default exists only for journal rows written before prompt v6."""
+    required = tool_input_schema()["$defs"]["Hypothesis"]["required"]
+    old_row = _with()
+
+    assert "remediate" in required
+    assert "remediate" not in old_row["hypotheses"][0]
+    assert Diagnosis.model_validate(old_row).hypotheses[0].remediate == []
+
+
+def test_a_remedy_step_rejects_an_unknown_risk_and_an_invented_field():
+    d = _with()
+    d["hypotheses"][0]["remediate"] = [{"action": "a", "risk": "none"}]
+    with pytest.raises(ValidationError, match="risk"):
+        Diagnosis.model_validate(d)
+    d["hypotheses"][0]["remediate"] = [{"action": "a", "risk": "low", "auto_apply": True}]
+    with pytest.raises(ValidationError, match="auto_apply"):
+        Diagnosis.model_validate(d)

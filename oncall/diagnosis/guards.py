@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 import shlex
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Any
 
 from oncall.diagnosis.schema import Diagnosis
@@ -134,17 +134,19 @@ def _verb_and_rest(tokens: list[str]) -> list[str] | None:
     return tokens[i:] if i < len(tokens) else None
 
 
-def check_command(command: str) -> str | None:
-    """None when the command is allowed, otherwise the reason it is not."""
+def _screen(command: str) -> tuple[str | None, list[str], list[str] | None]:
+    """The rules every suggested command is held to, read-only or not: one kubectl
+    invocation, no shell, no other identity or server, no Secret printed. Returns the
+    reason it fails (or None), its tokens and the tokens from the verb onward."""
     for meta in SHELL_METACHARACTERS:
         if meta in command:
-            return f"shell syntax {meta!r} is not allowed"
+            return f"shell syntax {meta!r} is not allowed", [], None
     try:
         tokens = shlex.split(command)
     except ValueError as e:
-        return f"cannot be parsed: {e}"
+        return f"cannot be parsed: {e}", [], None
     if not tokens or tokens[0] != "kubectl":
-        return "only kubectl commands are allowed"
+        return "only kubectl commands are allowed", tokens, None
 
     rest = _verb_and_rest(tokens)
     can_i = rest is not None and tuple(rest[: len(_CAN_I)]) == _CAN_I
@@ -157,17 +159,25 @@ def check_command(command: str) -> str | None:
             continue
         # -v8 is -v with its value attached, as pflag allows for any short flag.
         if flag in FORBIDDEN_FLAGS or re.fullmatch(r"-v\d+", flag):
-            return f"flag {flag} is not allowed"
+            return f"flag {flag} is not allowed", tokens, rest
         if not token.startswith("-") and _names_secret(token):
             names_secret = True
 
     if names_secret:
         printed = [o for o in _output_formats(tokens) if o not in SAFE_SECRET_OUTPUTS]
         if printed:
-            return f"printing Secret values (output {printed[0]}) is not allowed"
+            return f"printing Secret values (output {printed[0]}) is not allowed", tokens, rest
 
     if rest is None:
-        return "no kubectl verb"
+        return "no kubectl verb", tokens, rest
+    return None, tokens, rest
+
+
+def check_command(command: str) -> str | None:
+    """None when the command is allowed, otherwise the reason it is not."""
+    reason, _, rest = _screen(command)
+    if reason or rest is None:
+        return reason
     for allowed in ALLOWED_COMMANDS:
         if tuple(rest[: len(allowed)]) == allowed:
             return None
@@ -207,6 +217,10 @@ def check_prose(diagnosis: Diagnosis) -> list[str]:
         fields += [(f"hypothesis {h.rank} title", h.title),
                    (f"hypothesis {h.rank} mechanism", h.mechanism)]
         fields += [(f"hypothesis {h.rank} verify purpose", c.purpose) for c in h.verify]
+        for i, step in enumerate(h.remediate, 1):
+            fields += [(f"hypothesis {h.rank} remediate {i} {name}", text)
+                       for name, text in (("action", step.action), ("undo", step.undo))
+                       if text]
     return [f"{where}: contains a link; the diagnosis must not point outside the evidence"
             for where, text in fields if _URL.search(text)]
 
@@ -254,3 +268,204 @@ def check_grounding(
             "nothing; cite evidence of the cause, or set insufficient_evidence"
         )
     return problems
+
+
+def namespaces_in(command: str) -> list[str]:
+    """Every namespace a command names with -n or --namespace, in any spelling kubectl
+    accepts: -n x, -nx, -n=x, --namespace x, --namespace=x. A command that does not parse
+    names none here; check_command has already rejected it."""
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return []
+    found = []
+    for i, token in enumerate(tokens):
+        flag, eq, inline = token.partition("=")
+        if flag in ("-n", "--namespace"):
+            value = inline if eq else (tokens[i + 1] if i + 1 < len(tokens) else "")
+        elif token.startswith("-n") and not token.startswith("--") and len(token) > 2:
+            value = token[2:]
+        else:
+            continue
+        if value:
+            found.append(value)
+    return found
+
+
+def check_namespaces(diagnosis: Diagnosis, namespaces: Collection[str]) -> list[str]:
+    """Commands that point at a namespace the evidence never mentions, one line each.
+
+    check_command decides whether a command is safe; this decides whether it can be
+    about this incident. On 2026-10-13 a whole-cluster diagnosis sent the engineer to
+    -n loki while Loki ran in monitoring: a read-only command that answers nothing, at
+    the moment someone is relying on it. The model can only know a namespace from the
+    evidence, so a namespace outside it is a guess and earns a repair. -A is unaffected.
+    """
+    allowed = set(namespaces)
+    hint = (f"use one of {', '.join(sorted(allowed))}" if allowed
+            else "the evidence names no namespace, so drop -n or use -A")
+    problems = []
+    for h in diagnosis.hypotheses:
+        for c in h.verify:
+            for ns in namespaces_in(c.command):
+                if ns not in allowed:
+                    problems.append(
+                        f"hypothesis {h.rank}: {c.command!r}: namespace {ns} appears "
+                        f"nowhere in the evidence; {hint}"
+                    )
+    return problems
+
+
+
+# ---- remedy steps ------------------------------------------------------------------
+# A remedy changes the cluster, so it is held to a different list from verify, and it is
+# never run by anything in this package: the agent has no write path at all, and a remedy
+# reaches the cluster only when the engineer types it. These rules exist so that what the
+# engineer is shown is honest about its blast radius, not to make it safe to automate.
+#
+# Each verb carries the lowest risk it may be labelled with. A model that calls a drain
+# "low" is understating what the engineer is about to do; the floor makes that a repair
+# rather than a label the engineer has to second-guess at 3am.
+
+RISK_ORDER = {"low": 0, "medium": 1, "high": 2}
+
+REMEDY_COMMANDS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("rollout", "restart"), "medium"),
+    (("rollout", "undo"), "medium"),
+    (("rollout", "pause"), "low"),
+    (("rollout", "resume"), "low"),
+    (("scale",), "medium"),
+    (("autoscale",), "medium"),
+    (("set", "image"), "medium"),
+    (("set", "env"), "medium"),
+    (("set", "resources"), "medium"),
+    (("patch",), "medium"),
+    (("edit",), "medium"),
+    (("label",), "low"),
+    (("annotate",), "low"),
+    (("uncordon",), "low"),
+    (("cordon",), "medium"),
+    (("taint",), "medium"),
+    (("drain",), "high"),
+    (("create", "configmap"), "medium"),
+    (("delete",), "medium"),
+)
+
+# What delete may name. A pod or a Job is recreated by its owner or is disposable by
+# design; anything else (a Deployment, a PVC, a namespace) loses state or configuration
+# that the evidence cannot show is safe to lose, so it is described, never commanded.
+DELETABLE = frozenset({"pod", "pods", "po", "job", "jobs"})
+
+# Deletion that skips graceful termination. The remedy for a pod stuck terminating, and
+# also the way to leave a volume attached to a node that never saw the pod stop.
+_FORCED = frozenset({"--force", "--grace-period=0", "--now"})
+
+
+# Deletion of every match rather than of one named object.
+_MASS = frozenset({"--all", "-l", "--selector", "--field-selector", "-A", "--all-namespaces"})
+
+# Flags whose value is a separate token, so the value is not mistaken for the resource.
+_VALUE_FLAGS = frozenset({"-n", "--namespace", "-l", "--selector", "--field-selector",
+                          "-o", "--output", "-f", "--filename", "--grace-period", "--timeout"})
+
+
+def _first_positional(tokens: list[str]) -> str:
+    skip = False
+    for t in tokens:
+        if skip:
+            skip = False
+            continue
+        if t.startswith("-"):
+            skip = t in _VALUE_FLAGS
+            continue
+        return t
+    return ""
+
+
+def remedy_text() -> str:
+    """The remedy allowlist with its risk floors, as the system prompt states it."""
+    by_floor: dict[str, list[str]] = {}
+    for verb, floor in REMEDY_COMMANDS:
+        by_floor.setdefault(floor, []).append(" ".join(verb))
+    parts = [f"{floor}: {', '.join(verbs)}" for floor, verbs in
+             sorted(by_floor.items(), key=lambda kv: RISK_ORDER[kv[0]])]
+    return (
+        "; ".join(parts)
+        + f". delete may name only {', '.join(sorted(DELETABLE))}; a forced delete "
+        "(--force, --grace-period=0) or one by selector or --all is high"
+    )
+
+
+def check_remedy_command(command: str) -> tuple[str | None, str]:
+    """(reason it is not allowed or None, the lowest risk it may be labelled)."""
+    reason, tokens, rest = _screen(command)
+    if reason or rest is None:
+        return reason, "high"
+    for verb, floor in REMEDY_COMMANDS:
+        if tuple(rest[: len(verb)]) != verb:
+            continue
+        if verb == ("delete",):
+            target = _first_positional(rest[1:])
+            if target.split("/", 1)[0].lower() not in DELETABLE:
+                return (f"delete may name only {', '.join(sorted(DELETABLE))}; describe "
+                        "any other deletion as an action without a command"), "high"
+            flags = {t.split("=", 1)[0] if t.startswith(("--force", "--all")) else t
+                     for t in tokens}
+            if _FORCED & flags or _MASS & flags:
+                floor = "high"
+        return None, floor
+    return (f"'{' '.join(rest[:2])}' is not on the remedy allowlist; describe the step "
+            "as an action without a command"), "high"
+
+
+def check_remedies(diagnosis: Diagnosis) -> list[str]:
+    """Problems with the remedy steps, one line each. All earn a repair: unlike verify,
+    a remedy is expected to change the cluster, so a write is not a sign of a misread
+    incident. What is checked is whether the step is honest and usable.
+
+      - every hypothesis that names a fault offers at least one step;
+      - a command is one the remedy allowlist knows, labelled no lower than its floor;
+      - medium and high steps say how to undo them;
+      - no credential appears in a step: the engineer will paste it into a shell
+        history, and the journal would store it.
+    """
+    from oncall.envelope.redact import rules_fired
+
+    problems = []
+    for h in diagnosis.hypotheses:
+        where = f"hypothesis {h.rank}"
+        if str(h.cause_class) != "no_fault" and not h.remediate:
+            problems.append(f"{where}: remediate must give at least one step for a fault")
+        for i, step in enumerate(h.remediate, 1):
+            at = f"{where} remediate {i}"
+            if step.command:
+                reason, floor = check_remedy_command(step.command)
+                if reason:
+                    problems.append(f"{at}: {step.command!r}: {reason}")
+                elif RISK_ORDER[step.risk] < RISK_ORDER[floor]:
+                    problems.append(
+                        f"{at}: {step.command!r} is labelled {step.risk}, below its floor "
+                        f"of {floor}"
+                    )
+            if step.risk != "low" and not step.undo:
+                problems.append(f"{at}: a {step.risk} risk step must say how to undo it")
+            fired = rules_fired(" ".join(filter(None, (step.action, step.command, step.undo))))
+            if fired:
+                problems.append(
+                    f"{at}: looks like it carries a credential ({', '.join(fired)}); "
+                    "reference the Secret that holds it instead"
+                )
+    return problems
+
+
+def check_remedy_namespaces(diagnosis: Diagnosis, namespaces: Collection[str]) -> list[str]:
+    """The namespace rule for remedy commands, which matter more than verify: a remedy
+    aimed at the wrong namespace changes something nobody was diagnosing."""
+    allowed = set(namespaces)
+    return [
+        f"hypothesis {h.rank} remediate {i}: {step.command!r}: namespace {ns} appears "
+        "nowhere in the evidence"
+        for h in diagnosis.hypotheses
+        for i, step in enumerate(h.remediate, 1) if step.command
+        for ns in namespaces_in(step.command) if ns not in allowed
+    ]

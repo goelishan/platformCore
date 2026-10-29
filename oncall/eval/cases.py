@@ -36,5 +36,7 @@ def load(path: Path) -> list[Case]:
         if unknown:
             raise ValueError(f"{path}: {subject} uses labels outside CauseClass: {unknown}")
         scored = bool(entry.get("scored", True)) and expected is not None
-        cases.append(Case(subject, expected, also, scored, str(entry.get("rationale", ""))))
+        terms = tuple(str(t) for t in entry.get("remedy_terms") or ())
+        cases.append(Case(subject, expected, also, scored, str(entry.get("rationale", "")),
+                          terms))
     return cases

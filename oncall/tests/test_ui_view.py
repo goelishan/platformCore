@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from oncall import config
 from oncall import landing_zone as lz
 from oncall.diagnosis import service, snapshots
 from oncall.diagnosis.journal import journal
@@ -88,6 +89,24 @@ def test_a_rejected_diagnosis_is_a_banner_with_its_error_never_an_empty_card():
     assert v.receipt["cost"] == "not priced"
 
 
+@pytest.mark.parametrize(("runtime", "names", "never"), [
+    ("local", "make -C oncall bedrock-check", "helm test"),
+    ("kubernetes", "helm test oncall", "make "),
+])
+def test_the_model_error_hint_names_a_check_that_exists_where_the_ui_runs(
+    monkeypatch, runtime, names, never
+):
+    """F3, drill 2026-10-13: the UI in the cluster told the engineer to run a make target,
+    and the image has no Makefile."""
+    monkeypatch.setattr(config, "RUNTIME", runtime)
+    row = {"diagnosis_id": "d", "outcome": "model_error", "hypotheses": [], "errors": []}
+
+    level, text = view.build(row, None, {}).banner
+
+    assert level == "error"
+    assert names in text and never not in text
+
+
 def test_a_citation_the_snapshot_lacks_is_shown_as_missing_not_dropped(crashloop):
     bundle, record = crashloop
     row = view.row_from_record(record)
@@ -156,3 +175,18 @@ def test_source_age_is_readable(seconds, text):
 
     assert view.age(then, now) == text
     assert view.age(None) == "never"
+
+
+def test_remedies_reach_the_view_and_old_rows_show_none(crashloop):
+    bundle, record = crashloop
+    row = view.row_from_record(record)
+    row["hypotheses"][0]["remediate"] = [
+        {"action": "Restore the setting", "risk": "medium", "undo": "remove it"}]
+    old = view.row_from_record(record)
+    old["hypotheses"][0].pop("remediate", None)
+
+    v = view.build(row, bundle, service.labels(bundle))
+
+    assert v.hypotheses[0].remediate[0]["action"] == "Restore the setting"
+    assert view.remedy_heading(v.hypotheses[0].remediate[0]) == "medium risk: Restore the setting"
+    assert view.build(old, bundle, service.labels(bundle)).hypotheses[0].remediate == []

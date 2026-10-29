@@ -144,8 +144,9 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     summary               TEXT,
     errors                TEXT,          -- JSON
     insufficient_evidence INTEGER,       -- 0/1, NULL when there is no diagnosis
-    unknowns              TEXT           -- JSON; what the model said it could not see,
+    unknowns              TEXT,          -- JSON; what the model said it could not see,
                                          -- NULL when there is no diagnosis
+    requested_by          TEXT           -- manual | auto; NULL before it was recorded
 );
 
 

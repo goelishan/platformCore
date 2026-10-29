@@ -53,6 +53,13 @@ BLOB_DIR = DATA_DIR / "blobs"
 
 CLUSTER_NAME = os.getenv("ONCALL_CLUSTER", "platformcore")
 
+# Where this process runs: local on a laptop, kubernetes when the chart deployed it. Only
+# what a person is told to do next depends on it: make targets exist in a checkout, not
+# inside the image, and on 2026-10-13 the UI in the cluster told the engineer to run one.
+RUNTIME = os.getenv("ONCALL_RUNTIME", "local")
+if RUNTIME not in {"local", "kubernetes"}:
+    raise RuntimeError(f"ONCALL_RUNTIME must be local or kubernetes, not {RUNTIME!r}")
+
 # The kubeconfig context to read, when not running inside the cluster. Required: a
 # collector that silently used whatever context kubectl last switched to could read a
 # production cluster from a laptop. In the cluster the service account is used and
@@ -345,6 +352,53 @@ DIAGNOSE_ENABLED = os.getenv("ONCALL_DIAGNOSE_ENABLED", "true").lower() in {"1",
 # under prompt v3, 84% of the old 2,000, before the citation and summary bounds were
 # raised. Only tokens actually generated are billed, so headroom costs nothing.
 BEDROCK_MAX_TOKENS = int(os.getenv("ONCALL_BEDROCK_MAX_TOKENS", "3000"))
+
+
+# ---- continuous triage ------------------------------------------------------
+# The agent watches the buffer for subjects in trouble and diagnoses them unasked, so a
+# hypothesis is waiting when the engineer arrives. Every knob below exists to bound one
+# of three costs: money (a Bedrock call per diagnosis), noise (diagnosing a blip that
+# was over before anyone could read about it) and trust (an incident closed while the
+# sources that would have shown it still open were blind).
+
+def _flag(name: str, default: str) -> bool:
+    return os.getenv(name, default).lower() in {"1", "true", "yes"}
+
+
+TRIAGE_ENABLED = _flag("ONCALL_TRIAGE_ENABLED", "true")
+TRIAGE_INTERVAL = int(os.getenv("ONCALL_TRIAGE_INTERVAL", "120"))
+
+# Startup is noisy by nature: pods still pulling images, probes not yet passing. On
+# 2026-10-13 the first whole-cluster diagnosis after make up was entirely startup
+# transients. Five minutes lets the cluster settle and every collector run twice.
+TRIAGE_START_AFTER = int(os.getenv("ONCALL_TRIAGE_START_AFTER", "300"))
+
+# error, not warning. warning is also a container that recovered (see the log trigger
+# above): worth reading when someone asks, not worth a paid call unasked.
+TRIAGE_MIN_SEVERITY = os.getenv("ONCALL_TRIAGE_MIN_SEVERITY", "error")
+
+# How long a problem must have lasted, and how recently it must still be seen, before it
+# is diagnosed. The first keeps a rollout's transient errors out; the second keeps a
+# problem that has already stopped out. Active spans two of the slowest polls (120 s).
+TRIAGE_SETTLE_SECONDS = int(os.getenv("ONCALL_TRIAGE_SETTLE_SECONDS", "180"))
+TRIAGE_ACTIVE_SECONDS = int(os.getenv("ONCALL_TRIAGE_ACTIVE_SECONDS", "300"))
+
+# An incident is diagnosed again when new evidence arrives, or when its last good
+# diagnosis is this old and the problem persists. A failed attempt is retried after the
+# retry interval, at most MAX_FAILURES times: a Bedrock outage must not become a loop.
+TRIAGE_REDIAGNOSE_SECONDS = int(os.getenv("ONCALL_TRIAGE_REDIAGNOSE_SECONDS", "3600"))
+TRIAGE_RETRY_SECONDS = int(os.getenv("ONCALL_TRIAGE_RETRY_SECONDS", "900"))
+TRIAGE_MAX_FAILURES = int(os.getenv("ONCALL_TRIAGE_MAX_FAILURES", "3"))
+
+# Spend ceilings. Per tick so one pass cannot stall the loop for minutes; per hour so a
+# cluster-wide failure costs a bounded amount. At the measured $0.05 a diagnosis the
+# hourly default is about $0.30.
+TRIAGE_MAX_PER_TICK = int(os.getenv("ONCALL_TRIAGE_MAX_PER_TICK", "2"))
+TRIAGE_MAX_PER_HOUR = int(os.getenv("ONCALL_TRIAGE_MAX_PER_HOUR", "6"))
+
+# An incident is closed once its subject has been quiet this long, and only while the
+# sources that would show it are fresh: silence from a blind collector is not recovery.
+TRIAGE_RESOLVE_QUIET_SECONDS = int(os.getenv("ONCALL_TRIAGE_RESOLVE_QUIET_SECONDS", "900"))
 
 
 def _optional_float(name: str) -> float | None:

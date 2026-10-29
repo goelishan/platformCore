@@ -20,11 +20,16 @@ from dataclasses import dataclass
 from typing import Any
 
 from oncall import config
-from oncall.diagnosis.guards import allowed_command_text, forbidden_flag_text, secret_rule_text
+from oncall.diagnosis.guards import (
+    allowed_command_text,
+    forbidden_flag_text,
+    remedy_text,
+    secret_rule_text,
+)
 from oncall.diagnosis.schema import MAX_CITATIONS, MAX_SUMMARY_CHARS, tool_input_schema
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "5"
+PROMPT_VERSION = "6"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
@@ -90,6 +95,20 @@ Each must be a single kubectl command using only: {allowed_command_text()}. No p
 redirects, command substitution, credential or server flags, or changes to the cluster \
 of any kind, and none of these flags: {forbidden_flag_text()}. {secret_rule_text()}. A \
 command outside these rules rejects the whole diagnosis.
+- A namespace given with -n must be one that appears in the evidence. The evidence is all \
+you know about where things run; do not guess where a component lives.
+- remediate gives one to three steps that would fix the cause once verify has confirmed \
+it, most direct first. Leave it empty only for no_fault. Each step has an action in plain \
+words, a risk of low, medium or high, and for medium or high an undo that says how to \
+reverse it. The engineer decides and runs every step; nothing runs on its own.
+- A step may carry one kubectl command from this list, labelled no lower than the risk \
+shown: {remedy_text()}. The same flag, namespace and Secret rules as verify apply. When \
+the fix belongs outside kubectl, or a value is unknown, give the action without a command.
+- When the evidence shows a workload is managed by Argo CD, Helm or an operator, a change \
+to its spec made with kubectl is reverted or drifts. Then say in the action that the change \
+belongs in the source it is deployed from, and keep kubectl to steps that do not fight \
+that, such as deleting a stuck pod.
+- Never put a credential in a step. Point to the Secret that holds it.
 - Write no links or URLs anywhere in the diagnosis.
 - If the evidence cannot support any cause, set insufficient_evidence to true, give no \
 hypotheses, and list in unknowns what is missing. Do not guess.

@@ -51,6 +51,8 @@ def record(*causes: str, outcome=Outcome.OK, attempts=1, latency=1000, tokens=(1
                 "rank": i, "cause_class": c, "title": "t", "mechanism": "m",
                 "confidence": "low", "supporting": ["a" * 32], "contradicting": [],
                 "verify": [{"command": "kubectl get pods", "purpose": "p"}],
+                "remediate": [] if c == "no_fault" else [
+                    {"action": "fix the cause", "risk": "low"}],
             } for i, c in enumerate(causes, start=1)],
         })
     return DiagnosisRecord(
@@ -96,6 +98,41 @@ def test_the_label_anywhere_in_three_is_top3_and_only_rank_one_is_top1():
     run = Run(CASE, record("image_pull", "other", "config_missing"))
 
     assert (run.top1, run.top3) == (False, True)
+
+
+def _remedied(action: str, command: str | None = None) -> DiagnosisRecord:
+    r = record("config_missing")
+    r.diagnosis.hypotheses[0].remediate[0].action = action
+    r.diagnosis.hypotheses[0].remediate[0].command = command
+    return r
+
+
+def test_a_remedy_naming_the_fault_is_relevant_and_one_about_something_else_is_not():
+    case = Case("crashloop", "config_missing", remedy_terms=("DATABASE_URL",))
+    s = summarise([
+        Run(case, _remedied("Set database_url from the db Secret",
+                            "kubectl set env deployment/crashloop --from=secret/db")),
+        Run(case, _remedied("Restart the pod")),
+        Run(case, record(outcome=Outcome.MODEL_ERROR)),
+    ])
+
+    assert (s.remedy_relevance.hits, s.remedy_relevance.total) == (1, 3)
+    assert (s.remedy_actionable.hits, s.remedy_actionable.total) == (1, 2)
+
+
+def test_cases_without_remedy_terms_are_left_out_of_remedy_relevance():
+    s = summarise([Run(CASE, _remedied("anything"))])
+
+    assert s.remedy_relevance.total == 0
+
+
+def test_the_shipped_golden_labels_give_every_scored_fault_remedy_terms():
+    golden = cases.load(EVAL / "golden.yaml")
+    missing = [c.subject for c in golden
+               if c.scored and c.expected not in (None, "no_fault") and not c.remedy_terms
+               and c.subject != "leakylogger"]
+
+    assert missing == []
 
 
 def test_a_run_without_a_diagnosis_is_wrong_not_left_out():

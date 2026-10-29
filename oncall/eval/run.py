@@ -81,6 +81,8 @@ def render_report(runs: list[Run], s: Summary, meta: dict[str, Any]) -> str:
         f"{s.mean_output_tokens or 0:.0f} |",
         f"| Cost | {money} |",
         f"| Self-agreement across repeats | {s.agreement} |",
+        f"| Remedy names the fault (rank 1) | {s.remedy_relevance} |",
+        f"| Remedy has a command (rank 1) | {s.remedy_actionable} |",
         f"| Outcomes | {', '.join(f'{k} {v}' for k, v in sorted(s.outcomes.items()))} |",
         "",
         "| Subject | Expected | Top-1 | Top-1 ok | Top-3 ok | Outcome | Attempts "
@@ -148,6 +150,7 @@ def main(argv: list[str] | None = None, client: Any = None) -> int:
         "summary": {k: (vars(v) if hasattr(v, "hits") else v) for k, v in vars(s).items()},
         "runs": [{"subject": r.case.subject, "expected": r.case.expected,
                   "scored": r.case.scored, "top1": r.top1, "top3": r.top3,
+                  "remedy_relevant": r.remedy_relevant,
                   "record": r.record.model_dump(mode="json")} for r in runs],
     }, indent=1) + "\n")
     print()
