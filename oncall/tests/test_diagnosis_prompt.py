@@ -160,10 +160,11 @@ def test_v9_states_every_rule_the_reasoner_enforces():
     8 Oct the citation cap and the can-i exception cost three more. v5 raised the citation
     and summary bounds; v6 added the namespace rule (F4, drill 2026-10-13); v7 recalibrates remedy floors
     and allows placeholders in remedies, after the v6 eval spent 10 of 17 on repairs; v8
-    adds the timeline ranking rule; v9 moves remedies to their own call (see the next test)."""
+    adds the timeline ranking rule; v9 moves remedies to their own call (see the next test); v10 allows
+    read-only remedy steps."""
     text = prompt.SYSTEM_PROMPT
 
-    assert prompt.PROMPT_VERSION == "9"
+    assert prompt.PROMPT_VERSION == "10"
     assert "Rank by cause, using the timeline" in text
     assert "must be one that appears in the evidence" in text
     assert f"at most {MAX_CITATIONS} IDs" in text
@@ -190,5 +191,6 @@ def test_v9_asks_for_remedies_only_after_the_diagnosis_is_made():
     assert "remediate" not in diagnosis_text and "remed" not in prompt.SYSTEM_PROMPT
     assert guards.remedy_text() in remedy_text
     assert "placeholder in angle brackets" in remedy_text
+    assert "step that confirms the fix or reads what it needs" in remedy_text
     assert "You do not change, re-rank or argue with the diagnosis" in remedy_text
     assert "managed by Argo CD" in remedy_text

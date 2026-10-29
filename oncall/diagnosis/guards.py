@@ -398,6 +398,8 @@ def remedy_text() -> str:
              sorted(by_floor.items(), key=lambda kv: RISK_ORDER[kv[0]])]
     return (
         "; ".join(parts)
+        + f". The read-only commands allowed in verify are allowed too, at low, for a "
+        "step that confirms the fix or reads what it needs"
         + f". delete may name only {', '.join(sorted(DELETABLE))}; a forced delete "
         "(--force, --grace-period=0) or one by selector or --all is high. A value the "
         "evidence does not show may be a placeholder in angle brackets, such as <tag>"
@@ -422,6 +424,13 @@ def check_remedy_command(command: str) -> tuple[str | None, str]:
     reason, tokens, rest = _screen(PLACEHOLDER.sub(_PLACEHOLDER_STAND_IN, command))
     if reason or rest is None:
         return reason, "high"
+    # A read-only step: confirming the fix took, or reading what the fix needs. In the v9
+    # eval (2026-10-30) five of six remedy repairs were "kubectl describe node" or
+    # "kubectl get pods" offered as a step and refused, which cost a call and taught the
+    # model nothing worth knowing.
+    for allowed in ALLOWED_COMMANDS:
+        if tuple(rest[: len(allowed)]) == allowed:
+            return None, "low"
     for verb, floor in REMEDY_COMMANDS:
         if tuple(rest[: len(verb)]) != verb:
             continue

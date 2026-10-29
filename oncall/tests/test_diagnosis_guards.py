@@ -329,7 +329,6 @@ def test_remedy_commands_on_the_allowlist_carry_their_floor(command, floor):
     ("kubectl exec -it web -- sh", "not on the remedy allowlist"),
     ("kubectl apply -f fix.yaml", "not on the remedy allowlist"),
     ("kubectl create secret generic db --from-literal=p=x", "not on the remedy allowlist"),
-    ("kubectl get pods", "not on the remedy allowlist"),
     ("kubectl rollout restart deployment web | tee log", "shell syntax"),
     ("kubectl --context prod rollout restart deployment web", "flag --context"),
     ("helm rollback web 3", "only kubectl"),
@@ -439,3 +438,19 @@ def test_a_placeholder_namespace_in_a_remedy_is_not_a_guessed_one():
 
     assert guards.check_remedy_namespaces(d, {"oncall-lab"}) == []
     assert guards.check_remedies(d) == []
+
+
+@pytest.mark.parametrize("command", [
+    "kubectl describe node oncall-worker2",
+    "kubectl get pods -n oncall-lab -o wide",
+    "kubectl rollout status deployment/<name> -n oncall-lab",
+])
+def test_a_read_only_step_is_allowed_at_low(command):
+    """v9 eval: five of six remedy repairs were read-only checks offered as steps."""
+    assert guards.check_remedy_command(command) == (None, "low")
+
+
+def test_a_read_only_step_still_may_not_print_a_secret():
+    reason, _ = guards.check_remedy_command("kubectl get secret db -n oncall-lab -o yaml")
+
+    assert reason is not None and "Secret" in reason

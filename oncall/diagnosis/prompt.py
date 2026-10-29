@@ -34,7 +34,7 @@ from oncall.diagnosis.schema import (
 )
 from oncall.evidence.bundle import Bundle, evidence_receipt, finding_labels, prompt_receipt, render
 
-PROMPT_VERSION = "9"
+PROMPT_VERSION = "10"
 
 TOOL_NAME = "record_diagnosis"
 TOOL_DESCRIPTION = (
