@@ -2,6 +2,6 @@
  "top1_hits": 45,
  "scored": 45,
  "model": "us.anthropic.claude-sonnet-4-6",
- "prompt_version": "5",
- "report": "reports/2026-10-12T1315-v5-claude-sonnet-4-6.md"
+ "prompt_version": "10",
+ "report": "reports/2026-10-29T2038-v10-claude-sonnet-4-6.md"
 }

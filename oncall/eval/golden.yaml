@@ -67,7 +67,10 @@ healthy:
 failingjob:
   expected: app_crash
   rationale: 'every attempt exits 1 ("migration failed"); the Job''s backoff is the consequence'
-  remedy_terms: ["migration"]
+  # No remedy_terms until the fixture is frozen again. The log collector read a finished
+  # Job pod under the ten-minute age bound, so "migration failed" is not in this bundle
+  # and no remedy could name it (0/3 on v6, v7 and v10). Fixed in k8s_logs collector
+  # version 3; re-freeze, then restore remedy_terms: ["migration"].
 
 failingcronjob:
   expected: app_crash

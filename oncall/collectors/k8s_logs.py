@@ -18,6 +18,11 @@ Log excerpt collector.
     finite and its edges are the runtime timestamps on its first and last line. Bounded
     by time, a container that died fifteen minutes ago came back empty and was recorded
     as having printed nothing (found 2026-09-30).
+  - So is a current container that has already terminated. A Job pod (restartPolicy
+    Never) has no previous container: the one that failed is the current one, and the
+    fallback read kept the age bound, so every Job that failed more than ten minutes
+    before collection was recorded as having printed nothing (found 2026-10-30 in the
+    failingjob fixture, where "migration failed" never reached the model).
   - Nothing is parsed out of the log text. event_time and severity come from the signal
     that triggered the fetch; only covered_through comes from the stream, and from the
     runtime's own per-line timestamp rather than from anything the application wrote.
@@ -71,7 +76,7 @@ STREAM_PREVIOUS = "previous"
 # saying which rules produced which. normalizer_version covers message templating and
 # nothing else. A column would be the proper form; this is a payload key, and it is
 # here now rather than correct later.
-COLLECTOR_VERSION = 2
+COLLECTOR_VERSION = 3
 
 PROVENANCE_KEYS = frozenset({
     "collector_version",
@@ -143,6 +148,9 @@ class Target(NamedTuple):
     trigger_source: str
     trigger_fingerprint: str
     trigger_signal_id: str
+    # The current container has already exited and is not backing off, so its log is
+    # finite and is read without the age bound, like a previous one.
+    finished: bool = False
 
 
 def _payload_of(row: Any) -> dict[str, Any]:
@@ -185,6 +193,19 @@ def _streams_for(payload: dict[str, Any], source: str) -> tuple[str, ...]:
     # severity are overwhelmingly about a container that has already stopped; the fetch
     # falls back to current when there is no previous container.
     return (STREAM_PREVIOUS,)
+
+
+def _finished(payload: dict[str, Any], source: str) -> bool:
+    """The current container has exited and nothing is restarting it.
+
+    Only a pod-state payload can say so: exit_code is set from state.terminated, and a
+    container in backoff carries waiting_reason with its last exit code beside it, which
+    describes the previous container rather than the current one."""
+    return (
+        source == str(SignalSource.K8S_PODS)
+        and payload.get("exit_code") is not None
+        and not payload.get("waiting_reason")
+    )
 
 
 def _never_started(payload: dict[str, Any]) -> bool:
@@ -235,6 +256,7 @@ def targets_from_rows(rows: list[Any], limit: int) -> tuple[list[Target], int]:
                 trigger_source=row["source"],
                 trigger_fingerprint=row["fingerprint"],
                 trigger_signal_id=row["signal_id"],
+                finished=_finished(payload, row["source"]),
             )
 
             # Rows arrive newest first, so the first sighting of a key is already the
@@ -463,7 +485,8 @@ def build_signal(
         # stream carries it, and without it an empty current stream reads as a
         # container that never printed rather than one quiet for that long.
         "since_seconds": (
-            config.LOG_SINCE_SECONDS if fetch.stream == STREAM_CURRENT else None
+            config.LOG_SINCE_SECONDS
+            if fetch.stream == STREAM_CURRENT and not target.finished else None
         ),
         "collector_version": COLLECTOR_VERSION,
         # The interval that was asked for, and the last moment actually covered by a
@@ -571,9 +594,12 @@ def _read_log(target: Target, stream: str) -> Fetch:
                 container=target.container,
                 previous=previous,
                 # A dead container's log is finite; bounding it by age turned "died
-                # a while ago" into "printed nothing". The running stream keeps the
-                # bound, and build_signal records it so "empty" can say so.
-                **({} if previous else {"since_seconds": config.LOG_SINCE_SECONDS}),
+                # a while ago" into "printed nothing". That holds for a current
+                # container that has exited too (a Job pod has no previous one). The
+                # running stream keeps the bound, and build_signal records it so
+                # "empty" can say so.
+                **({} if previous or target.finished
+                   else {"since_seconds": config.LOG_SINCE_SECONDS}),
                 limit_bytes=config.LOG_LIMIT_BYTES,
                 timestamps=True,
                 _request_timeout=k8s.REQUEST_TIMEOUT,

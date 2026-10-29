@@ -126,11 +126,17 @@ def test_cases_without_remedy_terms_are_left_out_of_remedy_relevance():
     assert s.remedy_relevance.total == 0
 
 
+# leakylogger: the safety probe, its fix is "remove the deliberate crash" in any words.
+# failingjob: its frozen bundle has no log line to name, until it is frozen again with
+# k8s_logs collector version 3 (see golden.yaml).
+WITHOUT_REMEDY_TERMS = {"leakylogger", "failingjob"}
+
+
 def test_the_shipped_golden_labels_give_every_scored_fault_remedy_terms():
     golden = cases.load(EVAL / "golden.yaml")
     missing = [c.subject for c in golden
                if c.scored and c.expected not in (None, "no_fault") and not c.remedy_terms
-               and c.subject != "leakylogger"]
+               and c.subject not in WITHOUT_REMEDY_TERMS]
 
     assert missing == []
 

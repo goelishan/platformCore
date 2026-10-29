@@ -106,6 +106,16 @@ def test_one_target_per_pod_container_and_stream(buffer):
     assert declined == 0
 
 
+def test_a_failed_job_pod_becomes_a_finished_target(buffer):
+    rows = [
+        _row(_trigger(pod="job-1", payload={"container": "app", "exit_code": 1})),
+        _row(_trigger(pod="web-1")),
+    ]
+    targets, _ = k8s_logs.targets_from_rows(rows, limit=10)
+
+    assert {t.pod: t.finished for t in targets} == {"job-1": True, "web-1": False}
+
+
 def test_the_worst_trigger_wins_not_the_last(buffer):
     """The excerpt should be attached to the worst thing that happened in the window,
     not to whatever landed most recently."""
@@ -374,6 +384,70 @@ def test_the_running_container_keeps_its_age_bound(client):
     k8s_logs._read_log(_target(), k8s_logs.STREAM_CURRENT)
 
     assert calls[0]["since_seconds"] == config.LOG_SINCE_SECONDS
+
+
+def test_a_finished_job_pod_falls_back_to_current_without_an_age_bound(client):
+    """A Job pod has no previous container: the one that failed is the current one.
+    The fallback kept the age bound, so a Job that failed more than ten minutes before
+    collection read as having printed nothing (the failingjob fixture)."""
+    stub = client(ApiException(status=400, reason="Bad Request"), _Resp(STREAM.encode()))
+    calls: list[dict] = []
+    original = stub.read_namespaced_pod_log
+
+    def spy(**kwargs):
+        calls.append(kwargs)
+        return original(**kwargs)
+
+    stub.read_namespaced_pod_log = spy
+
+    fetch = k8s_logs._read_log(_target(finished=True), k8s_logs.STREAM_PREVIOUS)
+
+    assert [c["previous"] for c in calls] == [True, False]
+    assert "since_seconds" not in calls[1]
+    assert fetch.stream == k8s_logs.STREAM_CURRENT
+
+
+def test_a_running_pod_falls_back_to_current_with_its_age_bound(client):
+    """Without the bound a long-lived container's read starts at its first line, and the
+    byte cap then keeps the oldest output rather than the newest."""
+    stub = client(ApiException(status=400, reason="Bad Request"), _Resp(STREAM.encode()))
+    calls: list[dict] = []
+    original = stub.read_namespaced_pod_log
+
+    def spy(**kwargs):
+        calls.append(kwargs)
+        return original(**kwargs)
+
+    stub.read_namespaced_pod_log = spy
+
+    k8s_logs._read_log(_target(), k8s_logs.STREAM_PREVIOUS)
+
+    assert calls[1]["since_seconds"] == config.LOG_SINCE_SECONDS
+
+
+@pytest.mark.parametrize(
+    ("payload", "source", "expected"),
+    [
+        ({"exit_code": 1}, str(SignalSource.K8S_PODS), True),
+        ({"exit_code": 0}, str(SignalSource.K8S_PODS), True),
+        # Backing off: the exit code is the previous container's, the current one waits.
+        ({"exit_code": 1, "waiting_reason": "CrashLoopBackOff"},
+         str(SignalSource.K8S_PODS), False),
+        ({"reason": "Running"}, str(SignalSource.K8S_PODS), False),
+        # An event says nothing about the container's state.
+        ({"exit_code": 1}, str(SignalSource.K8S_EVENTS), False),
+    ],
+)
+def test_finished_means_exited_and_not_restarting(payload, source, expected):
+    assert k8s_logs._finished(payload, source) is expected
+
+
+def test_a_finished_container_records_no_age_bound():
+    signal = k8s_logs.build_signal(
+        _target(finished=True), _fetch(stream=k8s_logs.STREAM_CURRENT), None, None,
+        "oncall-dev", NOW, NOW,
+    )
+    assert "since_seconds" not in signal.payload
 
 
 def test_the_age_bound_is_recorded_only_where_it_applied():
