@@ -287,3 +287,57 @@ tests:
             exp_annotations:
               summary: "Diagnosis spend exceeded $5 in 24 hours."
               description: "loop has spent $6.00 at list price in the last 24 hours. Check the diagnosis rate per incident for a loop."
+
+  #------------------------------------------------------------------------------------------------
+  # EVALUATION
+  #------------------------------------------------------------------------------------------------
+
+  - name: diagnoses left unchecked for half an hour fire, a brief backlog does not
+    interval: 1m
+    input_series:
+      - series: 'oncall_evaluation_backlog{job="oncall-journal", instance="a"}'
+        values: '2x40'
+      - series: 'oncall_evaluation_backlog{job="oncall-journal", instance="b"}'
+        values: '1x10 0x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OncallEvaluationsStalled
+        exp_alerts: []
+      - eval_time: 31m
+        alertname: OncallEvaluationsStalled
+        exp_alerts:
+          - exp_labels: {severity: warning, component: oncall-agent, job: oncall-journal, instance: a}
+            exp_annotations:
+              summary: "Diagnoses are reaching the store without being evaluated."
+              description: "2 diagnoses have had no automatic checks for 30 minutes. The agent's evaluate job is failing or not scheduled; its log line starts \"evaluated:\"."
+
+  - name: labelled accuracy alerts only with enough labels behind it
+    interval: 1m
+    input_series:
+      - series: 'oncall_human_labelled{model="m", prompt_version="6"}'
+        values: '12x90'
+      - series: 'oncall_human_top1_matches{model="m", prompt_version="6"}'
+        values: '6x90'
+      - series: 'oncall_human_labelled{model="m", prompt_version="5"}'
+        values: '4x90'
+      - series: 'oncall_human_top1_matches{model="m", prompt_version="5"}'
+        values: '1x90'
+    promql_expr_test:
+      - expr: oncall:human_top1:ratio
+        eval_time: 5m
+        exp_samples:
+          - labels: 'oncall:human_top1:ratio{model="m", prompt_version="5"}'
+            value: 0.25
+          - labels: 'oncall:human_top1:ratio{model="m", prompt_version="6"}'
+            value: 0.5
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: OncallLabelledAccuracyLow
+        exp_alerts: []
+      - eval_time: 65m
+        alertname: OncallLabelledAccuracyLow
+        exp_alerts:
+          - exp_labels: {severity: info, component: oncall-agent, model: m, prompt_version: "6"}
+            exp_annotations:
+              summary: "Rank 1 matched the engineer's cause on fewer than 70% of labelled diagnoses."
+              description: "50% for m on prompt v6. make -C oncall review lists the wrong ones with the command that adds each to the eval."

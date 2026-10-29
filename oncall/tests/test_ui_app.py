@@ -142,3 +142,39 @@ def test_with_diagnose_off_the_button_is_disabled_and_says_why(lab, monkeypatch)
     assert button.disabled
     assert any("no AWS identity" in c.value for c in at.caption)
     assert len(client.requests) == 0
+
+
+def test_the_engineer_records_a_verdict_beside_the_diagnosis(lab, monkeypatch):
+    """The checks are shown as soon as the answer is, and the form writes the one
+    evaluation only a person can give."""
+    from oncall.eval import online
+
+    fake(monkeypatch, tr.answer(tr.diagnosis()))
+    at = run()
+    subject(at, tb.POD)
+    click(at, "Diagnose")
+    assert any(t.value.startswith("checks: ") for t in at.text)
+
+    next(r for r in at.radio if r.label == "Verdict").set_value("wrong")
+    next(s for s in at.selectbox if s.label.startswith("What the cause")).set_value(
+        "config_missing")
+    next(r for r in at.radio if r.label == "The remedy").set_value("did_not_work")
+    click(at, "Record verdict")
+
+    assert not at.exception, at.exception
+    (row,) = service.recent()
+    h = online.evaluations_for(row["diagnosis_id"])["human"]
+    assert (h["verdict"], h["cause_class"], h["details"]["remedy"]) == (
+        "wrong", "config_missing", "did_not_work")
+    assert any(s.value == "Verdict recorded." for s in at.success)
+
+
+def test_open_incidents_are_listed_with_who_opened_them(lab, monkeypatch):
+    fake(monkeypatch, tr.answer(tr.diagnosis()))
+    at = run()
+    subject(at, tb.POD)
+    click(at, "Diagnose")
+    at.run()
+
+    assert any(c.value.startswith(f"{tb.POD}: diagnosed, manual, 1 diagnoses")
+               for c in at.sidebar.caption)

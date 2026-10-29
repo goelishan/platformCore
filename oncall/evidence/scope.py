@@ -132,8 +132,11 @@ def admits(row: sqlite3.Row, scope: Scope) -> str | None:
     # Co-location, not selection. Pod rows carry no labels, so a Service's selector
     # cannot be matched against them; sharing a namespace is the most this can claim,
     # and the label says so rather than dressing it as a match.
+    # An Argo CD Application is written into the namespace it deploys to. Sharing that
+    # namespace is what "managed from git" means here, and it is still co-location: an
+    # Application deploying several workloads into one namespace manages all of them.
     if (
-        row["source"] == SignalSource.K8S_SERVICES
+        row["source"] in (SignalSource.K8S_SERVICES, SignalSource.ARGOCD)
         and scope.namespace is not None
         and namespace == scope.namespace
     ):

@@ -1,6 +1,8 @@
 {{- /*
-Read-only, and only what the collectors call: list on six kinds, get on pod logs. This
+Read-only, and only what the collectors call: list on seven kinds, get on pod logs. This
 ClusterRole is the diagnose-only boundary; nothing in the agent can write to the cluster.
+Argo CD Applications are listed in their own namespace only, through a Role, so the agent
+cannot read Applications anywhere else.
 */ -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -50,3 +52,33 @@ subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount.name }}
     namespace: {{ .Release.Namespace }}
+{{- if .Values.sources.argocd.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: oncall-agent-read-applications
+  namespace: {{ .Values.sources.argocd.namespace }}
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: oncall-agent-read-applications
+  namespace: {{ .Values.sources.argocd.namespace }}
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: oncall-agent-read-applications
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

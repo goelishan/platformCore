@@ -357,8 +357,8 @@ def test_a_remedy_labelled_below_its_floor_is_sent_back():
     problems = guards.check_remedies(_with_remedy(
         {"command": "kubectl drain node-1 --ignore-daemonsets", "risk": "medium"}))
 
-    assert problems == ["hypothesis 1 remediate 1: 'kubectl drain node-1 "
-                        "--ignore-daemonsets' is labelled medium, below its floor of high"]
+    assert problems == [("hypothesis 1 remediate 1: 'kubectl drain node-1 "
+                         "--ignore-daemonsets' is labelled medium, below its floor of high")]
 
 
 def test_a_risky_step_must_say_how_to_undo_it_and_a_low_one_need_not():

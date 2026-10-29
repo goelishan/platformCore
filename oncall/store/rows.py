@@ -89,6 +89,20 @@ DIAGNOSIS_COLUMNS = (
 )
 
 
+EVALUATION_COLUMNS = (
+    "evaluation_id",
+    "diagnosis_id",
+    "evaluator",
+    "evaluator_version",
+    "created_at",
+    "verdict",
+    "score",
+    "cause_class",
+    "details",
+    "notes",
+)
+
+
 def _ts(value: str | None):
     return parse(value) if value else None
 
@@ -118,6 +132,13 @@ def incident_from_buffer(row: Any) -> dict[str, Any]:
     out: dict[str, Any] = {c: row[c] for c in INCIDENT_COLUMNS}
     out["opened_at"] = _ts(out["opened_at"])
     out["closed_at"] = _ts(out["closed_at"])
+    return out
+
+
+def evaluation_from_buffer(row: Any) -> dict[str, Any]:
+    out: dict[str, Any] = {c: row[c] for c in EVALUATION_COLUMNS}
+    out["created_at"] = _ts(out["created_at"])
+    out["details"] = _json(out["details"])
     return out
 
 

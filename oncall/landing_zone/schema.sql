@@ -150,6 +150,28 @@ CREATE TABLE IF NOT EXISTS diagnoses (
 );
 
 
+-- How each diagnosis did, by each evaluator. One row per (diagnosis, evaluator): the id is
+-- diagnosis_id:evaluator, so a re-run or a changed human verdict replaces the row rather
+-- than piling up beside it.
+--   checks   automatic, as soon as the diagnosis is journalled: grounding, gaps, remedies
+--   outcome  automatic, once the incident closes or the horizon passes: what happened next
+--   human    the engineer's verdict and the cause they actually found
+CREATE TABLE IF NOT EXISTS evaluations (
+    evaluation_id     TEXT PRIMARY KEY,
+    diagnosis_id      TEXT NOT NULL REFERENCES diagnoses(diagnosis_id),
+    evaluator         TEXT NOT NULL,
+    evaluator_version TEXT NOT NULL,
+    created_at        TEXT NOT NULL,
+    verdict           TEXT NOT NULL,
+    score             REAL,                  -- 0..1; NULL where a number would mislead
+    cause_class       TEXT,                  -- human only: the cause as found
+    details           TEXT NOT NULL,         -- JSON
+    notes             TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_diagnosis ON evaluations(diagnosis_id);
+
+
 -- ---- shipping --------------------------------------------------------------
 -- A transactional outbox. An entry is appended in the same transaction as the write it
 -- describes, so the buffer can never hold a row the shipper does not know about, nor

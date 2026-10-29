@@ -68,6 +68,25 @@ def _fetch(conn, table: str, id_column: str, ids: list[str]) -> list:
     return found
 
 
+def _snapshots(shas: list[str]) -> dict[str, dict]:
+    """The queued snapshot files, as JSON. One that is missing or no longer matches its
+    name is logged and left out: the diagnosis it belongs to still ships, and a missing
+    snapshot is something a later reader is told about rather than a batch that can
+    never be delivered."""
+    import json
+
+    from oncall.diagnosis import snapshots
+
+    found = {}
+    for sha in shas:
+        try:
+            snapshots.load(sha)
+            found[sha] = json.loads(snapshots.path_for(sha).read_text())
+        except (FileNotFoundError, snapshots.SnapshotMismatch, ValueError) as exc:
+            log.warning("snapshot %s not shipped: %s", sha[:16], exc)
+    return found
+
+
 def ship_once(batch_size: int | None = None) -> tuple[SourceStatus, int]:
     """One shipping cycle. Returns (status, rows written).
 
@@ -95,6 +114,9 @@ def ship_once(batch_size: int | None = None) -> tuple[SourceStatus, int]:
             incidents = _fetch(conn, "incidents", "incident_id", batch.get("incident", []))
             signals = _fetch(conn, "signals", "signal_id", batch.get("signal", []))
             diagnoses = _fetch(conn, "diagnoses", "diagnosis_id", batch.get("diagnosis", []))
+            evaluations = _fetch(conn, "evaluations", "evaluation_id",
+                                 batch.get("evaluation", []))
+        snapshots = _snapshots(batch.get("snapshot", []))
 
         ensure_schema()
 
@@ -112,6 +134,10 @@ def ship_once(batch_size: int | None = None) -> tuple[SourceStatus, int]:
             written += store.upsert_diagnoses(
                 pg, [store_rows.diagnosis_from_buffer(r) for r in diagnoses]
             )
+            written += store.upsert_evaluations(
+                pg, [store_rows.evaluation_from_buffer(r) for r in evaluations]
+            )
+            written += store.insert_snapshots(pg, snapshots)
 
         # Only now. Clearing first would lose the batch on a crash; clearing after
         # merely repeats it, and the upserts absorb a repeat.

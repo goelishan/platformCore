@@ -190,6 +190,34 @@ def build(row: dict[str, Any], bundle: Bundle | None, labels: dict[str, str]) ->
 RISK_LEVEL = {"low": "info", "medium": "warning", "high": "error"}
 
 
+def evaluation_lines(evals: dict[str, dict[str, Any]]) -> list[str]:
+    """One line per evaluator that has run, flags spelled out. Empty when none has."""
+    from oncall.eval.online import FLAGS
+
+    lines = []
+    checks = evals.get("checks")
+    if checks:
+        d = checks["details"]
+        score = f", score {checks['score']:.2f}" if checks.get("score") is not None else ""
+        lines.append(f"checks: {checks['verdict']}{score}")
+        lines += [f"  - {FLAGS.get(f, f)}" for f in d.get("flags", [])]
+    outcome = evals.get("outcome")
+    if outcome:
+        d = outcome["details"]
+        after = (f" after {d['resolved_after_minutes']} min"
+                 if d.get("resolved_after_minutes") is not None else "")
+        stable = {True: "; later diagnoses agreed", False: "; a later diagnosis disagreed",
+                  None: ""}[d.get("cause_stable")]
+        lines.append(f"outcome: {outcome['verdict']}{after}{stable}")
+    human = evals.get("human")
+    if human:
+        cause = f", actual cause {human['cause_class']}" if human.get("cause_class") else ""
+        remedy = human["details"].get("remedy")
+        lines.append(f"engineer: {human['verdict']}{cause}"
+                     + (f", remedy {remedy.replace('_', ' ')}" if remedy else ""))
+    return lines
+
+
 def remedy_heading(step: dict[str, Any]) -> str:
     """'medium risk: <action>', with the risk first so it is read before the action."""
     return f"{step.get('risk', 'unrated')} risk: {step.get('action', '')}"

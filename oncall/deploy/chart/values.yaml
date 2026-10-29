@@ -72,6 +72,23 @@ bedrock:
   priceInputPerMTok: "3"
   priceOutputPerMTok: "15"
 
+# Optional evidence sources. Prometheus needs the in-cluster URL of the server whose alerts
+# the agent should read; empty leaves the source unscheduled. Argo CD Applications are read
+# from one namespace through a Role there; a cluster without Argo CD just records empty runs.
+sources:
+  prometheus:
+    url: ""
+  argocd:
+    enabled: true
+    namespace: argocd
+
+# Alertmanager posts alerts here (Service oncall-agent); a firing one opens an incident that
+# triage diagnoses on its next pass. Point an Alertmanager webhook receiver at
+# http://oncall-agent.oncall.svc:8080/alertmanager.
+webhook:
+  enabled: true
+  port: 8080
+
 # The agent diagnoses failing subjects on its own and closes incidents that go quiet.
 # Needs bedrock.enabled; the caps bound spend at roughly $0.30 an hour at worst.
 triage:

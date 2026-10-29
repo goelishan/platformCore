@@ -19,7 +19,7 @@
 # No Postgres is needed for any of this. Collection writes only to the local SQLite
 # buffer; the store is reached by shipper.py alone, so dev/compose.yaml stays down.
 
-.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval bedrock-check dryrun env ui agent lock image image-kind chart-check deploy-kind ui-forward undeploy-kind exporter obs-up obs-down obs-render rules-test help
+.PHONY: lab-up lab-down lab-stage lab-all lab-clean lab-status venv collect peek bundle diagnose eval-freeze eval evaluate review feedback eval-promote bedrock-check dryrun env ui agent lock image image-kind chart-check deploy-kind ui-forward undeploy-kind exporter obs-up obs-down obs-render rules-test help
 
 CLUSTER    ?= oncall
 LAB_NS     ?= oncall-lab
@@ -53,6 +53,10 @@ help:
 	@echo "diagnose    assemble, ask Bedrock, journal   (SUBJECT=crashloop ARGS=\"--dry-run | --replay ID\")"
 	@echo "eval-freeze freeze one bundle per golden subject into eval/fixtures"
 	@echo "eval        run the frozen fixtures through Bedrock and write a report   (ARGS=\"--repeat 3\")"
+	@echo "evaluate    run the online evaluators over every pending diagnosis once"
+	@echo "review      how real diagnoses did and what to improve   (ARGS=\"--since 7d\")"
+	@echo "feedback    record an engineer's verdict   (DIAGNOSIS=id VERDICT=wrong CAUSE=image_pull NOTES=...)"
+	@echo "eval-promote add a labelled real diagnosis to the eval   (DIAGNOSIS=id ARGS=\"--terms a,b\")"
 	@echo "bedrock-check  config, identity, endpoint, profile routing vs IAM, one call"
 	@echo "ui          the triage UI on 127.0.0.1:8501"
 	@echo "agent       the long-running agent: collection, shipping, retention"
@@ -206,6 +210,27 @@ eval-freeze:
 eval:
 	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
 	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python oncall/eval/run.py $(ARGS)
+
+# The online side of the evaluation: real diagnoses, judged by rules, by what happened
+# next, and by the engineer. No model calls; review reads the store when it answers.
+evaluate:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python -m oncall.eval.online
+
+review:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python -m oncall.eval.review $(ARGS)
+
+feedback:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@test -n "$(DIAGNOSIS)" -a -n "$(VERDICT)" || { echo "usage: make feedback DIAGNOSIS=<id> VERDICT=correct|partial|wrong [CAUSE=...] [REMEDY=...] [NOTES=...]"; exit 2; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python -m oncall.eval.feedback "$(DIAGNOSIS)" "$(VERDICT)" \
+	  $(if $(CAUSE),--cause "$(CAUSE)") $(if $(REMEDY),--remedy "$(REMEDY)") $(if $(NOTES),--notes "$(NOTES)")
+
+eval-promote:
+	@test -d $(VENV) || { echo "no $(VENV) - run: make -C oncall venv"; exit 1; }
+	@test -n "$(DIAGNOSIS)" || { echo "usage: make eval-promote DIAGNOSIS=<id> [ARGS=\"--name x --terms a,b\"]"; exit 2; }
+	@cd .. && PYTHONPATH=. oncall/$(VENV)/bin/python -m oncall.eval.promote "$(DIAGNOSIS)" $(ARGS)
 
 # One Converse call of a few tokens; everything else is read-only.
 bedrock-check:

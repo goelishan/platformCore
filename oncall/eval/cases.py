@@ -37,6 +37,9 @@ def load(path: Path) -> list[Case]:
             raise ValueError(f"{path}: {subject} uses labels outside CauseClass: {unknown}")
         scored = bool(entry.get("scored", True)) and expected is not None
         terms = tuple(str(t) for t in entry.get("remedy_terms") or ())
+        source = str(entry.get("source", "lab"))
+        if source not in ("lab", "production"):
+            raise ValueError(f"{path}: {subject} has source {source!r}, not lab or production")
         cases.append(Case(subject, expected, also, scored, str(entry.get("rationale", "")),
-                          terms))
+                          terms, source))
     return cases

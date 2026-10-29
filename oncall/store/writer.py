@@ -18,8 +18,14 @@ from __future__ import annotations
 from typing import Any
 
 from psycopg import Connection
+from psycopg.types.json import Jsonb
 
-from oncall.store.rows import DIAGNOSIS_COLUMNS, INCIDENT_COLUMNS, SIGNAL_COLUMNS
+from oncall.store.rows import (
+    DIAGNOSIS_COLUMNS,
+    EVALUATION_COLUMNS,
+    INCIDENT_COLUMNS,
+    SIGNAL_COLUMNS,
+)
 
 
 def _upsert(table: str, columns: tuple[str, ...], key: tuple[str, ...]) -> str:
@@ -41,6 +47,14 @@ def _upsert(table: str, columns: tuple[str, ...], key: tuple[str, ...]) -> str:
 _UPSERT_SIGNAL = _upsert("signals", SIGNAL_COLUMNS, ("signal_id", "event_time"))
 _UPSERT_INCIDENT = _upsert("incidents", INCIDENT_COLUMNS, ("incident_id",))
 _UPSERT_DIAGNOSIS = _upsert("diagnoses", DIAGNOSIS_COLUMNS, ("diagnosis_id",))
+_UPSERT_EVALUATION = _upsert("evaluations", EVALUATION_COLUMNS, ("evaluation_id",))
+
+# DO NOTHING: a snapshot is named by the hash of its own contents, so a second write of
+# the same name is the same bytes.
+_INSERT_SNAPSHOT = (
+    "INSERT INTO bundle_snapshots (bundle_sha256, bundle) VALUES (%(sha)s, %(bundle)s) "
+    "ON CONFLICT (bundle_sha256) DO NOTHING"
+)
 
 
 def ensure_partitions(conn: Connection, rows: list[dict[str, Any]]) -> set[str]:
@@ -110,3 +124,23 @@ def upsert_diagnoses(conn: Connection, rows: list[dict[str, Any]]) -> int:
     with conn.cursor() as cur:
         cur.executemany(_UPSERT_DIAGNOSIS, rows)
     return len(rows)
+
+
+def upsert_evaluations(conn: Connection, rows: list[dict[str, Any]]) -> int:
+    """After diagnoses, which every evaluation references."""
+    if not rows:
+        return 0
+
+    with conn.cursor() as cur:
+        cur.executemany(_UPSERT_EVALUATION, rows)
+    return len(rows)
+
+
+def insert_snapshots(conn: Connection, snapshots: dict[str, dict[str, Any]]) -> int:
+    if not snapshots:
+        return 0
+
+    with conn.cursor() as cur:
+        cur.executemany(_INSERT_SNAPSHOT,
+                        [{"sha": sha, "bundle": Jsonb(b)} for sha, b in sorted(snapshots.items())])
+    return len(snapshots)

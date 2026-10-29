@@ -106,6 +106,45 @@ GROUP BY 1
 
 
 
+# Evaluations are gauges, not counters. Each (diagnosis, evaluator) row is replaced when
+# re-evaluated, so a verdict can move between labels (persisted to resolved, or an
+# engineer changing their mind), and a counter that went down would read as a reset.
+_EVALUATIONS_SQL = """
+SELECT coalesce(d.model, '') AS model,
+       coalesce(d.prompt_version, '') AS prompt_version,
+       e.evaluator, e.verdict, count(*) AS n
+FROM evaluations e JOIN diagnoses d USING (diagnosis_id)
+GROUP BY 1, 2, 3, 4
+"""
+
+_FLAGS_SQL = """
+SELECT coalesce(d.model, '') AS model,
+       coalesce(d.prompt_version, '') AS prompt_version,
+       flag, count(*) AS n
+FROM evaluations e JOIN diagnoses d USING (diagnosis_id),
+     jsonb_array_elements_text(coalesce(e.details -> 'flags', '[]'::jsonb)) AS flag
+WHERE e.evaluator = 'checks'
+GROUP BY 1, 2, 3
+"""
+
+_HUMAN_SQL = """
+SELECT coalesce(d.model, '') AS model,
+       coalesce(d.prompt_version, '') AS prompt_version,
+       count(*) FILTER (WHERE e.details ->> 'top1_match' IS NOT NULL) AS labelled,
+       count(*) FILTER (WHERE (e.details ->> 'top1_match')::boolean) AS top1
+FROM evaluations e JOIN diagnoses d USING (diagnosis_id)
+WHERE e.evaluator = 'human'
+GROUP BY 1, 2
+"""
+
+_UNCHECKED_SQL = """
+SELECT count(*) AS n FROM diagnoses d
+WHERE NOT EXISTS (SELECT 1 FROM evaluations e
+                  WHERE e.diagnosis_id = d.diagnosis_id AND e.evaluator = 'checks')
+"""
+
+
+
 #--------------------------------------------------------------------------------------------------------
 # COLLECTOR
 #--------------------------------------------------------------------------------------------------------
@@ -130,6 +169,10 @@ class JournalCollector(Collector):
         yield _duration(started)
         yield from outcome_families(outcomes, seed=_seed())
         yield from call_families(calls, seed=_seed())
+        try:
+            yield from evaluation_families(*self._read_evaluations(), seed=_seed())
+        except Exception as exc:  # noqa: BLE001 - a store before 0008 still exports the rest
+            log.warning("evaluations not read: %s", exc)
 
     def _read(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         with connection.connect() as conn:
@@ -137,6 +180,17 @@ class JournalCollector(Collector):
             return (
                 connection.fetch_all(conn, _OUTCOMES_SQL),
                 connection.fetch_all(conn, _CALLS_SQL),
+            )
+
+    def _read_evaluations(self) -> tuple[list, list, list, int]:
+        with connection.connect() as conn:
+            conn.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
+            unchecked = connection.fetch_one(conn, _UNCHECKED_SQL)
+            return (
+                connection.fetch_all(conn, _EVALUATIONS_SQL),
+                connection.fetch_all(conn, _FLAGS_SQL),
+                connection.fetch_all(conn, _HUMAN_SQL),
+                int(unchecked["n"]) if unchecked else 0,
             )
 
 
@@ -254,6 +308,67 @@ def call_families(
             last.add_metric(model, float(r["last_ts"]))
 
     return [latency, tokens, cost, unpriced, last]
+
+
+# Every verdict each evaluator can give, so the seed below can emit them all at zero.
+VERDICTS = {
+    "checks": ("pass", "warn", "fail"),
+    "outcome": ("resolved", "persisted"),
+    "human": ("correct", "partial", "wrong"),
+}
+
+
+def evaluation_families(evaluations: Iterable[dict[str, Any]], flags: Iterable[dict[str, Any]],
+                        human: Iterable[dict[str, Any]], unchecked: int,
+                        seed: tuple[str, str] | None = None) -> list[Metric]:
+    """Seeded like the outcome families: every verdict and flag for the configured model
+    and current prompt exists at zero before the first row, so the first wrong verdict is
+    a change from 0 rather than a series that appears from nowhere."""
+    from oncall.eval.online import FLAGS
+
+    verdicts = GaugeMetricFamily(
+        "oncall_evaluations",
+        "Diagnoses by evaluator and current verdict (checks, outcome, human).",
+        labels=["model", "prompt_version", "evaluator", "verdict"],
+    )
+    flagged = GaugeMetricFamily(
+        "oncall_evaluation_flags",
+        "Diagnoses whose automatic checks raised each flag.",
+        labels=["model", "prompt_version", "flag"],
+    )
+    labelled = GaugeMetricFamily(
+        "oncall_human_labelled",
+        "Diagnoses an engineer gave a cause for.",
+        labels=["model", "prompt_version"],
+    )
+    top1 = GaugeMetricFamily(
+        "oncall_human_top1_matches",
+        "Of those, diagnoses whose rank-1 cause matched the engineer's.",
+        labels=["model", "prompt_version"],
+    )
+    by_verdict = {(r["model"], r["prompt_version"], r["evaluator"], r["verdict"]): int(r["n"])
+                  for r in evaluations}
+    by_flag = {(r["model"], r["prompt_version"], r["flag"]): int(r["n"]) for r in flags}
+    by_human = {(r["model"], r["prompt_version"]): (int(r["labelled"]), int(r["top1"]))
+                for r in human}
+    if seed:
+        for evaluator, names in VERDICTS.items():
+            for verdict in names:
+                by_verdict.setdefault((*seed, evaluator, verdict), 0)
+        for flag in FLAGS:
+            by_flag.setdefault((*seed, flag), 0)
+        by_human.setdefault(seed, (0, 0))
+
+    for key in sorted(by_verdict):
+        verdicts.add_metric(list(key), by_verdict[key])
+    for key in sorted(by_flag):
+        flagged.add_metric(list(key), by_flag[key])
+    for key in sorted(by_human):
+        labelled.add_metric(list(key), by_human[key][0])
+        top1.add_metric(list(key), by_human[key][1])
+    pending = _gauge("oncall_evaluation_backlog",
+                     "Diagnoses in the store with no automatic checks yet.", unchecked)
+    return [verdicts, flagged, labelled, top1, pending]
 
 
 def _empty_calls(model: str) -> dict[str, Any]:

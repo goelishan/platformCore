@@ -369,6 +369,44 @@ def record_diagnosis(
     return diagnosis_id
 
 
+# ---- evaluations -----------------------------------------------------------
+
+
+def record_evaluation(
+    conn: Connection,
+    diagnosis_id: str,
+    evaluator: str,
+    evaluator_version: str,
+    verdict: str,
+    details: dict[str, Any],
+    *,
+    score: float | None = None,
+    cause_class: str | None = None,
+    notes: str | None = None,
+    created_at: datetime | None = None,
+) -> str:
+    """Upsert one evaluator's verdict on one diagnosis, and queue it for the store.
+
+    REPLACE rather than a new row: the latest verdict per evaluator is the one that
+    counts, whether that is a check re-run under a new version or an engineer changing
+    their mind once the incident was understood."""
+    evaluation_id = f"{diagnosis_id}:{evaluator}"
+    conn.execute(
+        "INSERT OR REPLACE INTO evaluations (evaluation_id, diagnosis_id, evaluator, "
+        "evaluator_version, created_at, verdict, score, cause_class, details, notes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (evaluation_id, diagnosis_id, evaluator, evaluator_version,
+         iso(created_at) if created_at else _now(), verdict, score, cause_class,
+         json.dumps(details, sort_keys=True), notes),
+    )
+    outbox.enqueue(conn, outbox.EVALUATION, [evaluation_id])
+    return evaluation_id
+
+
+def queue_snapshot(conn: Connection, bundle_sha256: str) -> None:
+    outbox.enqueue(conn, outbox.SNAPSHOT, [bundle_sha256])
+
+
 # ---- buffer drops ----------------------------------------------------------
 
 

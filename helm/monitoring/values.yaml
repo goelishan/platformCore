@@ -59,6 +59,38 @@ alertmanager:
       limits:
         memory: 256Mi
 
+  # F9 (drill 2026-10-13): Alertmanager had no receiver, so every alert went nowhere. Now
+  # firing and resolved alerts go to the on-call agent, which opens an incident and
+  # diagnoses it. Watchdog and InfoInhibitor are the pipeline's own heartbeats and go to
+  # the null receiver. Replaces the chart's default config, so the default inhibition of
+  # warnings by a critical alert on the same object is restated here.
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: oncall-agent
+      group_by: [namespace, alertname]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        - receiver: "null"
+          matchers: ['alertname =~ "Watchdog|InfoInhibitor"']
+    receivers:
+      - name: "null"
+      - name: oncall-agent
+        webhook_configs:
+          - url: http://oncall-agent.oncall.svc:8080/alertmanager
+            send_resolved: true
+            max_alerts: 50
+    inhibit_rules:
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity =~ "warning|info"']
+        equal: [namespace, alertname]
+      - source_matchers: ['severity = "warning"']
+        target_matchers: ['severity = "info"']
+        equal: [namespace, alertname]
+
 
 # EKS runs the control plane; there is nothing to scrape, and the default rules would fire
 # KubeControllerManagerDown and KubeSchedulerDown permanently. kube-proxy is a real

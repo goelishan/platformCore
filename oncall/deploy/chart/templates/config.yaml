@@ -30,6 +30,13 @@ data:
   ONCALL_BEDROCK_REGION: {{ .Values.aws.region | quote }}
   ONCALL_BEDROCK_MODEL_ID: {{ .Values.bedrock.modelId | quote }}
   ONCALL_DIAGNOSE_ENABLED: {{ .Values.bedrock.enabled | quote }}
+  ONCALL_ARGOCD_ENABLED: {{ .Values.sources.argocd.enabled | quote }}
+  ONCALL_ARGOCD_NAMESPACE: {{ .Values.sources.argocd.namespace | quote }}
+  {{- with .Values.sources.prometheus.url }}
+  ONCALL_PROMETHEUS_URL: {{ . | quote }}
+  {{- end }}
+  ONCALL_WEBHOOK_ENABLED: {{ .Values.webhook.enabled | quote }}
+  ONCALL_WEBHOOK_PORT: {{ .Values.webhook.port | quote }}
   ONCALL_TRIAGE_ENABLED: {{ .Values.triage.enabled | quote }}
   ONCALL_TRIAGE_INTERVAL: {{ .Values.triage.intervalSeconds | quote }}
   ONCALL_TRIAGE_MIN_SEVERITY: {{ .Values.triage.minSeverity | quote }}

@@ -34,6 +34,9 @@ class Case:
     # purpose: it cannot say a remedy is good, only that one which names none of these
     # is not about this fault.
     remedy_terms: tuple[str, ...] = ()
+    # lab: frozen from the oncall-lab faults by make eval-freeze. production: promoted
+    # from a labelled real diagnosis by make eval-promote, never re-frozen.
+    source: str = "lab"
 
 
 def remedy_text(hypothesis: Any) -> str:

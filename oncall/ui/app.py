@@ -22,6 +22,8 @@ import streamlit as st
 
 from oncall import config
 from oncall.diagnosis import service, snapshots
+from oncall.diagnosis.schema import CauseClass
+from oncall.eval import online
 from oncall.evidence import bundle as assembler
 from oncall.ui import view
 
@@ -38,7 +40,7 @@ st.set_page_config(page_title="On-call triage", layout="wide")
 
 
 
-def show_diagnosis(v: view.DiagnosisView) -> None:
+def show_diagnosis(v: view.DiagnosisView, key: str = "result") -> None:
     if v.banner:
         level, text = v.banner
         (st.error if level == "error" else st.warning)(text)
@@ -94,6 +96,45 @@ def show_diagnosis(v: view.DiagnosisView) -> None:
     with st.expander("Receipt"):
         st.table({"field": list(v.receipt), "value": list(v.receipt.values())})
 
+    show_evaluation(v, key)
+
+
+SAME_AS_MODEL = "(the model's rank-1 cause)"
+
+
+def show_evaluation(v: view.DiagnosisView, key: str) -> None:
+    """How this diagnosis was judged, and the form that records the engineer's verdict:
+    the one evaluator that can say right or wrong, and what turns a production mistake
+    into a regression case (make -C oncall eval-promote)."""
+    evals = online.evaluations_for(v.diagnosis_id)
+    with st.expander("Evaluation", expanded=False):
+        lines = view.evaluation_lines(evals)
+        if not lines:
+            st.caption("Not evaluated yet; the agent's evaluate job runs every few minutes.")
+        for line in lines:
+            st.text(line)
+
+        if not v.ok:
+            return
+        with st.form(f"feedback-{key}-{v.diagnosis_id}"):
+            st.markdown("**Was this right?** Recorded against this diagnosis.")
+            verdict = st.radio("Verdict", list(online.HUMAN_VERDICTS), horizontal=True)
+            cause = st.selectbox("What the cause actually was",
+                                 [SAME_AS_MODEL, *(c.value for c in CauseClass)])
+            remedy = st.radio("The remedy", ["(not answered)", *online.REMEDY_RESULTS],
+                              horizontal=True, format_func=lambda r: r.replace("_", " "))
+            notes = st.text_input("Notes (what was really going on)")
+            if st.form_submit_button("Record verdict"):
+                try:
+                    online.record_human(
+                        v.diagnosis_id, verdict,
+                        None if cause == SAME_AS_MODEL else cause,
+                        None if remedy == "(not answered)" else remedy, notes or None,
+                    )
+                    st.success("Verdict recorded.")
+                except ValueError as e:
+                    st.error(str(e))
+
 
 def show_evidence(e: view.Evidence, side: str) -> None:
     if not e.found:
@@ -138,6 +179,14 @@ for h in health:
     stale = view.age(h["started_at"]).endswith("h ago")
     line = f"{h['source']}: {h['status']}, {view.age(h['started_at'])}"
     (st.sidebar.warning if stale or h["status"] != "ok" else st.sidebar.caption)(line)
+
+st.sidebar.markdown("**Open incidents**")
+incidents = service.open_incidents(cluster)
+if not incidents:
+    st.sidebar.caption("None open.")
+for inc in incidents:
+    st.sidebar.caption(f"{inc['title'] or 'cluster'}: {inc['state']}, {inc['trigger']}, "
+                       f"{inc['diagnoses']} diagnoses, opened {view.age(inc['opened_at'])}")
 
 if st.sidebar.button("Collect now", help="One cycle of every collector, as make collect"):
     with st.spinner("Collecting"):
@@ -197,7 +246,7 @@ with diagnose_tab:
 
     if "result" in st.session_state:
         st.caption(st.session_state.get("incident_note", ""))
-        show_diagnosis(st.session_state["result"])
+        show_diagnosis(st.session_state["result"], key="result")
 
 with history_tab:
     rows = service.recent(50)
@@ -208,9 +257,15 @@ with history_tab:
             hs = r.get("hypotheses") or []
             return f"{hs[0]['cause_class']} ({hs[0]['confidence']})" if hs else "-"
 
+        def evaluated(r: dict, evaluator: str) -> str:
+            e = online.evaluations_for(r["diagnosis_id"]).get(evaluator)
+            return e["verdict"] if e else "-"
+
         st.dataframe(
             [{"when": r["created_at"][:19].replace("T", " "), "subject": r.get("title") or "-",
+              "by": r.get("requested_by") or "-",
               "outcome": r.get("outcome") or "ok", "top cause": top(r),
+              "checks": evaluated(r, "checks"), "engineer": evaluated(r, "human"),
               "latency s": round((r.get("latency_ms") or 0) / 1000, 1),
               "prompt": f"v{r.get('prompt_version') or '-'}", "id": r["diagnosis_id"]}
              for r in rows],
@@ -233,7 +288,7 @@ with history_tab:
             b = None
         if b is not None:
             st.session_state["bundle"] = b
-        show_diagnosis(view.build(row, b, service.labels(b) if b else {}))
+        show_diagnosis(view.build(row, b, service.labels(b) if b else {}), key="history")
 
         if b is not None and st.button("Replay on today's prompt and model",
                                        disabled=not config.DIAGNOSE_ENABLED,
@@ -244,7 +299,7 @@ with history_tab:
                 view.row_from_record(r.record), r.bundle, service.labels(r.bundle))
         if "replayed" in st.session_state:
             st.markdown("### Replay")
-            show_diagnosis(st.session_state["replayed"])
+            show_diagnosis(st.session_state["replayed"], key="replay")
 
 with evidence_tab:
     b = st.session_state.get("bundle")

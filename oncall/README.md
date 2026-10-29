@@ -5,6 +5,43 @@ assembles a bounded picture of one incident, and asks a model on Amazon Bedrock 
 hypotheses with read-only commands to verify them. It diagnoses only: the model never sees
 the cluster, and nothing it returns is executed.
 
+## Continuous triage, remedies and evaluation
+
+The agent no longer waits to be asked. Every two minutes it looks for subjects in trouble,
+diagnoses them within a spend cap, proposes a fix for each hypothesis, and evaluates every
+diagnosis it or a person makes.
+
+- **Continuous triage** (`triage.py`, agent job `triage`). A subject at `error` or worse for
+  3 minutes and still seen in the last 5 is diagnosed through the same service the UI uses,
+  with `requested_by = auto`. It is diagnosed again on new evidence or an hour later if
+  still failing; failed calls back off for 15 minutes, at most 3 in a row. Caps: 2 per pass,
+  6 per hour. Incidents close after 15 minutes quiet, and only while `k8s_pods` and
+  `k8s_events` are fresh: silence from a blind collector is not recovery.
+- **Alerts trigger it too.** Alertmanager posts to `oncall-agent:8080/alertmanager`
+  (`webhook.py`, receiver in `helm/monitoring/values.yaml`). A firing alert opens an
+  incident (`trigger = alert:<name>`) that the next pass diagnoses without a settle period;
+  the handler wakes the loop and never calls Bedrock itself.
+- **New sources.** `prometheus` polls firing alerts (set `sources.prometheus.url`), and is
+  the one source that keeps kube-system, so cluster DNS failures are visible. `argocd`
+  reads Applications, so the evidence shows what is deployed from git.
+- **Remedies** (prompt v6). Each hypothesis carries one to three steps with a risk of low,
+  medium or high and an undo. A command is held to a remedy allowlist with a risk floor per
+  verb (`drain` is high; `delete` may name only pods and Jobs). The agent runs none of them.
+  For an Argo CD managed workload the step says the fix belongs in git.
+- **Every diagnosis is evaluated** (`eval/online.py`, agent job `evaluate`):
+  - `checks` straight away: worst evidence cited, gaps acknowledged, confidence while
+    blind, a remedy offered, least risky step first, needed a repair;
+  - `outcome` once the incident closes or two hours pass: resolved or persisted, and
+    whether later diagnoses of the same incident agreed;
+  - `human` from the UI's Evaluation panel or `make -C oncall feedback`: correct, partial
+    or wrong, the real cause, and whether the remedy worked.
+  Evaluations and bundle snapshots ship to the store (`store/migrations/0008`) and are
+  exported as `oncall_evaluations`, `oncall_evaluation_flags`, `oncall_human_*`.
+- **Improving from it.** `make -C oncall review` reports by model and prompt version with
+  accuracy over labelled diagnoses only, and lists what to change. A diagnosis an engineer
+  labelled becomes a frozen eval case with `make -C oncall eval-promote DIAGNOSIS=<id>`
+  (`source: production` in `golden.yaml`, kept by `eval-freeze`).
+
 ## M6: the triage UI
 
 ```bash
@@ -169,5 +206,19 @@ when they drift, and they are applied together with the exporter's Deployment.
   journalled while Postgres was down counts when it ships. The first diagnosis under a
   model or prompt version the exporter was not configured with is invisible to
   `increase()`, because its series is born at 1.
-- **Snapshots live on local disk.** Replay needs the bundle a diagnosis saw; a deployed
-  agent would keep those in object storage.
+- **Snapshots are on local disk first.** They now ship to the store's `bundle_snapshots`
+  table, so promotion and review work from anywhere; replay in the UI still reads the
+  agent's volume.
+- **Remedy relevance is a keyword test.** `remedy_terms` can catch a fix about the wrong
+  thing; it cannot say a fix is good. Only the engineer's `remedy` answer does that.
+- **Outcome is not correctness.** An incident that resolved after a diagnosis may have
+  been fixed by a restart nobody understood. It is reported beside, never as, accuracy.
+- **Retention is not in the newness horizon.** `watching_since` is the first contact
+  (migration 0006); a problem whose rows expired before it recurred reads as new.
+- **The webhook trusts the cluster network.** ClusterIP only; set `ONCALL_WEBHOOK_TOKEN`
+  and an Alertmanager `authorization` credential to require a bearer token.
+- **One Application per namespace is assumed** when Argo CD rows join a bundle by
+  namespace; several Applications deploying into one namespace all join.
+- **metrics-server is not installed** (F8), so an HPA cannot scale; `kubectl top` in a
+  verify command fails until it is.
+- **CPU throttling on the agent pods** (F6) is unconfirmed; size from the next cluster.

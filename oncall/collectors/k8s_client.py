@@ -95,6 +95,13 @@ def discovery_v1() -> client.DiscoveryV1Api:
     return client.DiscoveryV1Api()
 
 
+def custom_objects() -> client.CustomObjectsApi:
+    """Argo CD Applications. Plain dicts back, not generated models: the client has no
+    types for a CRD, which is also why list_all does not apply to it."""
+    _ensure_auth()
+    return client.CustomObjectsApi()
+
+
 # ---- scope -----------------------------------------------------------------
 # Exclusions win over the allowlist. The agent's own namespace is always excluded:
 # without it, the agent restarting emits a signal about itself, which triggers log

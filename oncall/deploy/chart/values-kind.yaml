@@ -29,3 +29,9 @@ store:
 # Kind has no IRSA, so no pod here has an AWS identity: Preview only, no helm test.
 bedrock:
   enabled: false
+
+# No Argo CD on the lab cluster, so no argocd namespace for the Application Role to live in.
+# The webhook stays on: make deploy-kind with a local Alertmanager can exercise it.
+sources:
+  argocd:
+    enabled: false

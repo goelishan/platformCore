@@ -133,6 +133,7 @@ STORE_RETENTION = {
     "log_excerpt": timedelta(hours=24),
     "metric": timedelta(days=7),
     "deploy": timedelta(days=30),
+    "alert": timedelta(days=7),
 }
 
 STORE_RETENTION_DEFAULT = timedelta(days=7)
@@ -215,6 +216,39 @@ POLL_INTERVALS = {
     # so it is always one cycle behind them — see LOG_LOOKBACK_SECONDS.
     "k8s_logs": 120,
 }
+
+# Optional sources, scheduled only where they can work. An interval for a source that is
+# not configured would make every bundle report it as never having run, which is a gap
+# the model is told to take seriously and here would mean nothing.
+#
+# Prometheus: firing alerts from /api/v1/alerts. The rules already encode what someone
+# decided matters, including things no Kubernetes object shows (CoreDNS errors, a full
+# disk, an API server error rate).
+PROMETHEUS_URL = os.getenv("ONCALL_PROMETHEUS_URL") or None
+if PROMETHEUS_URL:
+    POLL_INTERVALS["prometheus"] = int(os.getenv("ONCALL_PROMETHEUS_INTERVAL", "60"))
+
+# Argo CD: Application sync and health. Tells the reasoner which workloads are deployed
+# from git, so a fix to their spec belongs in git, and shows a failed sync as the cause it
+# often is. Slow: an Application changes when someone commits.
+ARGOCD_ENABLED = os.getenv("ONCALL_ARGOCD_ENABLED", "true").lower() in {"1", "true", "yes"}
+ARGOCD_NAMESPACE = os.getenv("ONCALL_ARGOCD_NAMESPACE", "argocd")
+if ARGOCD_ENABLED:
+    POLL_INTERVALS["argocd"] = int(os.getenv("ONCALL_ARGOCD_INTERVAL", "120"))
+
+# Alerts that are about the alerting pipeline or this agent, never about the cluster.
+IGNORED_ALERTS = frozenset({"Watchdog", "InfoInhibitor"})
+
+# The Alertmanager webhook. Alertmanager POSTs firing and resolved alerts here; each
+# firing one is written as a signal and opens an incident that triage diagnoses on its
+# next pass, without the settle period, because the rule's own "for" already settled it.
+WEBHOOK_ENABLED = os.getenv("ONCALL_WEBHOOK_ENABLED", "false").lower() in {"1", "true", "yes"}
+WEBHOOK_PORT = int(os.getenv("ONCALL_WEBHOOK_PORT", "8080"))
+# Optional shared secret. When set, a request without "Authorization: Bearer <token>" is
+# refused. The receiver is a ClusterIP Service, so this guards against other workloads
+# in the cluster, not the internet.
+WEBHOOK_TOKEN = os.getenv("ONCALL_WEBHOOK_TOKEN") or None
+WEBHOOK_MAX_BYTES = 1024 * 1024
 
 # Sources whose signals choose which pods k8s_logs reads. Here rather than in the
 # collector because the assembler has to know it too, and importing a collector would
@@ -399,6 +433,11 @@ TRIAGE_MAX_PER_HOUR = int(os.getenv("ONCALL_TRIAGE_MAX_PER_HOUR", "6"))
 # An incident is closed once its subject has been quiet this long, and only while the
 # sources that would show it are fresh: silence from a blind collector is not recovery.
 TRIAGE_RESOLVE_QUIET_SECONDS = int(os.getenv("ONCALL_TRIAGE_RESOLVE_QUIET_SECONDS", "900"))
+
+
+# How often the agent evaluates what is due: checks for any diagnosis without them, and
+# outcomes for incidents that have closed or passed the horizon (oncall/eval/online.py).
+EVALUATE_INTERVAL = int(os.getenv("ONCALL_EVALUATE_INTERVAL", "300"))
 
 
 def _optional_float(name: str) -> float | None:

@@ -36,6 +36,15 @@ store:
   database: oncall
   user: oncall
 
+# kube-prometheus-stack's Prometheus, release kps in monitoring. Check the Service name
+# with kubectl -n monitoring get svc if the release is ever renamed.
+sources:
+  prometheus:
+    url: http://kps-kube-prometheus-stack-prometheus.monitoring.svc:9090
+  argocd:
+    enabled: true
+    namespace: argocd
+
 bedrock:
   enabled: true
 

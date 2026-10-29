@@ -59,6 +59,12 @@ class Scheduler:
         for job in self.jobs:
             job.next_due = start + job.start_after
 
+    def due_now(self, name: str) -> None:
+        """Bring one job forward to the next tick: the webhook opened an incident."""
+        for job in self.jobs:
+            if job.name == name:
+                job.next_due = self.clock()
+
     def tick(self) -> float:
         """Run every due job once; return the clock value at which the next one is due."""
         for job in self.jobs:
@@ -151,6 +157,14 @@ def triage() -> object:
     return report
 
 
+def evaluate() -> object:
+    from oncall.eval import online
+
+    done = online.evaluate_pending()
+    log.info("evaluated: %s", done)
+    return done
+
+
 def jobs() -> list[Job]:
     """Collectors first, in registry order, which is least recoverable first: events are
     garbage-collected by the API server and lost if missed, so they run before anything
@@ -162,6 +176,8 @@ def jobs() -> list[Job]:
     out.append(Job("ship", config.SHIP_INTERVAL, ship, start_after=config.SHIP_INTERVAL / 2))
     out.append(Job("sweep:buffer", config.BUFFER_SWEEP_INTERVAL, sweep_buffer))
     out.append(Job("sweep:store", config.STORE_SWEEP_INTERVAL, sweep_store))
+    # Every diagnosis, manual or automatic, gets its checks and later its outcome.
+    out.append(Job("evaluate", config.EVALUATE_INTERVAL, evaluate))
     # Last, so a pass reads what this cycle's collectors have just written. Only where a
     # diagnosis can be made at all: on kind there is no AWS identity to make one with.
     if config.TRIAGE_ENABLED and config.DIAGNOSE_ENABLED:
@@ -177,11 +193,16 @@ def jobs() -> list[Job]:
 
 
 
-def run(scheduler: Scheduler, stop: threading.Event, beat: Path) -> None:
+def run(scheduler: Scheduler, stop: threading.Event, beat: Path,
+        wake: threading.Event | None = None) -> None:
+    """wake, when set by the webhook, ends the wait early and makes triage due now."""
+    wake = wake or stop
     while not stop.is_set():
         due = scheduler.tick()
         heartbeat(beat)
-        stop.wait(max(0.0, due - scheduler.clock()))
+        if wake.wait(max(0.0, due - scheduler.clock())) and wake is not stop:
+            wake.clear()
+            scheduler.due_now("triage")
 
 
 def main() -> int:
@@ -191,13 +212,26 @@ def main() -> int:
     lz.bootstrap()
 
     stop = threading.Event()
+    wake = threading.Event()
+
+    def _stop(*_: object) -> None:
+        stop.set()
+        wake.set()
+
     for sig in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(sig, lambda *_: stop.set())
+        signal.signal(sig, _stop)
 
     scheduler = Scheduler(jobs())
     log.info("agent started for cluster %s: %s", config.CLUSTER_NAME,
              ", ".join(f"{j.name}/{j.interval:g}s" for j in scheduler.jobs))
-    run(scheduler, stop, config.HEARTBEAT_PATH)
+    server = None
+    if config.WEBHOOK_ENABLED:
+        from oncall import webhook
+
+        server = webhook.serve(config.WEBHOOK_PORT, on_opened=wake.set)
+    run(scheduler, stop, config.HEARTBEAT_PATH, wake)
+    if server is not None:
+        server.shutdown()
     log.info("agent stopped")
     return 0
 

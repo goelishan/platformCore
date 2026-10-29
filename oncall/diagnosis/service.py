@@ -106,11 +106,25 @@ def diagnose(b: assembler.Bundle, cluster: str, subject: str | None,
         attached = lz.attach_signal_ids(conn, incident, b.candidate_signal_ids)
 
     snapshots.save(b)
+    with lz.connect() as conn:
+        lz.queue_snapshot(conn, assembler.evidence_receipt(b))
     record = reasoner.diagnose(b, incident_id=incident, client=client)
     record = record.model_copy(update={"requested_by": trigger})
     with lz.connect() as conn:
         journal(conn, record)
+    _evaluate(record.diagnosis_id)
     return Diagnosed(record, b, incident, reused, attached, labels(b))
+
+
+def _evaluate(diagnosis_id: str) -> None:
+    """The automatic checks, straight away, so the UI shows them beside the answer. A
+    failure here never costs the diagnosis: the agent's evaluate job picks it up."""
+    from oncall.eval import online
+
+    try:
+        online.evaluate_checks(diagnosis_id)
+    except Exception:  # noqa: BLE001 - evaluation is never on the diagnosis's critical path
+        log.exception("checks for %s failed; left for the evaluate job", diagnosis_id)
 
 
 def replay(diagnosis_id: str, client: Any = None) -> Replayed:
@@ -122,6 +136,7 @@ def replay(diagnosis_id: str, client: Any = None) -> Replayed:
     new = new.model_copy(update={"requested_by": "manual"})
     with lz.connect() as conn:
         journal(conn, new)
+    _evaluate(new.diagnosis_id)
     return Replayed(old, new, b)
 
 
@@ -172,6 +187,20 @@ def source_health(cluster: str) -> list[dict[str, Any]]:
             "  SELECT max(started_at) FROM collection_runs "
             "  WHERE source = r.source AND cluster = r.cluster) ORDER BY source",
             (cluster,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def open_incidents(cluster: str, limit: int = 20) -> list[dict[str, Any]]:
+    """Unresolved incidents, newest first, with who opened them and how many attempts."""
+    with lz.connect() as conn:
+        rows = conn.execute(
+            "SELECT i.incident_id, i.title, i.trigger, i.state, i.opened_at, "
+            "       count(d.diagnosis_id) AS diagnoses "
+            "FROM incidents i LEFT JOIN diagnoses d USING (incident_id) "
+            "WHERE i.cluster = ? AND i.state != 'resolved' "
+            "GROUP BY i.incident_id ORDER BY i.opened_at DESC LIMIT ?",
+            (cluster, limit),
         ).fetchall()
     return [dict(r) for r in rows]
 

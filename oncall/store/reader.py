@@ -22,6 +22,14 @@ from psycopg import Connection
 from oncall.store.connection import fetch_all, fetch_one
 
 
+def snapshot(conn: Connection, bundle_sha256: str) -> dict[str, Any] | None:
+    """A shipped bundle snapshot as the JSON it was saved as, or None."""
+    row = fetch_one(
+        conn, "SELECT bundle FROM bundle_snapshots WHERE bundle_sha256 = %s", (bundle_sha256,)
+    )
+    return row["bundle"] if row else None
+
+
 def first_seen_ever(conn: Connection, fingerprint: str) -> datetime | None:
     """Turns "started after the deploy" into "has never happened before the deploy".
 

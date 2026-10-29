@@ -52,6 +52,14 @@ groups:
       - record: oncall:diagnosis_cost_usd:increase_24h
         expr: sum by (model) (increase(oncall_diagnosis_cost_usd_total[24h]))
 
+      # Accuracy on real incidents, over the diagnoses an engineer labelled. Only that
+      # denominator: an unlabelled diagnosis is unknown, never assumed right.
+      - record: oncall:human_top1:ratio
+        expr: |
+          sum by (model, prompt_version) (oncall_human_top1_matches)
+            /
+          sum by (model, prompt_version) (oncall_human_labelled) > 0
+
 
       #----------------------------------------------------------------------------------------------
       # EXPORTER AND JOURNAL
@@ -205,6 +213,44 @@ groups:
             {{ $value | humanizePercentage }} for {{ $labels.model }} over 24 hours. Each
             repair re-sends the whole prompt; the contract and the prompt have drifted
             apart. Compare against the latest eval report.
+
+
+      #----------------------------------------------------------------------------------------------
+      # EVALUATION
+      #----------------------------------------------------------------------------------------------
+      #
+      # Checks run as each diagnosis is journalled and again every five minutes for anything
+      # missed, so half an hour unchecked means the evaluate job is not running.
+
+
+
+      - alert: OncallEvaluationsStalled
+        expr: oncall_evaluation_backlog > 0
+        for: 30m
+        labels:
+          severity: warning
+          component: oncall-agent
+        annotations:
+          summary: Diagnoses are reaching the store without being evaluated.
+          description: >-
+            {{ $value }} diagnoses have had no automatic checks for 30 minutes. The agent's
+            evaluate job is failing or not scheduled; its log line starts "evaluated:".
+
+      - alert: OncallLabelledAccuracyLow
+        expr: |
+          oncall:human_top1:ratio < 0.7
+            and on (model, prompt_version)
+          sum by (model, prompt_version) (oncall_human_labelled) > 9
+        for: 1h
+        labels:
+          severity: info
+          component: oncall-agent
+        annotations:
+          summary: Rank 1 matched the engineer's cause on fewer than 70% of labelled diagnoses.
+          description: >-
+            {{ $value | humanizePercentage }} for {{ $labels.model }} on prompt
+            v{{ $labels.prompt_version }}. make -C oncall review lists the wrong ones with the
+            command that adds each to the eval.
 
 
       #----------------------------------------------------------------------------------------------

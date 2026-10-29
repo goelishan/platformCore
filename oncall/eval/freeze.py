@@ -69,9 +69,17 @@ def main(argv: list[str] | None = None) -> int:
     fixtures = args.root / "fixtures"
     fixtures.mkdir(parents=True, exist_ok=True)
 
-    manifest: dict[str, str] = {}
+    # Promoted production cases keep their fixture and manifest line: their cluster has
+    # moved on, and re-freezing would replace the evidence with whatever the lab shows.
+    old_manifest = fixtures / "manifest.json"
+    previous = json.loads(old_manifest.read_text()) if old_manifest.exists() else {}
+    manifest: dict[str, str] = {c.subject: previous[c.subject] for c in golden
+                                if c.source == "production" and c.subject in previous}
     problems = 0
     for case in golden:
+        if case.source == "production":
+            print(f"  kept    {case.subject:18} promoted from production")
+            continue
         with lz.connect() as conn:
             b = assembler.assemble(conn, args.cluster, subject_name=cases.subject_of(case.subject))
         stale = [n for n in b.degraded if n.startswith(assembler.STALE_NOTE_PREFIX)]
@@ -93,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {case.subject:18} {len(b.findings):3} findings  {receipt[:16]}{note}")
 
     (fixtures / "manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
-    print(f"froze {len(manifest)} of {len(golden)} into {fixtures}")
+    print(f"{len(manifest)} of {len(golden)} fixtures in {fixtures}")
     return 1 if problems else 0
 
 

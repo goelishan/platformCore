@@ -116,7 +116,8 @@ def store_db(store_available):
     store.migrate()
 
     with store.connect() as conn:
-        conn.execute("TRUNCATE signals, incidents, diagnoses, cluster_watch CASCADE")
+        conn.execute("TRUNCATE signals, incidents, diagnoses, cluster_watch, evaluations, "
+                     "bundle_snapshots CASCADE")
 
     yield store
 

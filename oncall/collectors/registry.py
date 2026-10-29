@@ -20,7 +20,15 @@ from __future__ import annotations
 import logging
 
 from oncall import config
-from oncall.collectors import k8s_events, k8s_logs, k8s_nodes, k8s_pods, k8s_services
+from oncall.collectors import (
+    argocd,
+    k8s_events,
+    k8s_logs,
+    k8s_nodes,
+    k8s_pods,
+    k8s_services,
+    prometheus,
+)
 from oncall.collectors.runner import CollectFn, run_once
 from oncall.envelope import SignalSource, SourceStatus
 
@@ -40,20 +48,28 @@ log = logging.getLogger(__name__)
 # down by LOG_LOOKBACK_SECONDS and LOG_SINCE_SECONDS each spanning several intervals,
 # so a trigger from the previous cycle is still in the window and its logs still in
 # range.
+#
+# Prometheus and Argo CD are optional and registered exactly when config schedules them,
+# so _validate() holds either way. Both go before logs: a Prometheus alert about a pod is
+# a log trigger like any other pod signal, and logs must read this cycle's triggers.
 COLLECTORS: dict[SignalSource, CollectFn] = {
     SignalSource.K8S_EVENTS: k8s_events.collect,
     SignalSource.K8S_PODS: k8s_pods.collect,
     SignalSource.K8S_SERVICES: k8s_services.collect,
     SignalSource.K8S_NODES: k8s_nodes.collect,
-    SignalSource.K8S_LOGS: k8s_logs.collect,
 }
+if str(SignalSource.PROMETHEUS) in config.POLL_INTERVALS:
+    COLLECTORS[SignalSource.PROMETHEUS] = prometheus.collect
+if str(SignalSource.ARGOCD) in config.POLL_INTERVALS:
+    COLLECTORS[SignalSource.ARGOCD] = argocd.collect
+COLLECTORS[SignalSource.K8S_LOGS] = k8s_logs.collect
 
 
 def _validate() -> None:
     """Registered collectors and configured intervals must describe the same set.
 
-    A SignalSource member with no entry here is fine — k8s_logs, prometheus and argocd
-    are declared before they are built. What is not fine is the two halves drifting:
+    A SignalSource member with no entry here is fine: prometheus and argocd are only
+    registered where config schedules them. What is not fine is the two halves drifting:
     a collector with no interval never runs, and an interval naming no collector is a
     typo that will read as a configured source forever.
     """

@@ -34,6 +34,8 @@ EXPORTED = {
     "oncall_diagnosis_cost_usd_total", "oncall_diagnoses_unpriced_total",
     "oncall_diagnosis_last_timestamp_seconds",
     "oncall_store_login_up", "oncall_store_login_duration_seconds",
+    "oncall_evaluations", "oncall_evaluation_flags", "oncall_human_labelled",
+    "oncall_human_top1_matches", "oncall_evaluation_backlog",
 }
 
 
@@ -108,7 +110,7 @@ def test_every_alert_has_a_severity_and_both_annotations():
     groups = yaml.safe_load(RULES.read_text())["groups"]
     alerts = [r for g in groups for r in g["rules"] if "alert" in r]
 
-    assert len(alerts) == 10
+    assert len(alerts) == 12
     for a in alerts:
         assert a["labels"]["severity"] in {"info", "warning", "critical"}, a["alert"]
         assert a["labels"]["component"] == "oncall-agent", a["alert"]

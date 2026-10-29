@@ -33,6 +33,9 @@ class SignalKind(StrEnum):
     NODE_STATE = "node_state"
     METRIC = "metric"
     DEPLOY = "deploy"
+    # A Prometheus alert, polled or pushed by Alertmanager. Its own kind because an alert
+    # is a judgement someone encoded in a rule, not an observation of one object.
+    ALERT = "alert"
 
 class SourceStatus(StrEnum):
     OK = "ok"

@@ -16,6 +16,9 @@ Continuous triage: the agent diagnoses subjects in trouble without being asked.
     TRIAGE_RESOLVE_QUIET_SECONDS, and only while the sources that would show it are
     fresh. A blind collector produces silence too, and closing an incident on that
     silence would record a recovery that never happened.
+  - An incident opened by the Alertmanager webhook (trigger "alert:<name>") is diagnosed
+    on the next pass with no settle period, whatever its severity: the rule's "for" has
+    settled it, and someone decided it matters. Argo CD rows never become candidates.
   - Every diagnosis it makes goes through diagnosis.service, the path the UI uses, so an
     automatic diagnosis is journalled, snapshotted and evaluated exactly like one asked
     for by hand. The incident's trigger is "auto", which is how the two are told apart.
@@ -37,6 +40,7 @@ from oncall.envelope.timefmt import iso
 log = logging.getLogger(__name__)
 
 AUTO = "auto"
+ALERT_PREFIX = "alert:"
 
 SEVERITY_RANK = {"warning": 1, "error": 2, "critical": 3}
 
@@ -65,6 +69,7 @@ class History:
     last_ok_at: datetime | None = None
     failures_in_a_row: int = 0
     new_evidence: bool = False
+    trigger: str | None = None
 
 
 @dataclass(frozen=True)
@@ -89,6 +94,9 @@ class Report:
 
 
 def decide(c: Candidate, h: History, now: datetime) -> Decision:
+    # An Alertmanager alert already waited out its rule's "for" before it fired.
+    if h.trigger and h.trigger.startswith(ALERT_PREFIX) and h.last_at is None:
+        return Decision(True, f"alert fired: {h.trigger[len(ALERT_PREFIX):]}")
     if now - c.first_bad < timedelta(seconds=config.TRIAGE_SETTLE_SECONDS):
         return Decision(False, "settling: too new to tell from a transient")
     if now - c.last_bad > timedelta(seconds=config.TRIAGE_ACTIVE_SECONDS):
@@ -129,6 +137,9 @@ SELECT coalesce(owner_name, subject_name) AS name,
 FROM signals
 WHERE cluster = ? AND event_time >= ?
   AND coalesce(owner_name, subject_name) IS NOT NULL
+  -- Argo CD rows are context, joined to a workload's bundle by namespace. A Degraded
+  -- Application's workloads fail on their own, and diagnosing both would pay twice.
+  AND source != 'argocd'
   AND CASE severity WHEN 'critical' THEN 3 WHEN 'error' THEN 2 WHEN 'warning' THEN 1
                     ELSE 0 END >= ?
 GROUP BY 1, 2
@@ -137,7 +148,7 @@ ORDER BY worst DESC, last_bad DESC
 
 
 def _parse(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromisoformat(value)
 
 
 def _floor() -> int:
@@ -168,13 +179,15 @@ def history(conn: Connection, cluster: str, c: Candidate) -> History:
     incident = lz.unresolved_incident(conn, cluster, c.subject)
     if incident is None:
         return History()
+    trigger = conn.execute("SELECT trigger FROM incidents WHERE incident_id = ?",
+                           (incident,)).fetchone()["trigger"]
     rows = conn.execute(
         "SELECT created_at, outcome FROM diagnoses WHERE incident_id = ? "
         "ORDER BY created_at DESC",
         (incident,),
     ).fetchall()
     if not rows:
-        return History(incident_id=incident)
+        return History(incident_id=incident, trigger=trigger)
 
     failures = 0
     for r in rows:
@@ -185,6 +198,7 @@ def history(conn: Connection, cluster: str, c: Candidate) -> History:
     last_at = _parse(rows[0]["created_at"])
     return History(
         incident_id=incident,
+        trigger=trigger,
         last_at=last_at,
         last_outcome=rows[0]["outcome"],
         last_ok_at=last_ok,
@@ -205,6 +219,20 @@ def _new_since(conn: Connection, cluster: str, c: Candidate, since: datetime) ->
         (cluster, c.subject, _floor(), iso(since)),
     ).fetchone()
     return row is not None
+
+
+def alert_incidents(conn: Connection, cluster: str, now: datetime) -> list[Candidate]:
+    """Incidents an alert opened that nothing has diagnosed yet, as candidates. Their
+    subject may sit below the severity floor (a warning alert) or have no other rows, and
+    is diagnosed anyway: someone wrote a rule saying this matters."""
+    rows = conn.execute(
+        "SELECT i.title, i.namespace FROM incidents i WHERE i.cluster = ? "
+        "AND i.state != 'resolved' AND i.trigger LIKE ? AND i.title IS NOT NULL "
+        "AND NOT EXISTS (SELECT 1 FROM diagnoses d WHERE d.incident_id = i.incident_id) "
+        "ORDER BY i.opened_at",
+        (cluster, f"{ALERT_PREFIX}%"),
+    ).fetchall()
+    return [Candidate(r["title"], r["namespace"], 1, now, now, 0) for r in rows]
 
 
 def auto_diagnoses_since(conn: Connection, cluster: str, since: datetime) -> int:
@@ -295,6 +323,8 @@ def run_once(
     with lz.connect() as conn:
         report.blind = blind_witnesses(conn, now)
         found = candidates(conn, cluster, now)
+        known = {c.subject for c in found}
+        found += [c for c in alert_incidents(conn, cluster, now) if c.subject not in known]
         plans = [(c, history(conn, cluster, c)) for c in found]
         spent = auto_diagnoses_since(conn, cluster, now - timedelta(hours=1))
 

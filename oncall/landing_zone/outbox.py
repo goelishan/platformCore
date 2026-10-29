@@ -24,6 +24,11 @@ from oncall.envelope import iso
 SIGNAL = "signal"
 INCIDENT = "incident"
 DIAGNOSIS = "diagnosis"
+EVALUATION = "evaluation"
+# A bundle snapshot, keyed by its evidence receipt. Not a buffer row: the shipper reads the
+# file from diagnosis.snapshots, so the store holds the evidence behind every diagnosis
+# and a production diagnosis can be promoted into the eval corpus from anywhere.
+SNAPSHOT = "snapshot"
 
 
 def enqueue(conn: Connection, kind: str, row_ids: Iterable[str]) -> int:

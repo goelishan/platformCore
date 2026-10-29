@@ -77,6 +77,10 @@ spec:
           args: ["oncall.agent"]
           envFrom:
             {{- include "oncall.envFrom" . | nindent 12 }}
+          {{- if .Values.webhook.enabled }}
+          ports:
+            - {name: webhook, containerPort: {{ .Values.webhook.port }}}
+          {{- end }}
           securityContext:
             {{- include "oncall.containerSecurity" . | nindent 12 }}
           resources:
@@ -104,3 +108,22 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: 256Mi
+{{- if .Values.webhook.enabled }}
+---
+# The Alertmanager receiver. ClusterIP only: Alertmanager reaches it as
+# http://oncall-agent.{{ .Release.Namespace }}.svc:{{ .Values.webhook.port }}/alertmanager.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oncall-agent
+  labels:
+    {{- include "oncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "oncall.selector" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+  ports:
+    - {name: webhook, port: {{ .Values.webhook.port }}, targetPort: webhook}
+{{- end }}
